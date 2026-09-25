@@ -258,3 +258,23 @@ def test_axis_exclusion_reason_is_none_when_the_column_works():
     lap = trace_for.__wrapped__("petrol", "franco_eco")
     assert axis_exclusion_reason(lap, "distance_m") is None
     assert axis_exclusion_reason(lap, "not_a_column") is None
+
+
+def test_compare_and_category_view_agree_on_what_differs():
+    """Both pages must answer "what differs" identically — one implementation, not two."""
+    from dashboard.layout import varying_parameters
+    from dashboard.loaders import load_runs
+
+    runs = load_runs.__wrapped__()
+    pair = runs[
+        ((runs["powertrain"] == "petrol") | (runs["powertrain"] == "hybrid"))
+        & (runs["cycle"] == "franco_eco")
+    ]
+    expected = set(varying_parameters(pair)["Parameter"])
+
+    app = run(COMPARE)
+    app.selectbox(key="cmp_left").set_value(run_index("petrol", "franco_eco")).run()
+    app.selectbox(key="cmp_right").set_value(run_index("hybrid", "franco_eco")).run()
+    shown = set(app.dataframe[1].value["Parameter"])
+
+    assert shown == expected
