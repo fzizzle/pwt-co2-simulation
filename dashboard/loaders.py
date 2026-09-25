@@ -7,14 +7,29 @@ step. Everything is cached per session, so moving a control never re-parses a wo
 
 from __future__ import annotations
 
+import importlib
+import re
+
 import pandas as pd
 import streamlit as st
 
-import re
+from pwt import workbook as _workbook
+
+# Streamlit Community Cloud pulls new files on push and re-imports modules inside the app
+# folder, but packages outside it — `pwt/` — stay in memory from the moment the process
+# booted. A page that calls a function added after boot then raises "ImportError: cannot
+# import name …" while that function sits on disk, and only a manual reboot clears it.
+# Reloading when an expected name is missing makes the app recover on its own; locally, where
+# the module is never stale, this is a no-op.
+_REQUIRED = ("read_run", "read_block", "read_all")
+if any(not hasattr(_workbook, name) for name in _REQUIRED):
+    _workbook = importlib.reload(_workbook)
+
+read_block = _workbook.read_block
+read_run = _workbook.read_run
 
 from pwt.build import RUNS_PARQUET, TRACES_PARQUET, runs_frame, traces_frame
 from pwt.catalog import CATALOG, CYCLE_NAMES, POWERTRAIN_NAMES, course_file
-from pwt.workbook import read_block, read_run
 
 
 @st.cache_data(show_spinner="Reading workbooks…")

@@ -105,3 +105,28 @@ def test_no_chart_uses_a_second_y_axis(runs, lap):
     for fig in figures:
         for trace in fig.data:
             assert getattr(trace, "yaxis", None) in (None, "y")
+
+
+# --- deployment resilience ---------------------------------------------------------------------
+
+
+def test_loaders_recovers_from_a_stale_pwt_workbook(monkeypatch):
+    """Streamlit Cloud keeps `pwt/` cached from boot, so a newly added function goes missing.
+
+    Simulates that by hiding `read_block` on the loaded module, then re-importing loaders: the
+    guard must reload `pwt.workbook` and come back with the name rather than raising
+    ImportError, which is what forced a manual app reboot.
+    """
+    import importlib
+    import sys
+
+    import dashboard.loaders
+
+    workbook_module = sys.modules["pwt.workbook"]
+    monkeypatch.delattr(workbook_module, "read_block")
+    assert not hasattr(workbook_module, "read_block")
+
+    reloaded = importlib.reload(dashboard.loaders)
+
+    assert hasattr(reloaded, "read_block"), "loaders did not recover the missing name"
+    assert callable(reloaded.read_block)
