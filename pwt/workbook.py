@@ -229,6 +229,49 @@ def read_run(path: str | Path) -> Run:
     )
 
 
+def read_block(path: str | Path) -> pd.DataFrame:
+    """The A/B/C labelled block exactly as the sheet holds it.
+
+    This is the rawest view the tool offers: original label and unit text, the cell's row
+    number, and the value — plus how `read_run` classified the row and the normalised key it
+    was filed under. Nothing is renamed or dropped, so a row the reader skipped (a label with
+    no numeric value) still appears, with `value` empty.
+    """
+    path = Path(path)
+    workbook = openpyxl.load_workbook(path, data_only=True)
+    try:
+        ws = workbook[workbook.sheetnames[0]]
+        records = []
+        for row_number, row in enumerate(
+            ws.iter_rows(
+                min_row=_FIRST_DATA_ROW, min_col=_LABEL_COL, max_col=_VALUE_COL,
+                values_only=True,
+            ),
+            start=_FIRST_DATA_ROW,
+        ):
+            label_cell, unit_cell, value_cell = (row + (None, None, None))[:3]
+            if label_cell is None or not str(label_cell).strip():
+                continue
+            label = normalise(label_cell)
+            numeric = isinstance(value_cell, (int, float)) and not isinstance(value_cell, bool)
+            records.append(
+                {
+                    "row": row_number,
+                    "label": str(label_cell),
+                    "unit": "" if unit_cell is None else str(unit_cell),
+                    "value": float(value_cell) if numeric else None,
+                    "kind": ("total" if label in TOTAL_LABELS else "parameter")
+                    if numeric
+                    else "skipped (no numeric value)",
+                    "key_label": label,
+                    "key_unit": _unit_of(unit_cell),
+                }
+            )
+    finally:
+        workbook.close()
+    return pd.DataFrame(records)
+
+
 def read_all() -> list[Run]:
     """Every catalogued run, in catalog order."""
     from pwt.catalog import CATALOG, course_file

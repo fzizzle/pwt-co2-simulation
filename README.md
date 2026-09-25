@@ -36,9 +36,14 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Three pages: **Overview** (all twelve runs, one table and one chart), **Trace Explorer**
-(per-step data for one run), **Compare** (two runs, with their differing inputs listed first).
-Every table has a CSV download.
+Four pages: **Overview** (all twelve runs, one table and one chart), **Trace Explorer**
+(per-step data for one run), **Compare** (two runs, with their differing inputs listed first),
+and **Data** (the raw datasets as plain tables). Every table has a CSV download.
+
+The Data page carries five datasets: `Runs` (12 × 74), `Totals` and `Parameters` in long form,
+`Traces` (677 steps), and `Workbook cells` — one workbook's labelled block exactly as the
+sheet holds it, with the original label and unit text, the row number, and how the reader
+classified each row. That last one is where to look when a figure elsewhere seems wrong.
 
 `python -m pwt.build` writes `data/processed/*.parquet` to speed startup. It is optional and
 gitignored — the app reads the workbooks directly when the parquet is absent.

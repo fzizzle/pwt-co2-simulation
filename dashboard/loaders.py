@@ -10,6 +10,8 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+import re
+
 from pwt.build import RUNS_PARQUET, TRACES_PARQUET, runs_frame, traces_frame
 from pwt.catalog import CATALOG, CYCLE_NAMES, POWERTRAIN_NAMES, course_file
 from pwt.workbook import read_run
@@ -54,23 +56,42 @@ def pretty(kind: str, value: str) -> str:
     return table.get(value, value)
 
 
+#: Flattened column names look like "label [unit]", or just "label" when the workbook gave no
+#: unit. Splitting them back out keeps the long views readable as two sortable columns.
+_LABEL_UNIT = re.compile(r"^(?P<label>.*?)(?: \[(?P<unit>.*)\])?$")
+
+
+def _split_label_unit(series: pd.Series) -> pd.DataFrame:
+    extracted = series.str.extract(_LABEL_UNIT)
+    return extracted.fillna({"unit": ""})
+
+
+def _long(runs: pd.DataFrame, prefix: str, name: str) -> pd.DataFrame:
+    id_cols = ["powertrain", "cycle", "source_file"]
+    value_cols = [c for c in runs.columns if c.startswith(f"{prefix}:")]
+    long = runs.melt(
+        id_vars=id_cols, value_vars=value_cols, var_name=name, value_name="value"
+    )
+    long[name] = long[name].str.removeprefix(f"{prefix}:")
+    parts = _split_label_unit(long[name])
+    long[name] = parts["label"]
+    long.insert(long.columns.get_loc("value"), "unit", parts["unit"])
+    return long.dropna(subset=["value"]).reset_index(drop=True)
+
+
 def totals_long(runs: pd.DataFrame) -> pd.DataFrame:
     """The `total:` columns reshaped long, dropping figures a run does not report."""
-    id_cols = ["powertrain", "cycle", "source_file"]
-    total_cols = [c for c in runs.columns if c.startswith("total:")]
-    long = runs.melt(
-        id_vars=id_cols, value_vars=total_cols, var_name="quantity", value_name="value"
-    )
-    long["quantity"] = long["quantity"].str.removeprefix("total:")
-    return long.dropna(subset=["value"]).reset_index(drop=True)
+    return _long(runs, "total", "quantity")
 
 
 def params_long(runs: pd.DataFrame) -> pd.DataFrame:
     """The `param:` columns reshaped long."""
-    id_cols = ["powertrain", "cycle", "source_file"]
-    param_cols = [c for c in runs.columns if c.startswith("param:")]
-    long = runs.melt(
-        id_vars=id_cols, value_vars=param_cols, var_name="parameter", value_name="value"
-    )
-    long["parameter"] = long["parameter"].str.removeprefix("param:")
-    return long.dropna(subset=["value"]).reset_index(drop=True)
+    return _long(runs, "param", "parameter")
+
+
+@st.cache_data(show_spinner="Reading workbook…")
+def load_block(filename: str) -> pd.DataFrame:
+    """One workbook's labelled cells exactly as the sheet holds them."""
+    from pwt.workbook import read_block
+
+    return read_block(course_file(filename))
