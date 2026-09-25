@@ -9,19 +9,20 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import numpy as np
 import pandas as pd
 import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
     CANONICAL_QUANTITIES,
+    X_LABELS,
     configure,
     download,
     render_run_notices,
     run_label,
     run_picker,
     source_caption,
+    varying_parameters,
 )
 from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import style_axes
@@ -91,23 +92,11 @@ st.caption(
 # --- inputs that differ ---------------------------------------------------------------------
 
 st.subheader("Inputs that differ")
-param_columns = [c for c in runs.columns if c.startswith("param:")]
-rows = []
-for column in param_columns:
-    a, b = left_row.get(column), right_row.get(column)
-    if pd.isna(a) and pd.isna(b):
-        continue
-    same = pd.notna(a) and pd.notna(b) and np.isclose(a, b, rtol=1e-9, atol=0)
-    if same:
-        continue
-    rows.append({"Parameter": column.removeprefix("param:"), left_name: a, right_name: b})
-
-differences = pd.DataFrame(rows)
+pair = pd.concat([left_row.to_frame().T, right_row.to_frame().T], ignore_index=True)
+differences = varying_parameters(pair)
 if not differences.empty:
-    # Absent parameters arrive as Python None in an object column, which a Styler prints
-    # literally as "None"; as NaN they honour na_rep instead.
-    for side in (left_name, right_name):
-        differences[side] = pd.to_numeric(differences[side], errors="coerce")
+    differences = differences.drop(columns="Distinct values")
+
 if differences.empty:
     st.caption("Every parameter these two workbooks share holds the same value.")
 else:
@@ -117,8 +106,7 @@ else:
         hide_index=True,
     )
     st.caption(
-        f"{len(differences)} of {len(param_columns)} parameters differ, or appear in only one "
-        "of the two workbooks."
+        f"{len(differences)} parameters differ, or appear in only one of the two workbooks."
     )
     download(differences, "parameter-differences.csv")
 
@@ -153,7 +141,7 @@ fig = charts.compare_traces(
     left_trace, right_trace, column, x_column, (left_name, right_name),
     (left_colour, right_colour), pal,
 )
-style_axes(fig, pal, x_title=x_column, y_title=column)
+style_axes(fig, pal, x_title=X_LABELS.get(x_column, x_column), y_title=column)
 fig.update_layout(height=420)
 st.plotly_chart(fig, width="stretch", theme=None)
 

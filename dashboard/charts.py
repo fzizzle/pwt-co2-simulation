@@ -24,6 +24,10 @@ MARKER_SIZE = 8
 CORNER_RADIUS = 4
 BAR_GAP_PX = 2
 
+#: Dash patterns in a fixed order, used as a secondary encoding when several lines share a
+#: colour. Position determines pattern, so a member keeps its pattern as the selection changes.
+DASH_CYCLE: tuple[str, ...] = ("solid", "dash", "dot", "dashdot")
+
 
 def _rgba(hex_colour: str, alpha: float) -> str:
     """A hex colour as rgba(), so fills track the active palette."""
@@ -227,6 +231,43 @@ def force_breakdown(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.Figu
     return fig
 
 
+def overlay_traces(
+    frames: list[pd.DataFrame],
+    labels: list[str],
+    colours: list[str],
+    column: str,
+    x_column: str,
+    pal: Palette,
+    dashes: list[str] | None = None,
+) -> go.Figure:
+    """One per-step column from several runs on a single axis.
+
+    A run that does not carry the column is skipped rather than drawn as a gap — the electric
+    workbooks have no gear column at all, and an empty series in the legend would suggest the
+    data is missing when the concept simply does not apply.
+
+    `dashes` is an optional secondary encoding, one Plotly dash string per frame in the same
+    order as `frames`, for when several lines share a colour and need another way to tell them
+    apart. When `None`, every line is solid.
+    """
+    patterns = dashes or ["solid"] * len(frames)
+    fig = go.Figure()
+    for frame, label, colour, dash in zip(frames, labels, colours, patterns):
+        if column not in frame.columns or frame[column].isna().all():
+            continue
+        fig.add_scatter(
+            name=label,
+            x=frame[x_column],
+            y=frame[column],
+            mode="lines+markers",
+            line=dict(color=colour, width=LINE_WIDTH, dash=dash),
+            marker=dict(size=MARKER_SIZE, color=colour, line=dict(color=pal.surface, width=2)),
+            hovertemplate=f"<b>{label}</b><br>%{{y:.4g}}<extra></extra>",
+        )
+    fig.update_layout(showlegend=len(fig.data) > 1, hovermode="x unified")
+    return fig
+
+
 def compare_traces(
     left: pd.DataFrame,
     right: pd.DataFrame,
@@ -237,18 +278,8 @@ def compare_traces(
     pal: Palette,
 ) -> go.Figure:
     """One per-step column from two runs on a single axis."""
-    fig = go.Figure()
-    for frame, label, colour in ((left, labels[0], colours[0]), (right, labels[1], colours[1])):
-        if column not in frame.columns:
-            continue
-        fig.add_scatter(
-            name=label,
-            x=frame[x_column],
-            y=frame[column],
-            mode="lines+markers",
-            line=dict(color=colour, width=LINE_WIDTH),
-            marker=dict(size=MARKER_SIZE, color=colour, line=dict(color=pal.surface, width=2)),
-            hovertemplate=f"<b>{label}</b><br>%{{y:.4g}}<extra></extra>",
-        )
-    fig.update_layout(showlegend=True, hovermode="x unified")
+    fig = overlay_traces(
+        [left, right], list(labels), list(colours), column, x_column, pal
+    )
+    fig.update_layout(showlegend=True)
     return fig

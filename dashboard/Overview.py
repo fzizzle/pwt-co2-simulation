@@ -14,7 +14,6 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import pandas as pd
 import streamlit as st
 
 from dashboard import charts
@@ -26,6 +25,7 @@ from dashboard.layout import (
     data_notes,
     download,
     elevation_strip,
+    mark_gap_value,
     render_run_notices,
     run_notice,
     sidebar_filters,
@@ -98,21 +98,12 @@ matrix = (
 )
 # No cell gradient here: it would pull in matplotlib as a runtime dependency, and the
 # grouped bar below already carries the magnitude comparison.
-def mark_gaps(value, powertrain, cycle):
-    """Label a known-missing figure instead of letting a bare 0 read as a result."""
-    if pd.isna(value):
-        return "—"
-    if run_notice(powertrain, cycle):
-        return f"{value:,.3f} — to be filled"
-    return f"{value:,.3f}"
-
-
 display = matrix.copy().astype(object)
 for powertrain in matrix.index:
     for cycle in matrix.columns:
         code_p = next(k for k, v in POWERTRAIN_NAMES.items() if v == powertrain)
         code_c = next(k for k, v in CYCLE_NAMES.items() if v == cycle)
-        display.loc[powertrain, cycle] = mark_gaps(
+        display.loc[powertrain, cycle] = mark_gap_value(
             matrix.loc[powertrain, cycle], code_p, code_c
         )
 st.dataframe(display, width="stretch")

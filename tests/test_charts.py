@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import pandas as pd
 import pytest
 
 from dashboard import charts
@@ -149,3 +150,132 @@ def test_no_gap_labels_when_none_are_flagged(runs):
     fig = charts.grouped_totals(runs, "co2_g_per_km", DARK, unit="g")
     for bar in fig.data:
         assert "to be filled" not in list(bar.text)
+
+
+def test_varying_parameters_lists_only_what_differs(runs):
+    from dashboard.layout import varying_parameters
+
+    petrols = runs[runs["powertrain"] == "petrol"]
+    varying = varying_parameters(petrols)
+
+    assert not varying.empty
+    assert "Parameter" in varying.columns
+    assert "Distinct values" in varying.columns
+    # One column per run, named the way every other page names them.
+    assert "Petrol · NEDC" in varying.columns
+
+    names = set(varying["Parameter"])
+    # Mass differs between the NEDC car and the Spa car; the wheel is the same everywhere.
+    assert any(n.startswith("total mass") for n in names)
+    assert not any(n.startswith("wheel diameter") for n in names)
+
+    # Most-varied first.
+    counts = varying["Distinct values"].tolist()
+    assert counts == sorted(counts, reverse=True)
+
+
+def test_varying_parameters_flags_a_parameter_present_in_only_some_runs(runs):
+    """A parameter only some workbooks carry is a difference, not a match."""
+    from dashboard.layout import varying_parameters
+
+    nedc = runs[runs["cycle"] == "nedc"]
+    names = set(varying_parameters(nedc)["Parameter"])
+    # Only the hybrids carry an electric machine; petrol and BEV do not.
+    assert any(n.startswith("electric machine mass") for n in names)
+
+
+def test_varying_parameters_is_empty_for_a_single_run(runs):
+    from dashboard.layout import varying_parameters
+
+    one = runs[(runs["powertrain"] == "petrol") & (runs["cycle"] == "nedc")]
+    assert varying_parameters(one).empty
+
+
+def test_overlay_traces_draws_one_line_per_run(lap):
+    frames = [lap, lap, lap]
+    labels = ["a", "b", "c"]
+    colours = [DARK.series[0], DARK.series[1], DARK.series[2]]
+    fig = charts.overlay_traces(frames, labels, colours, "speed_kph", "distance_m", DARK)
+
+    assert len(fig.data) == 3
+    assert [t.name for t in fig.data] == labels
+    assert [t.line.color for t in fig.data] == colours
+    for trace in fig.data:
+        assert trace.line.width == charts.LINE_WIDTH
+        assert getattr(trace, "yaxis", None) in (None, "y")  # single axis
+
+
+def test_overlay_traces_skips_a_run_missing_the_column(lap):
+    """A BEV has no gear column; it drops out rather than raising."""
+    without = lap.drop(columns=["gear"])
+    fig = charts.overlay_traces(
+        [lap, without], ["has gear", "no gear"], [DARK.series[0], DARK.series[1]],
+        "gear", "distance_m", DARK,
+    )
+    assert [t.name for t in fig.data] == ["has gear"]
+
+
+def test_compare_traces_still_works_through_the_shared_path(lap):
+    fig = charts.compare_traces(
+        lap, lap, "speed_kph", "distance_m", ("left", "right"),
+        (DARK.series[0], DARK.series[1]), DARK,
+    )
+    assert [t.name for t in fig.data] == ["left", "right"]
+
+
+def test_overlay_traces_applies_dashes_when_given(lap):
+    fig = charts.overlay_traces(
+        [lap, lap, lap], ["a", "b", "c"], [DARK.series[0]] * 3,
+        "speed_kph", "distance_m", DARK, dashes=["solid", "dash", "dot"],
+    )
+    assert [t.line.dash for t in fig.data] == ["solid", "dash", "dot"]
+
+
+def test_overlay_traces_is_solid_by_default(lap):
+    fig = charts.overlay_traces(
+        [lap, lap], ["a", "b"], [DARK.series[0], DARK.series[1]],
+        "speed_kph", "distance_m", DARK,
+    )
+    assert all(t.line.dash in (None, "solid") for t in fig.data)
+
+
+def test_dashes_track_frames_when_one_is_skipped(lap):
+    """A frame without the column is skipped; the survivors keep their own dash."""
+    without = lap.drop(columns=["gear"])
+    fig = charts.overlay_traces(
+        [without, lap], ["skipped", "drawn"], [DARK.series[0]] * 2,
+        "gear", "distance_m", DARK, dashes=["solid", "dash"],
+    )
+    assert [t.name for t in fig.data] == ["drawn"]
+    assert [t.line.dash for t in fig.data] == ["dash"]
+
+
+def test_distinct_values_counts_only_distinct_present_values(runs):
+    """The column says "Distinct values", so it must not also count absence."""
+    from dashboard.layout import varying_parameters
+
+    nedc = runs[runs["cycle"] == "nedc"]
+    varying = varying_parameters(nedc)
+    row = varying[varying["Parameter"].str.startswith("effective mass gear 1")].iloc[0]
+
+    run_columns = [c for c in varying.columns if c not in ("Parameter", "Distinct values")]
+    values = [row[c] for c in run_columns]
+    present = [v for v in values if pd.notna(v)]
+
+    assert len(present) == 3
+    assert len(values) - len(present) == 1
+    assert row["Distinct values"] == len(set(present)) == 3
+
+
+def test_a_parameter_missing_somewhere_still_sorts_above_a_plain_difference(runs):
+    """Absence still matters for ordering, it just is not counted as a value."""
+    from dashboard.layout import varying_parameters
+
+    nedc = varying_parameters(runs[runs["cycle"] == "nedc"])
+    run_columns = [c for c in nedc.columns if c not in ("Parameter", "Distinct values")]
+
+    def missing(row):
+        return sum(pd.isna(row[c]) for c in run_columns)
+
+    keys = [(row["Distinct values"], missing(row)) for _, row in nedc.iterrows()]
+    assert keys == sorted(keys, key=lambda k: (k[0], k[1]), reverse=True)

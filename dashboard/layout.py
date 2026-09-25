@@ -1,6 +1,6 @@
 """Shared page furniture: the header, the sidebar controls, and small display helpers.
 
-Kept in one place so all three pages carry the same controls in the same order and the same
+Kept in one place so every page carries the same controls in the same order and the same
 vocabulary. Wording rule followed here: label things by what the reader recognises — "Fuel
 consumption", not "total consumption [l/100km]".
 """
@@ -20,6 +20,13 @@ CANONICAL_QUANTITIES: dict[str, tuple[str, str]] = {
     "consumption_l_per_100km": ("Fuel consumption", "l/100 km"),
     "energy_wh_per_100km": ("Electrical energy", "Wh/100 km"),
     "co2_g_total": ("CO₂ over the run", "g CO₂"),
+}
+
+#: Display names for the columns a chart can be plotted against.
+X_LABELS: dict[str, str] = {
+    "distance_m": "Distance (m)",
+    "time_s": "Time (s)",
+    "step": "Step",
 }
 
 
@@ -105,6 +112,25 @@ def run_notice(powertrain: str | None, cycle: str | None) -> str | None:
     return RUN_NOTICES.get((powertrain or "", cycle or ""))
 
 
+def mark_gap_value(
+    value: float | None,
+    powertrain: str | None,
+    cycle: str | None,
+    *,
+    decimals: int = 3,
+) -> str:
+    """Format a reported figure for display, labelling a known gap in place.
+
+    A figure the workbook does not report becomes an em dash. A figure from a run whose
+    workbook is flagged in RUN_NOTICES keeps its value but carries "to be filled", so a zero
+    that exists only because the data is missing cannot be read as a measurement.
+    """
+    if value is None or pd.isna(value):
+        return "—"
+    formatted = f"{value:,.{decimals}f}"
+    return f"{formatted} — to be filled" if run_notice(powertrain, cycle) else formatted
+
+
 def render_run_notices(*runs: pd.Series) -> None:
     """Warn about any run on screen whose workbook is known to be incomplete."""
     seen: set[tuple[str, str]] = set()
@@ -171,6 +197,45 @@ def elevation_strip(trace: pd.DataFrame, pal: Palette) -> go.Figure | None:
 
 def run_label(powertrain: str, cycle: str) -> str:
     return f"{POWERTRAIN_NAMES.get(powertrain, powertrain)} · {CYCLE_NAMES.get(cycle, cycle)}"
+
+
+def varying_parameters(runs: pd.DataFrame) -> pd.DataFrame:
+    """Parameters that are not identical across every run given.
+
+    A parameter counts as varying when the runs disagree on its value, or when some runs carry
+    it and others do not — a plug-in hybrid has a battery mass that a petrol car has no row
+    for, and that absence is a real difference, not a match. Values are compared as the
+    workbooks report them; nothing is rounded to force agreement beyond float noise.
+    """
+    if len(runs) < 2:
+        return pd.DataFrame()
+
+    labels = [run_label(row["powertrain"], row["cycle"]) for _, row in runs.iterrows()]
+    records = []
+    for column in (c for c in runs.columns if c.startswith("param:")):
+        values = [runs.iloc[i][column] for i in range(len(runs))]
+        present = [v for v in values if pd.notna(v)]
+        if not present:
+            continue
+        distinct = {round(float(v), 9) for v in present}
+        if len(distinct) == 1 and len(present) == len(values):
+            continue  # every run agrees and none is missing it
+        record = {"Parameter": column.removeprefix("param:")}
+        record.update(dict(zip(labels, values)))
+        record["Distinct values"] = len(distinct)
+        record["_missing"] = len(values) - len(present)
+        records.append(record)
+
+    frame = pd.DataFrame(records)
+    if frame.empty:
+        return frame
+    return (
+        frame.sort_values(
+            ["Distinct values", "_missing", "Parameter"], ascending=[False, False, True]
+        )
+        .drop(columns="_missing")
+        .reset_index(drop=True)
+    )
 
 
 def sidebar_filters(runs: pd.DataFrame) -> tuple[list[str], list[str]]:

@@ -44,9 +44,15 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Four pages: **Overview** (all twelve runs, one table and one chart), **Trace Explorer**
-(per-step data for one run), **Compare** (two runs, with their differing inputs listed first),
-and **Data** (the raw datasets as plain tables). Every table has a CSV download.
+Five pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
+one category together — all the petrols, all the NEDC runs, all the sport runs), **Trace
+Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
+listed first), and **Data** (the raw datasets as plain tables). Every table has a CSV download.
+
+A category is a slice of the 4×3 grid along one field: powertrain (4 categories of 3) or cycle
+(3 categories of 4). Driving style is not a third axis — it maps 1:1 onto cycle today, so "all the
+sport" is the Francorchamps sport category. That changes when the WLTC highway cycle is added,
+at which point `regulatory` will cover both NEDC and WLTC.
 
 The Data page carries five datasets: `Runs` (12 × 74), `Totals` and `Parameters` in long form,
 `Traces` (677 steps), and `Workbook cells` — one workbook's labelled block exactly as the
@@ -80,6 +86,10 @@ The twelve result workbooks share a shape but not a layout. Found by inspecting 
   the active value everywhere.
 - Only 12 of 37 trace headers are universal. `Time (s)`, `Distance (m)` and `Gear` are each
   missing from some workbooks, and `Energy (Wh)` is spelled `Engergy (Wh)` in six of them.
+- `Distance (m)` is per-workbook, not per-cycle: the eight Francorchamps files and NEDC
+  hybrid/plug-in hybrid store it cumulatively, `33 NEDC PETROL Car.xlsx` stores it per step,
+  and `32 NEDC ELECTRIC.xlsx` has the column but never fills it. A column is offered as a
+  chart axis only when it actually runs forward.
 - Each trace ends with a cumulative summary row and a unit-annotation row. Real steps fill
   50-100% of their columns and these artifacts 22-29%, so a density threshold separates them.
 - Three titles contradict their filename, so run identity comes from `pwt/catalog.py`.
