@@ -14,7 +14,7 @@ import re
 
 from pwt.build import RUNS_PARQUET, TRACES_PARQUET, runs_frame, traces_frame
 from pwt.catalog import CATALOG, CYCLE_NAMES, POWERTRAIN_NAMES, course_file
-from pwt.workbook import read_run
+from pwt.workbook import read_block, read_run
 
 
 @st.cache_data(show_spinner="Reading workbooks…")
@@ -92,6 +92,4 @@ def params_long(runs: pd.DataFrame) -> pd.DataFrame:
 @st.cache_data(show_spinner="Reading workbook…")
 def load_block(filename: str) -> pd.DataFrame:
     """One workbook's labelled cells exactly as the sheet holds them."""
-    from pwt.workbook import read_block
-
     return read_block(course_file(filename))
