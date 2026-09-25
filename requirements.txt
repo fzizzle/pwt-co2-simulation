@@ -1,0 +1,11 @@
+# Streamlit Community Cloud reads this file (and only this file — do not add
+# pyproject.toml / environment.yml, since Cloud uses the first dependency file it finds).
+streamlit>=1.40
+plotly>=5.24
+pandas>=2.2
+numpy>=2.0
+openpyxl>=3.1
+pyarrow>=17.0
+
+# Dev only; harmless on Cloud.
+pytest>=8.0

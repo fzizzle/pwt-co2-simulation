@@ -6,3 +6,6 @@ __pycache__/
 .DS_Store
 ~$*.xlsx
 out/
+
+# Derived data — rebuilt from data/course-files/ by `python -m pwt.build`.
+data/processed/
