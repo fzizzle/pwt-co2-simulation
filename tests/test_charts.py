@@ -188,3 +188,35 @@ def test_varying_parameters_is_empty_for_a_single_run(runs):
 
     one = runs[(runs["powertrain"] == "petrol") & (runs["cycle"] == "nedc")]
     assert varying_parameters(one).empty
+
+
+def test_overlay_traces_draws_one_line_per_run(lap):
+    frames = [lap, lap, lap]
+    labels = ["a", "b", "c"]
+    colours = [DARK.series[0], DARK.series[1], DARK.series[2]]
+    fig = charts.overlay_traces(frames, labels, colours, "speed_kph", "distance_m", DARK)
+
+    assert len(fig.data) == 3
+    assert [t.name for t in fig.data] == labels
+    assert [t.line.color for t in fig.data] == colours
+    for trace in fig.data:
+        assert trace.line.width == charts.LINE_WIDTH
+        assert getattr(trace, "yaxis", None) in (None, "y")  # single axis
+
+
+def test_overlay_traces_skips_a_run_missing_the_column(lap):
+    """A BEV has no gear column; it drops out rather than raising."""
+    without = lap.drop(columns=["gear"])
+    fig = charts.overlay_traces(
+        [lap, without], ["has gear", "no gear"], [DARK.series[0], DARK.series[1]],
+        "gear", "distance_m", DARK,
+    )
+    assert [t.name for t in fig.data] == ["has gear"]
+
+
+def test_compare_traces_still_works_through_the_shared_path(lap):
+    fig = charts.compare_traces(
+        lap, lap, "speed_kph", "distance_m", ("left", "right"),
+        (DARK.series[0], DARK.series[1]), DARK,
+    )
+    assert [t.name for t in fig.data] == ["left", "right"]

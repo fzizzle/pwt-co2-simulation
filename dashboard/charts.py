@@ -227,19 +227,23 @@ def force_breakdown(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.Figu
     return fig
 
 
-def compare_traces(
-    left: pd.DataFrame,
-    right: pd.DataFrame,
+def overlay_traces(
+    frames: list[pd.DataFrame],
+    labels: list[str],
+    colours: list[str],
     column: str,
     x_column: str,
-    labels: tuple[str, str],
-    colours: tuple[str, str],
     pal: Palette,
 ) -> go.Figure:
-    """One per-step column from two runs on a single axis."""
+    """One per-step column from several runs on a single axis.
+
+    A run that does not carry the column is skipped rather than drawn as a gap — the electric
+    workbooks have no gear column at all, and an empty series in the legend would suggest the
+    data is missing when the concept simply does not apply.
+    """
     fig = go.Figure()
-    for frame, label, colour in ((left, labels[0], colours[0]), (right, labels[1], colours[1])):
-        if column not in frame.columns:
+    for frame, label, colour in zip(frames, labels, colours):
+        if column not in frame.columns or frame[column].isna().all():
             continue
         fig.add_scatter(
             name=label,
@@ -250,5 +254,22 @@ def compare_traces(
             marker=dict(size=MARKER_SIZE, color=colour, line=dict(color=pal.surface, width=2)),
             hovertemplate=f"<b>{label}</b><br>%{{y:.4g}}<extra></extra>",
         )
-    fig.update_layout(showlegend=True, hovermode="x unified")
+    fig.update_layout(showlegend=len(fig.data) > 1, hovermode="x unified")
+    return fig
+
+
+def compare_traces(
+    left: pd.DataFrame,
+    right: pd.DataFrame,
+    column: str,
+    x_column: str,
+    labels: tuple[str, str],
+    colours: tuple[str, str],
+    pal: Palette,
+) -> go.Figure:
+    """One per-step column from two runs on a single axis."""
+    fig = overlay_traces(
+        [left, right], list(labels), list(colours), column, x_column, pal
+    )
+    fig.update_layout(showlegend=True)
     return fig
