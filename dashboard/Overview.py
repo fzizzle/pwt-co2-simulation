@@ -26,6 +26,8 @@ from dashboard.layout import (
     data_notes,
     download,
     elevation_strip,
+    render_run_notices,
+    run_notice,
     sidebar_filters,
 )
 from dashboard.theme import POWERTRAIN_ORDER, style_axes
@@ -80,7 +82,12 @@ if selected.empty:
 # --- the matrix -----------------------------------------------------------------------------
 
 st.subheader(f"{display_name} — every run")
-st.caption(f"Unit: {unit}. A blank cell means that workbook does not report this figure.")
+st.caption(
+    f"Unit: {unit}. A blank cell means that workbook does not report this figure; a cell "
+    "marked “to be filled” is a known gap in the supplied file."
+)
+
+render_run_notices(*(row for _, row in selected.iterrows()))
 
 matrix = (
     selected.pivot(index="powertrain", columns="cycle", values=quantity)
@@ -91,11 +98,33 @@ matrix = (
 )
 # No cell gradient here: it would pull in matplotlib as a runtime dependency, and the
 # grouped bar below already carries the magnitude comparison.
-st.dataframe(matrix.style.format("{:,.3f}", na_rep="—"), width="stretch")
+def mark_gaps(value, powertrain, cycle):
+    """Label a known-missing figure instead of letting a bare 0 read as a result."""
+    if pd.isna(value):
+        return "—"
+    if run_notice(powertrain, cycle):
+        return f"{value:,.3f} — to be filled"
+    return f"{value:,.3f}"
+
+
+display = matrix.copy().astype(object)
+for powertrain in matrix.index:
+    for cycle in matrix.columns:
+        code_p = next(k for k, v in POWERTRAIN_NAMES.items() if v == powertrain)
+        code_c = next(k for k, v in CYCLE_NAMES.items() if v == cycle)
+        display.loc[powertrain, cycle] = mark_gaps(
+            matrix.loc[powertrain, cycle], code_p, code_c
+        )
+st.dataframe(display, width="stretch")
 
 # --- the chart ------------------------------------------------------------------------------
 
-fig = charts.grouped_totals(selected, quantity, pal, unit=unit)
+gaps = {
+    (row["powertrain"], row["cycle"])
+    for _, row in selected.iterrows()
+    if run_notice(row["powertrain"], row["cycle"])
+}
+fig = charts.grouped_totals(selected, quantity, pal, unit=unit, gaps=gaps)
 style_axes(fig, pal, y_title=unit)
 fig.update_layout(height=420)
 st.plotly_chart(fig, width="stretch", theme=None)

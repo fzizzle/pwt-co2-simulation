@@ -47,14 +47,24 @@ def _fmt(value: float) -> str:
 
 
 def grouped_totals(
-    runs: pd.DataFrame, column: str, pal: Palette, *, unit: str = ""
+    runs: pd.DataFrame,
+    column: str,
+    pal: Palette,
+    *,
+    unit: str = "",
+    gaps: set[tuple[str, str]] | None = None,
 ) -> go.Figure:
     """One bar per (cycle, powertrain) for a single reported quantity.
 
     Cycles sit on the x-axis and powertrains are the series, so the comparison the group cares
     about — technologies on the same cycle — is the one read left to right within a group.
     Runs that do not report this quantity are simply absent rather than drawn as zero.
+
+    `gaps` names (powertrain, cycle) pairs whose workbook is known to be incomplete. Their bar
+    is labelled "to be filled" rather than with its value, so a zero-height bar cannot be read
+    as a measured result.
     """
+    gaps = gaps or set()
     fig = go.Figure()
     cycles = [c for c in CYCLE_NAMES if c in set(runs["cycle"])]
 
@@ -75,7 +85,10 @@ def grouped_totals(
                 cornerradius=CORNER_RADIUS,
                 line=dict(color=pal.surface, width=BAR_GAP_PX),
             ),
-            text=[_fmt(v) for v in values],
+            text=[
+                "to be filled" if (powertrain, cycle) in gaps else _fmt(value)
+                for cycle, value in zip(cycles, values)
+            ],
             textposition="outside",
             textfont=dict(color=pal.text_secondary, size=11),
             cliponaxis=False,
@@ -83,6 +96,7 @@ def grouped_totals(
                 f"<b>{POWERTRAIN_NAMES[powertrain]}</b><br>%{{x}}<br>"
                 f"%{{y:.4g}} {unit}<extra></extra>"
             ),
+            textfont_size=11,
         )
 
     fig.update_layout(barmode="group", bargap=0.28, bargroupgap=0.06, showlegend=True)

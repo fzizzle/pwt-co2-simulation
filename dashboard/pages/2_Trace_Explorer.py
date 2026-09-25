@@ -12,7 +12,13 @@ if str(ROOT) not in sys.path:
 import streamlit as st
 
 from dashboard import charts
-from dashboard.layout import configure, download, run_picker, source_caption
+from dashboard.layout import (
+    configure,
+    download,
+    render_run_notices,
+    run_picker,
+    source_caption,
+)
 from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import style_axes
 
@@ -53,6 +59,7 @@ if x_column == "step":
     trace = trace.assign(step=range(len(trace)))
 
 source_caption(row)
+render_run_notices(row)
 
 # --- the three standing views ---------------------------------------------------------------
 

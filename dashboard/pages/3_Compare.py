@@ -18,6 +18,7 @@ from dashboard.layout import (
     CANONICAL_QUANTITIES,
     configure,
     download,
+    render_run_notices,
     run_label,
     run_picker,
     source_caption,
@@ -50,6 +51,7 @@ if left_row["source_file"] == right_row["source_file"]:
     st.stop()
 
 source_caption(left_row, right_row)
+render_run_notices(left_row, right_row)
 
 # --- reported figures -----------------------------------------------------------------------
 

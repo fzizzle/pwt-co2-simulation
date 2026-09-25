@@ -56,6 +56,17 @@ classified each row. That last one is where to look when a figure elsewhere seem
 `python -m pwt.build` writes `data/processed/*.parquet` to speed startup. It is optional and
 gitignored — the app reads the workbooks directly when the parquet is absent.
 
+## Known gaps in the supplied data
+
+`34 NEDC PHYBRID engine.xlsx` has no fuel or emission figures: `Qfuel (g)`, `Qfuel (l)` and
+`Emission (g CO₂)` are 0 on all 105 steps, so the run reports 0 l/100 km and 0 g CO₂/km.
+Engine power is present (non-zero on 79 steps), so the step converting it into fuel was never
+entered. Confirmed with the lecturer as missing data, not a result. The app labels it
+"to be filled" wherever it appears rather than showing a bare zero.
+
+Record further gaps in `RUN_NOTICES` in `dashboard/layout.py`, keyed by `(powertrain, cycle)`;
+every page picks them up automatically.
+
 ## What the reader has to work around
 
 The twelve result workbooks share a shape but not a layout. Found by inspecting all of them:

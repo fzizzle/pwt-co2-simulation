@@ -85,6 +85,39 @@ def cycle_facts(trace: pd.DataFrame) -> str:
     return " · ".join(bits)
 
 
+#: Runs with a known gap in the supplied workbook, keyed by (powertrain, cycle).
+#: This is recorded fact, not inference: the lecturer confirmed the data is missing rather
+#: than a modelling result. Kept here in the dashboard package so Community Cloud picks it up
+#: without a reboot.
+RUN_NOTICES: dict[tuple[str, str], str] = {
+    ("phev", "nedc"): (
+        "**Data missing — to be filled.** `34 NEDC PHYBRID engine.xlsx` has no fuel or "
+        "emission figures: `Qfuel (g)`, `Qfuel (l)` and `Emission (g CO₂)` are 0 on all 105 "
+        "steps, so the run reports 0 l/100 km and 0 g CO₂/km. Engine power *is* present "
+        "(non-zero on 79 steps), so the step converting it into fuel was never entered. "
+        "Confirmed with the lecturer as missing data, not a result — treat every zero for "
+        "this run as a blank awaiting the file being completed, not as a figure to quote."
+    ),
+}
+
+
+def run_notice(powertrain: str | None, cycle: str | None) -> str | None:
+    return RUN_NOTICES.get((powertrain or "", cycle or ""))
+
+
+def render_run_notices(*runs: pd.Series) -> None:
+    """Warn about any run on screen whose workbook is known to be incomplete."""
+    seen: set[tuple[str, str]] = set()
+    for row in runs:
+        key = (row.get("powertrain") or "", row.get("cycle") or "")
+        if key in seen:
+            continue
+        seen.add(key)
+        notice = RUN_NOTICES.get(key)
+        if notice:
+            st.warning(f"**{run_label(*key)}** — {notice}", icon="⚠️")
+
+
 def configure(title: str) -> Palette:
     """Page config plus the active palette. Call first in every page."""
     st.set_page_config(
@@ -194,6 +227,8 @@ def data_notes(runs: pd.DataFrame) -> list[str]:
     """
     notes: list[str] = []
     for _, row in runs.iterrows():
+        if run_notice(row["powertrain"], row["cycle"]):
+            continue  # already stated in full by its own notice
         name = run_label(row["powertrain"], row["cycle"])
         zeros = [
             display

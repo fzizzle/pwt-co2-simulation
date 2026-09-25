@@ -16,7 +16,13 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from dashboard.layout import configure, download, run_label, sidebar_filters
+from dashboard.layout import (
+    configure,
+    download,
+    render_run_notices,
+    run_label,
+    sidebar_filters,
+)
 from dashboard.loaders import (
     load_block,
     load_runs,
@@ -52,6 +58,10 @@ choice = st.radio(
 st.caption(DATASETS[choice])
 
 powertrains, cycles = sidebar_filters(runs)
+render_run_notices(
+    *(row for _, row in runs[runs["powertrain"].isin(powertrains)
+      & runs["cycle"].isin(cycles)].iterrows())
+)
 
 
 def apply_filters(frame: pd.DataFrame) -> pd.DataFrame:

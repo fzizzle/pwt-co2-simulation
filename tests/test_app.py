@@ -54,13 +54,14 @@ def test_page_runs_without_exception(page):
 
 
 def test_overview_matrix_matches_the_workbook():
-    """Petrol Francorchamps eco must read 245.7298 g CO2/km, as workbook 07 reports."""
+    """Petrol Francorchamps eco must read 245.730 g CO2/km, as workbook 07 reports.
+
+    Cells are formatted strings so a known gap can be labelled in place, so compare text.
+    """
     app = run(OVERVIEW)
     matrix = app.dataframe[0].value
-    assert matrix.loc["Petrol", "Francorchamps — eco"] == pytest.approx(245.7298, rel=1e-4)
-    assert matrix.loc["Battery electric", "Francorchamps — eco"] == pytest.approx(
-        47.1369, rel=1e-4
-    )
+    assert matrix.loc["Petrol", "Francorchamps — eco"] == "245.730"
+    assert matrix.loc["Battery electric", "Francorchamps — eco"] == "47.137"
 
 
 def test_overview_fuel_consumption_matches_and_bev_is_blank():
@@ -68,17 +69,29 @@ def test_overview_fuel_consumption_matches_and_bev_is_blank():
     app.radio[0].set_value("consumption_l_per_100km").run()
     assert not app.exception, [e.value for e in app.exception]
     matrix = app.dataframe[0].value
-    assert matrix.loc["Petrol", "Francorchamps — eco"] == pytest.approx(10.2730, rel=1e-4)
-    assert matrix.loc["Full hybrid", "Francorchamps — eco"] == pytest.approx(7.5752, rel=1e-4)
-    # A BEV reports no fuel consumption; the cell must be absent, not zero.
-    assert pd.isna(matrix.loc["Battery electric", "Francorchamps — eco"])
+    assert matrix.loc["Petrol", "Francorchamps — eco"] == "10.273"
+    assert matrix.loc["Full hybrid", "Francorchamps — eco"] == "7.575"
+    # A BEV reports no fuel consumption; the cell must be blank, not zero.
+    assert matrix.loc["Battery electric", "Francorchamps — eco"] == "—"
 
 
-def test_overview_reports_the_zero_and_negative_cells():
-    """The zero NEDC PHEV figures and the negative PHEV energy rows must be surfaced."""
+def test_overview_flags_the_missing_nedc_phev_data():
+    """The lecturer confirmed 34 NEDC PHYBRID has no fuel data; it must be labelled, not shown
+    as a bare zero that reads like a result."""
+    app = run(OVERVIEW)
+    warnings = " ".join(w.value for w in app.warning)
+    assert "Data missing — to be filled" in warnings
+    assert "Plug-in hybrid" in warnings
+
+    # and the cell itself carries the label, not just the banner
+    matrix = app.dataframe[0].value
+    assert matrix.loc["Plug-in hybrid", "NEDC"] == "0.000 — to be filled"
+
+
+def test_overview_still_reports_the_negative_energy_rows():
+    """The PHEV negative energy rows are a separate, still-descriptive note."""
     app = run(OVERVIEW)
     notes = " ".join(m.value for m in app.markdown)
-    assert "reports 0 for" in notes
     assert "negative value" in notes
 
 
@@ -203,3 +216,22 @@ def test_francorchamps_distance_is_offered_as_an_axis():
     app = run(TRACE)
     app.selectbox(key="trace_run").set_value(run_index("petrol", "franco_eco")).run()
     assert "Distance (m)" in app.selectbox[1].options
+
+
+@pytest.mark.parametrize("page", [TRACE, COMPARE])
+def test_missing_data_is_flagged_on_every_page_showing_that_run(page):
+    """Selecting the incomplete run anywhere must surface the same notice."""
+    app = run(page)
+    key = "trace_run" if page == TRACE else "cmp_left"
+    app.selectbox(key=key).set_value(run_index("phev", "nedc")).run()
+    assert not app.exception, [e.value for e in app.exception]
+    warnings = " ".join(w.value for w in app.warning)
+    assert "to be filled" in warnings
+
+
+def test_complete_runs_are_not_flagged():
+    """The notice must not appear for runs whose data is present."""
+    app = run(TRACE)
+    app.selectbox(key="trace_run").set_value(run_index("petrol", "franco_eco")).run()
+    warnings = " ".join(w.value for w in app.warning)
+    assert "to be filled" not in warnings
