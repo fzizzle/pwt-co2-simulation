@@ -34,6 +34,13 @@ def configure(title: str) -> Palette:
     return palette()
 
 
+def _rgba(hex_colour: str, alpha: float) -> str:
+    """A hex colour as rgba(), so fills track the active palette instead of being hardcoded."""
+    h = hex_colour.lstrip("#")
+    r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def elevation_strip(trace: pd.DataFrame, pal: Palette) -> go.Figure | None:
     """The Spa elevation profile as a thin band.
 
@@ -51,7 +58,7 @@ def elevation_strip(trace: pd.DataFrame, pal: Palette) -> go.Figure | None:
         mode="lines",
         line=dict(color=pal.series[0], width=1.5),  # linear: smoothing would misstate the profile
         fill="tozeroy",
-        fillcolor="rgba(42,120,214,0.10)",
+        fillcolor=_rgba(pal.series[0], 0.14),
         hoverinfo="skip",
     )
     low, high = trace["altitude_m"].min(), trace["altitude_m"].max()

@@ -25,6 +25,13 @@ CORNER_RADIUS = 4
 BAR_GAP_PX = 2
 
 
+def _rgba(hex_colour: str, alpha: float) -> str:
+    """A hex colour as rgba(), so fills track the active palette."""
+    h = hex_colour.lstrip("#")
+    r, g, b = (int(h[i : i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({r},{g},{b},{alpha})"
+
+
 def _fmt(value: float) -> str:
     """Compact value label: keeps small figures readable and large ones short."""
     if value is None or pd.isna(value):
@@ -144,7 +151,7 @@ def speed_and_altitude(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.F
             mode="lines",
             line=dict(color=pal.text_muted, width=LINE_WIDTH),
             fill="tozeroy",
-            fillcolor="rgba(138,136,128,0.15)",
+            fillcolor=_rgba(pal.text_muted, 0.18),
             hovertemplate="Altitude %{y:.0f} m<extra></extra>",
             row=2,
             col=1,

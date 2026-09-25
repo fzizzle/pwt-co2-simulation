@@ -9,17 +9,19 @@ Palette provenance — these are not taste choices, they were computed:
     a fixed series order — never a four-series scatter. On that pairlist the documented slots
     1-4 pass every hard gate: worst adjacent CVD ΔE 9.1 light / 8.4 dark, worst normal-vision
     ΔE 22.9 light / 19.8 dark.
-  * Aqua (2.74:1) and yellow (2.11:1) fall below 3:1 on the light surface, so the relief rule
-    applies: every chart ships visible value labels and a table view. That is an obligation,
-    not a preference — do not remove the labels or the tables.
+  * On the light surface aqua (2.74:1) and yellow (2.11:1) fall below 3:1, so the relief rule
+    binds there: visible value labels and a table view. The dark steps clear 3:1 on the dark
+    surface, but the labels and tables stay regardless — they are what makes the figures
+    readable, and removing them would break light mode the moment anyone switches back.
 
 Series order is fixed by POWERTRAIN_ORDER and colour follows the powertrain, never its rank,
 so filtering the view never repaints the survivors.
 
-The app pins `base = "light"` in `.streamlit/config.toml`, so the light palette is what
-viewers actually see — a deliberate single-look commitment rather than an automatic flip. DARK
-is kept and validated against the dark surface so that unpinning the theme stays a one-line
-change; `palette()` already resolves it from the viewer's active theme.
+The app pins `base = "dark"` in `.streamlit/config.toml`, so DARK is what viewers see. Its
+steps were chosen for the dark band and validated as a set against the dark surface, not
+flipped from the light ones — and on that surface all four clear 3:1 contrast, where aqua and
+yellow fall below it on light. LIGHT stays validated so switching back is a one-line change;
+`palette()` resolves whichever is active.
 """
 
 from __future__ import annotations
@@ -71,12 +73,22 @@ DARK = Palette(
 
 
 def palette() -> Palette:
-    """The palette matching the viewer's active Streamlit theme."""
+    """The palette matching the active Streamlit theme.
+
+    Prefers the viewer's live theme, then falls back to the configured base — `st.context` is
+    not populated in every context (bare scripts, AppTest), and the charts must never be drawn
+    with the light palette on the dark surface.
+    """
     try:
-        if getattr(st.context.theme, "type", "light") == "dark":
+        if getattr(st.context.theme, "type", None) == "dark":
             return DARK
     except Exception:
-        pass  # older Streamlit, or no script run context (e.g. under pytest)
+        pass  # no script run context
+    try:
+        if st.get_option("theme.base") == "dark":
+            return DARK
+    except Exception:
+        pass
     return LIGHT
 
 
@@ -126,6 +138,15 @@ def style_axes(fig, pal: Palette, *, x_title: str = "", y_title: str = ""):
     )
     # Only set a title when one is given: a subplot figure sets its own per-row titles before
     # calling this, and passing title_text="" here would wipe them.
-    fig.update_xaxes(**axis_common, **({"title_text": x_title} if x_title else {}))
+    fig.update_xaxes(**axis_common)
     fig.update_yaxes(**axis_common, **({"title_text": y_title} if y_title else {}))
+
+    if x_title:
+        # On a stacked subplot figure every row has an x-axis, so titling them all prints the
+        # label once per row. Only the bottom axis carries it.
+        x_axes = sorted(
+            (k for k in fig.layout if k.startswith("xaxis")),
+            key=lambda k: int(k.removeprefix("xaxis") or 1),
+        )
+        fig.layout[x_axes[-1]].title.text = x_title
     return fig
