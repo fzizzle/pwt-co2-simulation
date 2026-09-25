@@ -173,6 +173,40 @@ def run_label(powertrain: str, cycle: str) -> str:
     return f"{POWERTRAIN_NAMES.get(powertrain, powertrain)} · {CYCLE_NAMES.get(cycle, cycle)}"
 
 
+def varying_parameters(runs: pd.DataFrame) -> pd.DataFrame:
+    """Parameters that are not identical across every run given.
+
+    A parameter counts as varying when the runs disagree on its value, or when some runs carry
+    it and others do not — a plug-in hybrid has a battery mass that a petrol car has no row
+    for, and that absence is a real difference, not a match. Values are compared as the
+    workbooks report them; nothing is rounded to force agreement beyond float noise.
+    """
+    if len(runs) < 2:
+        return pd.DataFrame()
+
+    labels = [run_label(row["powertrain"], row["cycle"]) for _, row in runs.iterrows()]
+    records = []
+    for column in (c for c in runs.columns if c.startswith("param:")):
+        values = [runs.iloc[i][column] for i in range(len(runs))]
+        present = [v for v in values if pd.notna(v)]
+        if not present:
+            continue
+        distinct = {round(float(v), 9) for v in present}
+        if len(distinct) == 1 and len(present) == len(values):
+            continue  # every run agrees and none is missing it
+        record = {"Parameter": column.removeprefix("param:")}
+        record.update(dict(zip(labels, values)))
+        record["Distinct values"] = len(distinct) + (len(values) != len(present))
+        records.append(record)
+
+    frame = pd.DataFrame(records)
+    if frame.empty:
+        return frame
+    return frame.sort_values(
+        ["Distinct values", "Parameter"], ascending=[False, True]
+    ).reset_index(drop=True)
+
+
 def sidebar_filters(runs: pd.DataFrame) -> tuple[list[str], list[str]]:
     """Powertrain and cycle selection, shared by every page."""
     st.sidebar.subheader("Show")

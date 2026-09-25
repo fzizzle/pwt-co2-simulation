@@ -149,3 +149,42 @@ def test_no_gap_labels_when_none_are_flagged(runs):
     fig = charts.grouped_totals(runs, "co2_g_per_km", DARK, unit="g")
     for bar in fig.data:
         assert "to be filled" not in list(bar.text)
+
+
+def test_varying_parameters_lists_only_what_differs(runs):
+    from dashboard.layout import varying_parameters
+
+    petrols = runs[runs["powertrain"] == "petrol"]
+    varying = varying_parameters(petrols)
+
+    assert not varying.empty
+    assert "Parameter" in varying.columns
+    assert "Distinct values" in varying.columns
+    # One column per run, named the way every other page names them.
+    assert "Petrol · NEDC" in varying.columns
+
+    names = set(varying["Parameter"])
+    # Mass differs between the NEDC car and the Spa car; the wheel is the same everywhere.
+    assert any(n.startswith("total mass") for n in names)
+    assert not any(n.startswith("wheel diameter") for n in names)
+
+    # Most-varied first.
+    counts = varying["Distinct values"].tolist()
+    assert counts == sorted(counts, reverse=True)
+
+
+def test_varying_parameters_flags_a_parameter_present_in_only_some_runs(runs):
+    """A parameter only some workbooks carry is a difference, not a match."""
+    from dashboard.layout import varying_parameters
+
+    nedc = runs[runs["cycle"] == "nedc"]
+    names = set(varying_parameters(nedc)["Parameter"])
+    # Only the hybrids carry an electric machine; petrol and BEV do not.
+    assert any(n.startswith("electric machine mass") for n in names)
+
+
+def test_varying_parameters_is_empty_for_a_single_run(runs):
+    from dashboard.layout import varying_parameters
+
+    one = runs[(runs["powertrain"] == "petrol") & (runs["cycle"] == "nedc")]
+    assert varying_parameters(one).empty
