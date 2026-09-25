@@ -1,0 +1,92 @@
+"""The Category view page shows every run in one category together."""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from streamlit.testing.v1 import AppTest
+
+CATEGORY_VIEW = str(ROOT / "dashboard" / "pages" / "5_Category_View.py")
+
+
+def run(axis_name: str | None = None, choice: str | None = None) -> AppTest:
+    app = AppTest.from_file(CATEGORY_VIEW, default_timeout=180).run()
+    assert not app.exception, [e.value for e in app.exception]
+    if axis_name is not None:
+        app.radio[0].set_value(axis_name).run()
+        assert not app.exception, [e.value for e in app.exception]
+    if choice is not None:
+        app.selectbox[0].set_value(choice).run()
+        assert not app.exception, [e.value for e in app.exception]
+    return app
+
+
+def test_page_renders():
+    app = run()
+    assert app.title[0].value == "Category view"
+
+
+def test_powertrain_category_shows_three_runs():
+    app = run("Powertrain", "petrol")
+    text = " ".join(m.value for m in app.markdown) + " ".join(c.value for c in app.caption)
+    assert "3 runs" in text
+
+
+def test_cycle_category_shows_four_runs():
+    app = run("Cycle", "nedc")
+    text = " ".join(m.value for m in app.markdown) + " ".join(c.value for c in app.caption)
+    assert "4 runs" in text
+
+
+def test_all_sport_is_reachable_through_the_cycle_category():
+    """"All the sport" is the Francorchamps sport cycle category."""
+    app = run("Cycle", "franco_sport")
+    table = app.dataframe[0].value
+    assert len(table) == 4
+    assert "Petrol" in set(table["Run"])
+    assert "Plug-in hybrid" in set(table["Run"])
+
+
+def test_totals_table_carries_every_canonical_figure():
+    app = run("Powertrain", "petrol")
+    table = app.dataframe[0].value
+    for heading in ("CO₂ per km (g CO₂/km)", "Fuel consumption (l/100 km)"):
+        assert heading in table.columns
+
+
+def test_petrol_category_shows_the_workbook_figures():
+    app = run("Powertrain", "petrol")
+    table = app.dataframe[0].value.set_index("Run")
+    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == pytest.approx(
+        245.7298, rel=1e-4
+    )
+    assert table.loc["NEDC", "CO₂ per km (g CO₂/km)"] == pytest.approx(158.2885, rel=1e-4)
+
+
+def test_incomplete_run_is_flagged_in_its_categories():
+    """The NEDC plug-in hybrid gap must show in both categories that contain it."""
+    for axis_name, choice in (("Cycle", "nedc"), ("Powertrain", "phev")):
+        app = run(axis_name, choice)
+        warnings = " ".join(w.value for w in app.warning)
+        assert "to be filled" in warnings, f"{axis_name}={choice}"
+
+
+def test_varying_parameters_are_listed():
+    app = run("Powertrain", "petrol")
+    names = set(app.dataframe[1].value["Parameter"])
+    assert any(n.startswith("total mass") for n in names)
+
+
+def test_axis_falls_back_when_the_category_shares_no_distance():
+    """The BEV category shares no usable distance or time column, so it plots against step."""
+    app = run("Powertrain", "bev")
+    assert not app.exception, [e.value for e in app.exception]
+    axis = app.selectbox[3]
+    assert axis.options == ["Step"]
