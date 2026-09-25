@@ -209,7 +209,7 @@ def test_nedc_distance_is_not_offered_as_an_axis():
     assert "Distance (m)" not in axis_options
     assert "Time (s)" in axis_options
     captions = " ".join(c.value for c in app.caption)
-    assert "per step rather than cumulatively" in captions
+    assert "recorded per step in this workbook rather than cumulatively" in captions
 
 
 def test_francorchamps_distance_is_offered_as_an_axis():
@@ -235,3 +235,26 @@ def test_complete_runs_are_not_flagged():
     app.selectbox(key="trace_run").set_value(run_index("petrol", "franco_eco")).run()
     warnings = " ".join(w.value for w in app.warning)
     assert "to be filled" not in warnings
+
+
+def test_axis_exclusion_reason_distinguishes_empty_from_per_step():
+    """Distance is per-step in NEDC petrol but simply empty in NEDC electric."""
+    from dashboard.loaders import axis_exclusion_reason, trace_for
+
+    petrol = trace_for.__wrapped__("petrol", "nedc")
+    reason = axis_exclusion_reason(petrol, "distance_m")
+    assert reason is not None and "per step" in reason
+
+    bev = trace_for.__wrapped__("bev", "nedc")
+    reason = axis_exclusion_reason(bev, "distance_m")
+    assert reason is not None and "empty" in reason
+    assert "per step" not in reason
+
+
+def test_axis_exclusion_reason_is_none_when_the_column_works():
+    """Francorchamps distance is cumulative, so there is nothing to explain."""
+    from dashboard.loaders import axis_exclusion_reason, trace_for
+
+    lap = trace_for.__wrapped__("petrol", "franco_eco")
+    assert axis_exclusion_reason(lap, "distance_m") is None
+    assert axis_exclusion_reason(lap, "not_a_column") is None

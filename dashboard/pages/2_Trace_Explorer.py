@@ -19,7 +19,13 @@ from dashboard.layout import (
     run_picker,
     source_caption,
 )
-from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
+from dashboard.loaders import (
+    axis_columns,
+    axis_exclusion_reason,
+    load_runs,
+    numeric_trace_columns,
+    trace_for,
+)
 from dashboard.theme import style_axes
 
 pal = configure("Trace Explorer")
@@ -50,11 +56,10 @@ x_column = st.sidebar.selectbox(
 )
 x_label = X_LABELS[x_column]
 
-if "distance_m" in trace.columns and "distance_m" not in x_options:
-    st.sidebar.caption(
-        "Distance is not offered for this run: the workbook records it per step rather than "
-        "cumulatively, so it does not run forward."
-    )
+for excluded in ("distance_m", "time_s"):
+    reason = axis_exclusion_reason(trace, excluded)
+    if reason:
+        st.sidebar.caption(f"Not offered as an axis: {reason}")
 if x_column == "step":
     trace = trace.assign(step=range(len(trace)))
 

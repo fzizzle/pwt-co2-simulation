@@ -82,6 +82,26 @@ def axis_columns(trace: pd.DataFrame) -> list[str]:
     return candidates + ["step"]
 
 
+def axis_exclusion_reason(trace: pd.DataFrame, column: str) -> str | None:
+    """Why `column` is not offered as an x-axis, or None if it is offered or absent.
+
+    Distance semantics are per-workbook, not per-cycle: the eight Francorchamps files and the
+    NEDC hybrid and plug-in hybrid store it cumulatively, `33 NEDC PETROL Car.xlsx` stores it
+    per step, and `32 NEDC ELECTRIC.xlsx` has the column but never fills it.
+    """
+    if column not in trace.columns or column in axis_columns(trace):
+        return None
+    values = trace[column].dropna()
+    if values.empty:
+        return f"`{column}` is empty in this workbook, so there is nothing to plot against."
+    if not values.is_monotonic_increasing:
+        return (
+            f"`{column}` is recorded per step in this workbook rather than cumulatively, so it "
+            "does not run forward and would scramble the chart."
+        )
+    return f"`{column}` does not increase across the run, so it cannot be an axis."
+
+
 def pretty(kind: str, value: str) -> str:
     """Display name for a powertrain or cycle code."""
     table = POWERTRAIN_NAMES if kind == "powertrain" else CYCLE_NAMES
