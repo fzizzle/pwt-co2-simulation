@@ -90,3 +90,20 @@ def test_axis_falls_back_when_the_category_shares_no_distance():
     assert not app.exception, [e.value for e in app.exception]
     axis = app.selectbox[3]
     assert axis.options == ["Step"]
+
+
+def test_powertrain_category_separates_members_by_dash():
+    """All three petrol runs share one colour, so dash must tell them apart."""
+    from dashboard import charts
+    from dashboard.loaders import trace_for
+    from dashboard.theme import DARK
+
+    frames = [trace_for.__wrapped__("petrol", c)
+              for c in ("franco_eco", "franco_sport", "nedc")]
+    colours = [DARK.for_powertrain("petrol")] * 3
+    fig = charts.overlay_traces(
+        frames, ["eco", "sport", "NEDC"], colours, "speed_kph", "step", DARK,
+        dashes=list(charts.DASH_CYCLE[:3]),
+    )
+    assert len({t.line.color for t in fig.data}) == 1, "colour must stay bound to powertrain"
+    assert len({t.line.dash for t in fig.data}) == 3, "members must be distinguishable"

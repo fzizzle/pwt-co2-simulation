@@ -220,3 +220,30 @@ def test_compare_traces_still_works_through_the_shared_path(lap):
         (DARK.series[0], DARK.series[1]), DARK,
     )
     assert [t.name for t in fig.data] == ["left", "right"]
+
+
+def test_overlay_traces_applies_dashes_when_given(lap):
+    fig = charts.overlay_traces(
+        [lap, lap, lap], ["a", "b", "c"], [DARK.series[0]] * 3,
+        "speed_kph", "distance_m", DARK, dashes=["solid", "dash", "dot"],
+    )
+    assert [t.line.dash for t in fig.data] == ["solid", "dash", "dot"]
+
+
+def test_overlay_traces_is_solid_by_default(lap):
+    fig = charts.overlay_traces(
+        [lap, lap], ["a", "b"], [DARK.series[0], DARK.series[1]],
+        "speed_kph", "distance_m", DARK,
+    )
+    assert all(t.line.dash in (None, "solid") for t in fig.data)
+
+
+def test_dashes_track_frames_when_one_is_skipped(lap):
+    """A frame without the column is skipped; the survivors keep their own dash."""
+    without = lap.drop(columns=["gear"])
+    fig = charts.overlay_traces(
+        [without, lap], ["skipped", "drawn"], [DARK.series[0]] * 2,
+        "gear", "distance_m", DARK, dashes=["solid", "dash"],
+    )
+    assert [t.name for t in fig.data] == ["drawn"]
+    assert [t.line.dash for t in fig.data] == ["dash"]

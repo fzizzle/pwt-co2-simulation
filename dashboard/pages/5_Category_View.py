@@ -149,12 +149,26 @@ else:
     if x_column == "step":
         traces = [t.assign(step=range(len(t))) for t in traces]
 
+    # In a powertrain category every member is the same technology and so the same colour;
+    # dash separates them without breaking the rule that colour belongs to the powertrain.
+    member_dashes = (
+        [charts.DASH_CYCLE[i % len(charts.DASH_CYCLE)] for i in range(len(traces))]
+        if field == "powertrain"
+        else None
+    )
+
     fig = charts.overlay_traces(
-        traces, member_names, member_colours, column, x_column, pal
+        traces, member_names, member_colours, column, x_column, pal, dashes=member_dashes
     )
     style_axes(fig, pal, x_title=X_LABELS[x_column], y_title=column)
     fig.update_layout(height=420)
     st.plotly_chart(fig, width="stretch", theme=None)
+
+    if member_dashes:
+        st.caption(
+            "All runs here are the same powertrain and so share its colour; the line pattern "
+            "tells the cycles apart."
+        )
 
     if axis_options == ["step"]:
         st.caption(
