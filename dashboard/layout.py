@@ -215,15 +215,20 @@ def varying_parameters(runs: pd.DataFrame) -> pd.DataFrame:
             continue  # every run agrees and none is missing it
         record = {"Parameter": column.removeprefix("param:")}
         record.update(dict(zip(labels, values)))
-        record["Distinct values"] = len(distinct) + (len(values) != len(present))
+        record["Distinct values"] = len(distinct)
+        record["_missing"] = len(values) - len(present)
         records.append(record)
 
     frame = pd.DataFrame(records)
     if frame.empty:
         return frame
-    return frame.sort_values(
-        ["Distinct values", "Parameter"], ascending=[False, True]
-    ).reset_index(drop=True)
+    return (
+        frame.sort_values(
+            ["Distinct values", "_missing", "Parameter"], ascending=[False, False, True]
+        )
+        .drop(columns="_missing")
+        .reset_index(drop=True)
+    )
 
 
 def sidebar_filters(runs: pd.DataFrame) -> tuple[list[str], list[str]]:

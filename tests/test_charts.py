@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import pandas as pd
 import pytest
 
 from dashboard import charts
@@ -247,3 +248,34 @@ def test_dashes_track_frames_when_one_is_skipped(lap):
     )
     assert [t.name for t in fig.data] == ["drawn"]
     assert [t.line.dash for t in fig.data] == ["dash"]
+
+
+def test_distinct_values_counts_only_distinct_present_values(runs):
+    """The column says "Distinct values", so it must not also count absence."""
+    from dashboard.layout import varying_parameters
+
+    nedc = runs[runs["cycle"] == "nedc"]
+    varying = varying_parameters(nedc)
+    row = varying[varying["Parameter"].str.startswith("effective mass gear 1")].iloc[0]
+
+    run_columns = [c for c in varying.columns if c not in ("Parameter", "Distinct values")]
+    values = [row[c] for c in run_columns]
+    present = [v for v in values if pd.notna(v)]
+
+    assert len(present) == 3
+    assert len(values) - len(present) == 1
+    assert row["Distinct values"] == len(set(present)) == 3
+
+
+def test_a_parameter_missing_somewhere_still_sorts_above_a_plain_difference(runs):
+    """Absence still matters for ordering, it just is not counted as a value."""
+    from dashboard.layout import varying_parameters
+
+    nedc = varying_parameters(runs[runs["cycle"] == "nedc"])
+    run_columns = [c for c in nedc.columns if c not in ("Parameter", "Distinct values")]
+
+    def missing(row):
+        return sum(pd.isna(row[c]) for c in run_columns)
+
+    keys = [(row["Distinct values"], missing(row)) for _, row in nedc.iterrows()]
+    assert keys == sorted(keys, key=lambda k: (k[0], k[1]), reverse=True)

@@ -128,3 +128,9 @@ def test_figures_table_formats_to_three_decimals():
     app = run("Powertrain", "petrol")
     table = app.dataframe[0].value.set_index("Run")
     assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.730"
+
+
+def test_varying_table_explains_its_blanks():
+    app = run("Cycle", "nedc")
+    captions = " ".join(c.value for c in app.caption)
+    assert "absent from" in captions

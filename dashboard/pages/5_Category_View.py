@@ -198,12 +198,15 @@ else:
         for name, (_, row) in zip(member_names, members.iterrows())
     }
     varying = varying.rename(columns=rename)
+    run_columns = [c for c in varying.columns if c not in ("Parameter", "Distinct values")]
     st.dataframe(
-        varying, width="stretch", hide_index=True,
+        varying.style.format({c: "{:,.4g}" for c in run_columns}, na_rep="—"),
+        width="stretch",
+        hide_index=True,
         height=min(len(varying), 18) * 35 + 38,
     )
     st.caption(
-        f"{len(varying)} parameters differ across the category, or appear in only some of its "
-        "workbooks. Most-varied first."
+        f"{len(varying)} parameters differ across the category, or are absent from some of its "
+        "workbooks — a dash means that workbook has no row for it at all. Most-varied first."
     )
     download(varying, f"pwt-category-{choice}-parameters.csv", "Download these parameters as CSV")
