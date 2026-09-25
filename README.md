@@ -19,6 +19,14 @@ full hybrid and plug-in hybrid over NEDC, Spa-Francorchamps (eco and sport) and 
 
 **Hosted:** <https://pwt-co2-simulation-iihscdva9b3woycsyuk7dp.streamlit.app>
 
+> [!important]
+> **Reboot the app after any change to `pwt/`.** Community Cloud pulls new files on push and
+> re-runs the page scripts, but it only re-imports modules inside the app folder
+> (`dashboard/`). The `pwt/` package sits outside that tree and stays in memory from boot, so
+> a page calling a newly added function hits `ImportError: cannot import name …` even though
+> the function is on disk. Manage app → ⋮ → Reboot app. Changes confined to `dashboard/`
+> hot-reload on their own.
+
 Deployed from this repo on Streamlit Community Cloud. Because the repo is private the app is
 invite-only — teammates need their email added under *Settings → Sharing* before the link
 works for them. It sleeps after extended inactivity; the next visitor waits ~30 s for it to
