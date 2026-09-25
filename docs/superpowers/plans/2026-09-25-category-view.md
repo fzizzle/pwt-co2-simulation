@@ -1,10 +1,10 @@
-# Group View Implementation Plan
+# Category View Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a Groups page that shows every run in one category together — all the petrols, all the NEDC runs, all the sport runs — with their totals, their traces overlaid, and the parameters that differ across them.
+**Goal:** Add a Category view page that shows every run in one category together — all the petrols, all the NEDC runs, all the sport runs — with their totals, their traces overlaid, and the parameters that differ across them.
 
-**Architecture:** One new page, `dashboard/pages/5_Groups.py`, plus two pure helpers: `charts.overlay_traces` (N runs on one axis, generalising the existing two-run `compare_traces`) and `layout.varying_parameters` (an N-way version of the pairwise diff already on the Compare page). Everything else is reused: loaders, palette, run notices, downloads. A category is a slice of the 4×3 grid along one field — `powertrain` (4 groups of 3) or `cycle` (3 groups of 4).
+**Architecture:** One new page, `dashboard/pages/5_Category_View.py`, plus two pure helpers: `charts.overlay_traces` (N runs on one axis, generalising the existing two-run `compare_traces`) and `layout.varying_parameters` (an N-way version of the pairwise diff already on the Compare page). Everything else is reused: loaders, palette, run notices, downloads. A category is a slice of the 4×3 grid along one field — `powertrain` (4 categories of 3) or `cycle` (3 categories of 4).
 
 **Tech Stack:** Python 3.14.7, Streamlit 1.64, Plotly 7.1, pandas 3.0, pytest 9.1. Run everything through `.venv/bin/`.
 
@@ -15,7 +15,7 @@
 Every task's requirements implicitly include these.
 
 - **Pass-through only.** No unit conversion, no recomputation, no correcting the supplied data, no conclusions. This tool is an internal viewer, not a project deliverable. Annotations about the data are allowed; changes to it are not.
-- **`style` is not a grouping axis.** It maps 1:1 onto `cycle` today: `eco`↔`franco_eco`, `sport`↔`franco_sport`, `regulatory`↔`nedc`. Grouping by cycle already delivers "all the sport". Do not add a third selector.
+- **`style` is not a category axis.** It maps 1:1 onto `cycle` today: `eco`↔`franco_eco`, `sport`↔`franco_sport`, `regulatory`↔`nedc`. Choosing the cycle category already delivers "all the sport". Do not add a third selector.
 - **New UI copy and annotations go in `dashboard/`, never `pwt/`.** Streamlit Community Cloud hot-reloads the app folder but keeps `pwt/` cached from process boot, so a name added to `pwt/` raises `ImportError` on the deployed app until it is rebooted.
 - **Chart rules** (from the data-viz method, already encoded in `dashboard/theme.py` and `dashboard/charts.py`):
   - Adjacent-pairlist forms only — grouped bars and fixed-order lines. **Never a four-series scatter**: no set of four categorical colours clears the all-pairs colourblind gates in both light and dark.
@@ -168,7 +168,7 @@ git commit -m "Explain axis exclusion per workbook, not per cycle"
 
 ### Task 2: N-way parameter diff
 
-The Compare page diffs two runs inline. The Groups page needs the same idea across three or four. Extract it as a reusable helper that both can use.
+The Compare page diffs two runs inline. The Category view needs the same idea across three or four. Extract it as a reusable helper that both can use.
 
 **Files:**
 - Modify: `dashboard/layout.py` (add `varying_parameters`)
@@ -406,11 +406,11 @@ git commit -m "Generalise trace overlay to any number of runs"
 
 ---
 
-### Task 4: The Groups page
+### Task 4: The Category view page
 
 **Files:**
-- Create: `dashboard/pages/5_Groups.py`
-- Test: `tests/test_groups_page.py`
+- Create: `dashboard/pages/5_Category_View.py`
+- Test: `tests/test_category_view.py`
 
 **Interfaces:**
 - Consumes: `layout.configure`, `layout.render_run_notices`, `layout.run_notice`, `layout.run_label`, `layout.download`, `layout.CANONICAL_QUANTITIES`, `layout.varying_parameters` (Task 2); `loaders.load_runs`, `loaders.trace_for`, `loaders.axis_columns`, `loaders.numeric_trace_columns`; `charts.grouped_totals`, `charts.overlay_traces` (Task 3); `theme.style_axes`, `theme.POWERTRAIN_ORDER`; `pwt.catalog.POWERTRAIN_NAMES`, `pwt.catalog.CYCLE_NAMES`
@@ -418,10 +418,10 @@ git commit -m "Generalise trace overlay to any number of runs"
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/test_groups_page.py`:
+Create `tests/test_category_view.py`:
 
 ```python
-"""The Groups page shows every run in one category together."""
+"""The Category view page shows every run in one category together."""
 
 from __future__ import annotations
 
@@ -436,14 +436,14 @@ if str(ROOT) not in sys.path:
 
 from streamlit.testing.v1 import AppTest
 
-GROUPS = str(ROOT / "dashboard" / "pages" / "5_Groups.py")
+CATEGORY_VIEW = str(ROOT / "dashboard" / "pages" / "5_Category_View.py")
 
 
-def run(group_by: str | None = None, choice: str | None = None) -> AppTest:
-    app = AppTest.from_file(GROUPS, default_timeout=180).run()
+def run(axis_name: str | None = None, choice: str | None = None) -> AppTest:
+    app = AppTest.from_file(CATEGORY_VIEW, default_timeout=180).run()
     assert not app.exception, [e.value for e in app.exception]
-    if group_by is not None:
-        app.radio[0].set_value(group_by).run()
+    if axis_name is not None:
+        app.radio[0].set_value(axis_name).run()
         assert not app.exception, [e.value for e in app.exception]
     if choice is not None:
         app.selectbox[0].set_value(choice).run()
@@ -453,23 +453,23 @@ def run(group_by: str | None = None, choice: str | None = None) -> AppTest:
 
 def test_page_renders():
     app = run()
-    assert app.title[0].value == "Groups"
+    assert app.title[0].value == "Category view"
 
 
-def test_grouping_by_powertrain_shows_three_runs():
+def test_powertrain_category_shows_three_runs():
     app = run("Powertrain", "petrol")
     text = " ".join(m.value for m in app.markdown) + " ".join(c.value for c in app.caption)
     assert "3 runs" in text
 
 
-def test_grouping_by_cycle_shows_four_runs():
+def test_cycle_category_shows_four_runs():
     app = run("Cycle", "nedc")
     text = " ".join(m.value for m in app.markdown) + " ".join(c.value for c in app.caption)
     assert "4 runs" in text
 
 
-def test_all_sport_is_reachable_through_the_cycle_grouping():
-    """"All the sport" is the Francorchamps sport cycle group."""
+def test_all_sport_is_reachable_through_the_cycle_category():
+    """"All the sport" is the Francorchamps sport cycle category."""
     app = run("Cycle", "franco_sport")
     table = app.dataframe[0].value
     assert len(table) == 4
@@ -484,7 +484,7 @@ def test_totals_table_carries_every_canonical_figure():
         assert heading in table.columns
 
 
-def test_petrol_group_shows_the_workbook_figures():
+def test_petrol_category_shows_the_workbook_figures():
     app = run("Powertrain", "petrol")
     table = app.dataframe[0].value.set_index("Run")
     assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == pytest.approx(
@@ -493,12 +493,12 @@ def test_petrol_group_shows_the_workbook_figures():
     assert table.loc["NEDC", "CO₂ per km (g CO₂/km)"] == pytest.approx(158.2885, rel=1e-4)
 
 
-def test_incomplete_run_is_flagged_in_its_groups():
-    """The NEDC plug-in hybrid gap must show in both groups that contain it."""
-    for group_by, choice in (("Cycle", "nedc"), ("Powertrain", "phev")):
-        app = run(group_by, choice)
+def test_incomplete_run_is_flagged_in_its_categories():
+    """The NEDC plug-in hybrid gap must show in both categories that contain it."""
+    for axis_name, choice in (("Cycle", "nedc"), ("Powertrain", "phev")):
+        app = run(axis_name, choice)
         warnings = " ".join(w.value for w in app.warning)
-        assert "to be filled" in warnings, f"{group_by}={choice}"
+        assert "to be filled" in warnings, f"{axis_name}={choice}"
 
 
 def test_varying_parameters_are_listed():
@@ -507,8 +507,8 @@ def test_varying_parameters_are_listed():
     assert any(n.startswith("total mass") for n in names)
 
 
-def test_axis_falls_back_when_the_group_shares_no_distance():
-    """The BEV group shares no usable distance or time column, so it plots against step."""
+def test_axis_falls_back_when_the_category_shares_no_distance():
+    """The BEV category shares no usable distance or time column, so it plots against step."""
     app = run("Powertrain", "bev")
     assert not app.exception, [e.value for e in app.exception]
     axis = app.selectbox[2]
@@ -517,20 +517,20 @@ def test_axis_falls_back_when_the_group_shares_no_distance():
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `.venv/bin/python -m pytest tests/test_groups_page.py -q`
+Run: `.venv/bin/python -m pytest tests/test_category_view.py -q`
 Expected: FAIL with `FileNotFoundError` — the page does not exist yet.
 
 - [ ] **Step 3: Create the page**
 
-Create `dashboard/pages/5_Groups.py`:
+Create `dashboard/pages/5_Category_View.py`:
 
 ```python
-"""Groups — every run in one category together.
+"""Category view — every run in one category together.
 
 A category is a slice of the 4x3 grid along one field: all four powertrains on one cycle, or
 one powertrain across all three cycles. Driving style is not a third axis — it maps 1:1 onto
 cycle today (eco/sport/regulatory to the two Francorchamps laps and NEDC), so "all the sport"
-is the Francorchamps sport group.
+is the Francorchamps sport category.
 """
 
 from __future__ import annotations
@@ -559,28 +559,28 @@ from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, tr
 from dashboard.theme import POWERTRAIN_ORDER, style_axes
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
-pal = configure("Groups")
+pal = configure("Category view")
 runs = load_runs()
 
-st.title("Groups")
+st.title("Category view")
 st.markdown(
-    "Every run in one category, side by side. Group by powertrain to see one technology across "
+    "Every run in one category, side by side. Choose powertrain to see one technology across "
     "the cycles, or by cycle to see the four technologies on the same drive."
 )
 
 # --- pick the category -----------------------------------------------------------------------
 
-GROUPINGS = {
+CATEGORY_AXES = {
     "Powertrain": ("powertrain", POWERTRAIN_NAMES, list(POWERTRAIN_ORDER)),
     "Cycle": ("cycle", CYCLE_NAMES, list(CYCLE_NAMES)),
 }
 
-grouping = st.radio(
-    "Group by", options=list(GROUPINGS), horizontal=True, label_visibility="collapsed"
+axis = st.radio(
+    "Category", options=list(CATEGORY_AXES), horizontal=True, label_visibility="collapsed"
 )
-field, names, order = GROUPINGS[grouping]
+field, names, order = CATEGORY_AXES[axis]
 available = [code for code in order if code in set(runs[field])]
-choice = st.selectbox(grouping, options=available, format_func=lambda c: names[c])
+choice = st.selectbox(axis, options=available, format_func=lambda c: names[c])
 
 members = runs[runs[field] == choice].copy()
 # Order members the way the rest of the app orders runs, so colour and sequence stay stable.
@@ -589,12 +589,12 @@ sort_order = list(CYCLE_NAMES) if sort_field == "cycle" else list(POWERTRAIN_ORD
 members["_sort"] = members[sort_field].map({c: i for i, c in enumerate(sort_order)})
 members = members.sort_values("_sort").drop(columns="_sort").reset_index(drop=True)
 
-#: Each member's short name: the field that varies within the group.
+#: Each member's short name: the field that varies within the category.
 member_names = [
     (CYCLE_NAMES if sort_field == "cycle" else POWERTRAIN_NAMES)[row[sort_field]]
     for _, row in members.iterrows()
 ]
-#: Colour always follows the powertrain, even when the powertrain is what the group has in
+#: Colour always follows the powertrain, even when the powertrain is what the category has in
 #: common — that keeps a technology the same colour on every page.
 member_colours = [pal.for_powertrain(row["powertrain"]) for _, row in members.iterrows()]
 
@@ -625,7 +625,7 @@ st.caption(
     "A blank cell means that workbook does not report the figure. Values are as reported — "
     "nothing here is converted or recomputed."
 )
-download(figures, f"pwt-group-{choice}.csv", "Download these figures as CSV")
+download(figures, f"pwt-category-{choice}.csv", "Download these figures as CSV")
 
 # --- one measure, charted ----------------------------------------------------------------------
 
@@ -648,7 +648,7 @@ fig.update_layout(height=400)
 st.plotly_chart(fig, width="stretch", theme=None)
 
 if members[quantity].isna().all():
-    st.caption(f"No run in this group reports {display_name.lower()}.")
+    st.caption(f"No run in this category reports {display_name.lower()}.")
 
 # --- traces overlaid ---------------------------------------------------------------------------
 
@@ -696,7 +696,7 @@ else:
 
 # --- what differs ------------------------------------------------------------------------------
 
-st.subheader("Inputs that differ across the group")
+st.subheader("Inputs that differ across the category")
 
 varying = varying_parameters(members)
 if varying.empty:
@@ -713,24 +713,24 @@ else:
         height=min(len(varying), 18) * 35 + 38,
     )
     st.caption(
-        f"{len(varying)} parameters differ across the group, or appear in only some of its "
+        f"{len(varying)} parameters differ across the category, or appear in only some of its "
         "workbooks. Most-varied first."
     )
-    download(varying, f"pwt-group-{choice}-parameters.csv", "Download these parameters as CSV")
+    download(varying, f"pwt-category-{choice}-parameters.csv", "Download these parameters as CSV")
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
 
-Run: `.venv/bin/python -m pytest tests/test_groups_page.py -q`
+Run: `.venv/bin/python -m pytest tests/test_category_view.py -q`
 Expected: PASS (9 passed)
 
-If `test_axis_falls_back_when_the_group_shares_no_distance` fails on the selectbox index, print what is on the page and adjust the index — the axis picker is the third selectbox (group choice, measure, column, axis), so confirm with:
+If `test_axis_falls_back_when_the_category_shares_no_distance` fails on the selectbox index, print what is on the page and adjust the index — the axis picker is the third selectbox (category choice, measure, column, axis), so confirm with:
 
 ```bash
 .venv/bin/python -c "
 import sys; sys.path.insert(0,'.')
 from streamlit.testing.v1 import AppTest
-at=AppTest.from_file('dashboard/pages/5_Groups.py', default_timeout=180).run()
+at=AppTest.from_file('dashboard/pages/5_Category_View.py', default_timeout=180).run()
 for i,s in enumerate(at.selectbox): print(i, s.label, s.options)
 "
 ```
@@ -747,17 +747,17 @@ Expected: PASS, 86 passed
 sleep 9
 ```
 
-Open `http://localhost:8560/Groups`. Check by eye, then stop the server:
-- grouping by Powertrain → petrol shows three runs, one bar per cycle;
-- grouping by Cycle → NEDC shows four runs and the "to be filled" banner;
-- the trace overlay draws one line per run in the group's colours;
+Open `http://localhost:8560/Category_View`. Check by eye, then stop the server:
+- choosing Powertrain → petrol shows three runs, one bar per cycle;
+- choosing Cycle → NEDC shows four runs and the "to be filled" banner;
+- the trace overlay draws one line per run in the category's colours;
 - no axis label is clipped and nothing overflows horizontally.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add dashboard/pages/5_Groups.py tests/test_groups_page.py
-git commit -m "Add a Groups page for viewing a category together"
+git add dashboard/pages/5_Category_View.py tests/test_category_view.py
+git commit -m "Add a Category view page"
 ```
 
 ---
@@ -772,14 +772,14 @@ git commit -m "Add a Groups page for viewing a category together"
 In `README.md`, replace the paragraph beginning "Four pages:" with:
 
 ```markdown
-Five pages: **Overview** (all twelve runs, one table and one chart), **Groups** (every run in
+Five pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
 one category together — all the petrols, all the NEDC runs, all the sport runs), **Trace
 Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
 listed first), and **Data** (the raw datasets as plain tables). Every table has a CSV download.
 
-A category is a slice of the 4×3 grid along one field: powertrain (4 groups of 3) or cycle
-(3 groups of 4). Driving style is not a third axis — it maps 1:1 onto cycle today, so "all the
-sport" is the Francorchamps sport group. That changes when the WLTC highway cycle is added,
+A category is a slice of the 4×3 grid along one field: powertrain (4 categories of 3) or cycle
+(3 categories of 4). Driving style is not a third axis — it maps 1:1 onto cycle today, so "all the
+sport" is the Francorchamps sport category. That changes when the WLTC highway cycle is added,
 at which point `regulatory` will cover both NEDC and WLTC.
 ```
 
@@ -798,20 +798,20 @@ In `README.md`, in the "What the reader has to work around" list, replace the bu
 
 ```bash
 git add README.md
-git commit -m "Document the Groups page and the distance quirk"
+git commit -m "Document the Category view and the distance quirk"
 ```
 
 ---
 
 ## Self-Review
 
-**Spec coverage.** The request named three examples. "All the petrols" is the Powertrain grouping (Task 4). "All the NEDC" and "all the sport" are both the Cycle grouping, since style is 1:1 with cycle — covered by Task 4 and asserted by `test_all_sport_is_reachable_through_the_cycle_grouping`. "Graphs tables and stuff" is the figures table, the measure chart, the trace overlay, and the varying-parameters table, each with a CSV download.
+**Spec coverage.** The request named three examples. "All the petrols" is the Powertrain category (Task 4). "All the NEDC" and "all the sport" are both the Cycle category, since style is 1:1 with cycle — covered by Task 4 and asserted by `test_all_sport_is_reachable_through_the_cycle_grouping`. "Graphs tables and stuff" is the figures table, the measure chart, the trace overlay, and the varying-parameters table, each with a CSV download.
 
 **Placeholders.** None. Every code step carries the code; every test step carries the assertions and the exact command with its expected result.
 
 **Type consistency.** `varying_parameters(runs: pd.DataFrame) -> pd.DataFrame` is defined in Task 2 and consumed in Task 4 under that name, with the `Parameter` and `Distinct values` columns the page renames around. `overlay_traces(frames, labels, colours, column, x_column, pal)` is defined in Task 3 and called with that argument order in Task 4. `axis_exclusion_reason(trace, column)` is defined in Task 1 and used only there. `run_notice`, `render_run_notices`, `run_label`, `download`, `CANONICAL_QUANTITIES`, `axis_columns`, `numeric_trace_columns`, `grouped_totals(..., gaps=...)` and `style_axes` all exist today with the signatures used here.
 
 **Risks.**
-- The BEV group shares only `step` as an axis, because the Francorchamps EV files have no `Time (s)` column and NEDC electric has no usable distance. The page handles it and says so; `test_axis_falls_back_when_the_group_shares_no_distance` pins it.
+- The BEV category shares only `step` as an axis, because the Francorchamps EV files have no `Time (s)` column and NEDC electric has no usable distance. The page handles it and says so; `test_axis_falls_back_when_the_category_shares_no_distance` pins it.
 - Overlaying runs from different cycles puts a 7 km lap and an 11 km cycle on one axis. The page captions this rather than rescaling, which would be a recomputation.
 - Task 3 changes `compare_traces` internals. The existing Compare tests are the regression check; run the full suite at Task 3 Step 5 before moving on.
