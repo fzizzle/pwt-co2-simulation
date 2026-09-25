@@ -5,8 +5,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -64,10 +62,8 @@ def test_totals_table_carries_every_canonical_figure():
 def test_petrol_category_shows_the_workbook_figures():
     app = run("Powertrain", "petrol")
     table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == pytest.approx(
-        245.7298, rel=1e-4
-    )
-    assert table.loc["NEDC", "CO₂ per km (g CO₂/km)"] == pytest.approx(158.2885, rel=1e-4)
+    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.730"
+    assert table.loc["NEDC", "CO₂ per km (g CO₂/km)"] == "158.288"
 
 
 def test_incomplete_run_is_flagged_in_its_categories():
@@ -107,3 +103,28 @@ def test_powertrain_category_separates_members_by_dash():
     )
     assert len({t.line.color for t in fig.data}) == 1, "colour must stay bound to powertrain"
     assert len({t.line.dash for t in fig.data}) == 3, "members must be distinguishable"
+
+
+def test_figures_table_shows_a_dash_not_none_for_an_unreported_figure():
+    """Petrol runs report no electrical energy; the cell must be blank, not the word None."""
+    app = run("Powertrain", "petrol")
+    table = app.dataframe[0].value
+    column = "Electrical energy (Wh/100 km)"
+    values = set(table[column].astype(str))
+    assert "None" not in values
+    assert values == {"—"}
+
+
+def test_figures_table_marks_the_known_gap():
+    """The NEDC plug-in hybrid has no fuel data; its zeros must not read as results."""
+    app = run("Cycle", "nedc")
+    table = app.dataframe[0].value.set_index("Run")
+    assert table.loc["Plug-in hybrid", "CO₂ per km (g CO₂/km)"] == "0.000 — to be filled"
+    # a complete run in the same table is untouched
+    assert table.loc["Petrol", "CO₂ per km (g CO₂/km)"] == "158.288"
+
+
+def test_figures_table_formats_to_three_decimals():
+    app = run("Powertrain", "petrol")
+    table = app.dataframe[0].value.set_index("Run")
+    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.730"

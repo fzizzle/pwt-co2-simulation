@@ -23,6 +23,7 @@ from dashboard.layout import (
     CANONICAL_QUANTITIES,
     configure,
     download,
+    mark_gap_value,
     render_run_notices,
     run_label,
     run_notice,
@@ -86,7 +87,9 @@ records = []
 for name, (_, row) in zip(member_names, members.iterrows()):
     record = {"Run": name}
     for column, (display, unit) in CANONICAL_QUANTITIES.items():
-        record[f"{display} ({unit})"] = row.get(column)
+        record[f"{display} ({unit})"] = mark_gap_value(
+            row.get(column), row["powertrain"], row["cycle"]
+        )
     record["Workbook"] = row["source_file"]
     records.append(record)
 figures = pd.DataFrame(records)
@@ -95,8 +98,8 @@ st.dataframe(
     figures, width="stretch", hide_index=True, height=len(figures) * 35 + 38
 )
 st.caption(
-    "A blank cell means that workbook does not report the figure. Values are as reported — "
-    "nothing here is converted or recomputed."
+    "A dash means that workbook does not report the figure; “to be filled” marks a known gap "
+    "in the supplied file. Values are as reported — nothing here is converted or recomputed."
 )
 download(figures, f"pwt-category-{choice}.csv", "Download these figures as CSV")
 

@@ -105,6 +105,25 @@ def run_notice(powertrain: str | None, cycle: str | None) -> str | None:
     return RUN_NOTICES.get((powertrain or "", cycle or ""))
 
 
+def mark_gap_value(
+    value: float | None,
+    powertrain: str | None,
+    cycle: str | None,
+    *,
+    decimals: int = 3,
+) -> str:
+    """Format a reported figure for display, labelling a known gap in place.
+
+    A figure the workbook does not report becomes an em dash. A figure from a run whose
+    workbook is flagged in RUN_NOTICES keeps its value but carries "to be filled", so a zero
+    that exists only because the data is missing cannot be read as a measurement.
+    """
+    if value is None or pd.isna(value):
+        return "—"
+    formatted = f"{value:,.{decimals}f}"
+    return f"{formatted} — to be filled" if run_notice(powertrain, cycle) else formatted
+
+
 def render_run_notices(*runs: pd.Series) -> None:
     """Warn about any run on screen whose workbook is known to be incomplete."""
     seen: set[tuple[str, str]] = set()
