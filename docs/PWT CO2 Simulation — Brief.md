@@ -3,7 +3,8 @@ type: project
 tags: [project]
 status: active
 course: MESISI471226
-repo: 
+repo: https://github.com/fzizzle/pwt-co2-simulation
+dashboard: https://pwt-co2-simulation-iihscdva9b3woycsyuk7dp.streamlit.app
 ---
 
 # PWT CO2 Simulation — Brief

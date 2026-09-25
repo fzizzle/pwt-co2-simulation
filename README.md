@@ -17,9 +17,18 @@ full hybrid and plug-in hybrid over NEDC, Spa-Francorchamps (eco and sport) and 
 
 ## The dashboard
 
+**Hosted:** <https://pwt-co2-simulation-iihscdva9b3woycsyuk7dp.streamlit.app>
+
+Deployed from this repo on Streamlit Community Cloud. Because the repo is private the app is
+invite-only — teammates need their email added under *Settings → Sharing* before the link
+works for them. It sleeps after extended inactivity; the next visitor waits ~30 s for it to
+wake, so open it once before any session where you need it immediately.
+
 An **internal viewer, not a project deliverable**. It shows the supplied figures exactly as the
 workbooks report them — no unit conversion, no recomputation, no corrections, no conclusions.
 Analysis belongs to the Python model phase, which is separate work.
+
+Run it locally with:
 
 ```sh
 python3 -m venv .venv
