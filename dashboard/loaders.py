@@ -65,6 +65,23 @@ def numeric_trace_columns(trace: pd.DataFrame) -> list[str]:
     ]
 
 
+def axis_columns(trace: pd.DataFrame) -> list[str]:
+    """Columns usable as an x-axis, meaning they increase step by step.
+
+    `Distance (m)` is cumulative in the Francorchamps workbooks but per-step in the NEDC ones,
+    where it is not monotonic and sums to the 11.2 km lap rather than ending at it. Plotting
+    against it there would scramble the chart, so a column only qualifies as an axis when it
+    actually runs forward. Nothing is recomputed — an unsuitable column is simply not offered.
+    """
+    candidates = []
+    for column in ("distance_m", "time_s"):
+        if column in trace.columns:
+            values = trace[column].dropna()
+            if len(values) > 1 and values.is_monotonic_increasing and values.iloc[-1] > 0:
+                candidates.append(column)
+    return candidates + ["step"]
+
+
 def pretty(kind: str, value: str) -> str:
     """Display name for a powertrain or cycle code."""
     table = POWERTRAIN_NAMES if kind == "powertrain" else CYCLE_NAMES

@@ -13,7 +13,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import configure, download, run_picker, source_caption
-from dashboard.loaders import load_runs, numeric_trace_columns, trace_for
+from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import style_axes
 
 pal = configure("Trace Explorer")
@@ -36,13 +36,19 @@ if trace.empty:
     st.stop()
 
 available = numeric_trace_columns(trace)
-x_options = [c for c in ("distance_m", "time_s", "step") if c in trace.columns or c == "step"]
+x_options = axis_columns(trace)
 st.sidebar.subheader("Axis")
 X_LABELS = {"distance_m": "Distance (m)", "time_s": "Time (s)", "step": "Step"}
 x_column = st.sidebar.selectbox(
     "Plot against", options=x_options, format_func=lambda c: X_LABELS[c]
 )
 x_label = X_LABELS[x_column]
+
+if "distance_m" in trace.columns and "distance_m" not in x_options:
+    st.sidebar.caption(
+        "Distance is not offered for this run: the workbook records it per step rather than "
+        "cumulatively, so it does not run forward."
+    )
 if x_column == "step":
     trace = trace.assign(step=range(len(trace)))
 

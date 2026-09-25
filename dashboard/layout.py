@@ -23,6 +23,68 @@ CANONICAL_QUANTITIES: dict[str, tuple[str, str]] = {
 }
 
 
+#: What each cycle is. Kept in the dashboard package, not `pwt/`, because it is UI copy —
+#: and because Community Cloud hot-reloads this folder but keeps `pwt/` cached from boot.
+#: The prose describes the cycle; the figures beside it are measured from the supplied files
+#: at run time rather than quoted, so they cannot drift from the data.
+CYCLE_DEFINITIONS: dict[str, str] = {
+    "nedc": (
+        "**New European Driving Cycle** — the European laboratory test that produced official "
+        "fuel and CO₂ figures until WLTP replaced it (phased in from 2017). It is synthetic "
+        "rather than recorded: four repeated urban segments, then one extra-urban run up to "
+        "120 km/h, driven on a rolling road. It is flat by definition — altitude is 0 "
+        "throughout, so no energy goes into climbing — and a large share of it is spent "
+        "stationary at idle. Its gentle accelerations and low average speed are why "
+        "real-world consumption routinely exceeded NEDC figures, and why it was retired."
+    ),
+    "franco_eco": (
+        "**A lap of Spa-Francorchamps, driven economically.** Not a regulatory cycle — a real "
+        "7 km circuit, described corner by corner rather than second by second, which is why "
+        "it has so few steps. It climbs and descends about 100 m per lap, so unlike NEDC the "
+        "road gradient does real work here."
+    ),
+    "franco_sport": (
+        "**The same Spa-Francorchamps lap, driven hard.** Identical route and gradient to the "
+        "eco lap; only the speeds differ, which makes the pair a clean before-and-after on "
+        "driving style alone."
+    ),
+}
+
+
+def cycle_facts(trace: pd.DataFrame) -> str:
+    """One line of measured facts about a cycle, computed from the trace itself."""
+    speed = trace.get("speed_kph")
+    if speed is None or speed.empty:
+        return ""
+    bits = [f"{len(trace)} steps"]
+
+    # Distance is cumulative in the lap workbooks and per-step in the NEDC ones, so take
+    # whichever reading that column actually supports rather than assuming one.
+    distance = trace.get("distance_m")
+    if distance is not None and distance.notna().any():
+        metres = (
+            distance.max() if distance.dropna().is_monotonic_increasing else distance.sum()
+        )
+        bits.append(f"{metres / 1000:.1f} km")
+
+    time = trace.get("time_s")
+    if time is not None and time.notna().any():
+        bits.append(f"{time.max() / 60:.1f} min")
+
+    bits.append(f"average {speed.mean():.0f} km/h, peak {speed.max():.0f} km/h")
+
+    stopped = int((speed == 0).sum())
+    if stopped:
+        bits.append(f"stationary for {stopped} of {len(trace)} steps")
+
+    altitude = trace.get("altitude_m")
+    if altitude is not None and altitude.notna().any():
+        spread = altitude.max() - altitude.min()
+        bits.append("flat" if spread == 0 else f"{spread:.0f} m of elevation range")
+
+    return " · ".join(bits)
+
+
 def configure(title: str) -> Palette:
     """Page config plus the active palette. Call first in every page."""
     st.set_page_config(

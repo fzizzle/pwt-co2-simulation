@@ -20,7 +20,9 @@ import streamlit as st
 from dashboard import charts
 from dashboard.layout import (
     CANONICAL_QUANTITIES,
+    CYCLE_DEFINITIONS,
     configure,
+    cycle_facts,
     data_notes,
     download,
     elevation_strip,
@@ -41,6 +43,13 @@ st.markdown(
     "the spreadsheets. Figures are shown exactly as the workbooks report them: nothing here "
     "converts units, recomputes a result, or fills in a missing value."
 )
+
+with st.expander("What the cycles are"):
+    for code, definition in CYCLE_DEFINITIONS.items():
+        st.markdown(f"### {CYCLE_NAMES[code]}\n{definition}")
+        facts = cycle_facts(trace_for("petrol", code))
+        if facts:
+            st.caption(f"In these files: {facts}.")
 
 lap = trace_for("petrol", "franco_eco")
 strip = elevation_strip(lap, pal)

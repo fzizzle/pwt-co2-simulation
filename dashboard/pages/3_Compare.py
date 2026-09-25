@@ -22,7 +22,7 @@ from dashboard.layout import (
     run_picker,
     source_caption,
 )
-from dashboard.loaders import load_runs, numeric_trace_columns, trace_for
+from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import style_axes
 
 pal = configure("Compare")
@@ -131,7 +131,8 @@ if not shared:
     st.caption("These two workbooks share no per-step column.")
     st.stop()
 
-x_candidates = [c for c in ("distance_m", "time_s") if c in shared] or ["step"]
+shared_axes = [c for c in axis_columns(left_trace) if c in axis_columns(right_trace)]
+x_candidates = [c for c in shared_axes if c == "step" or c in shared] or ["step"]
 picker, axis = st.columns([3, 1])
 with picker:
     column = st.selectbox(

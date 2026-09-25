@@ -170,3 +170,36 @@ def test_compare_says_when_two_runs_share_a_trace():
     app.selectbox(key="cmp_right").set_value(run_index("hybrid", "franco_eco")).run()
     captions = " ".join(c.value for c in app.caption)
     assert "the two lines coincide" in captions
+
+
+def test_overview_defines_every_cycle():
+    """Each cycle gets a definition plus facts measured from the files, not quoted."""
+    app = run(OVERVIEW)
+    text = " ".join(m.value for m in app.markdown)
+    assert "New European Driving Cycle" in text
+    assert "Spa-Francorchamps" in text
+
+    captions = " ".join(c.value for c in app.caption)
+    assert "In these files:" in captions
+    # NEDC is flat and spends a large share of its steps stationary; the lap is neither.
+    assert "flat" in captions
+    assert "elevation range" in captions
+
+
+def test_nedc_distance_is_not_offered_as_an_axis():
+    """NEDC records distance per step, so it does not run forward and must not be an x-axis."""
+    app = run(TRACE)
+    app.selectbox(key="trace_run").set_value(run_index("petrol", "nedc")).run()
+    assert not app.exception, [e.value for e in app.exception]
+    # AppTest exposes the formatted labels, not the underlying column names.
+    axis_options = app.selectbox[1].options
+    assert "Distance (m)" not in axis_options
+    assert "Time (s)" in axis_options
+    captions = " ".join(c.value for c in app.caption)
+    assert "per step rather than cumulatively" in captions
+
+
+def test_francorchamps_distance_is_offered_as_an_axis():
+    app = run(TRACE)
+    app.selectbox(key="trace_run").set_value(run_index("petrol", "franco_eco")).run()
+    assert "Distance (m)" in app.selectbox[1].options
