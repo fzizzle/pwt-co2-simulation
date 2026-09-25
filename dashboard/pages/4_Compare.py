@@ -15,6 +15,7 @@ import streamlit as st
 from dashboard import charts
 from dashboard.layout import (
     CANONICAL_QUANTITIES,
+    X_LABELS,
     configure,
     download,
     render_run_notices,
@@ -140,7 +141,7 @@ fig = charts.compare_traces(
     left_trace, right_trace, column, x_column, (left_name, right_name),
     (left_colour, right_colour), pal,
 )
-style_axes(fig, pal, x_title=x_column, y_title=column)
+style_axes(fig, pal, x_title=X_LABELS.get(x_column, x_column), y_title=column)
 fig.update_layout(height=420)
 st.plotly_chart(fig, width="stretch", theme=None)
 

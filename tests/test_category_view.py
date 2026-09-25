@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 
 from streamlit.testing.v1 import AppTest
 
-CATEGORY_VIEW = str(ROOT / "dashboard" / "pages" / "5_Category_View.py")
+CATEGORY_VIEW = str(ROOT / "dashboard" / "pages" / "2_Category_View.py")
 
 
 def run(axis_name: str | None = None, choice: str | None = None) -> AppTest:
@@ -134,3 +134,25 @@ def test_varying_table_explains_its_blanks():
     app = run("Cycle", "nedc")
     captions = " ".join(c.value for c in app.caption)
     assert "absent from" in captions
+
+
+def test_page_requests_dashes_only_for_a_powertrain_category(monkeypatch):
+    """Guards the call site: AppTest cannot see a figure, so capture the argument."""
+    from dashboard import charts
+
+    captured: list[object] = []
+    original = charts.overlay_traces
+
+    def spy(*args, **kwargs):
+        captured.append(kwargs.get("dashes"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(charts, "overlay_traces", spy)
+
+    run("Powertrain", "petrol")
+    assert captured and captured[-1] is not None, "a powertrain category needs dashes"
+    assert len(set(captured[-1])) == 3
+
+    captured.clear()
+    run("Cycle", "nedc")
+    assert captured and captured[-1] is None, "a cycle category is separated by colour"

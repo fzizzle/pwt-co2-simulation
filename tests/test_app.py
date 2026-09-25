@@ -22,8 +22,8 @@ from streamlit.testing.v1 import AppTest
 from pwt.catalog import CATALOG
 
 OVERVIEW = str(ROOT / "dashboard" / "Overview.py")
-TRACE = str(ROOT / "dashboard" / "pages" / "2_Trace_Explorer.py")
-COMPARE = str(ROOT / "dashboard" / "pages" / "3_Compare.py")
+TRACE = str(ROOT / "dashboard" / "pages" / "3_Trace_Explorer.py")
+COMPARE = str(ROOT / "dashboard" / "pages" / "4_Compare.py")
 
 TIMEOUT = 120
 

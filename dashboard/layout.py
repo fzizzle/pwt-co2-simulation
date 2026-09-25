@@ -1,6 +1,6 @@
 """Shared page furniture: the header, the sidebar controls, and small display helpers.
 
-Kept in one place so all three pages carry the same controls in the same order and the same
+Kept in one place so every page carries the same controls in the same order and the same
 vocabulary. Wording rule followed here: label things by what the reader recognises — "Fuel
 consumption", not "total consumption [l/100km]".
 """
@@ -20,6 +20,13 @@ CANONICAL_QUANTITIES: dict[str, tuple[str, str]] = {
     "consumption_l_per_100km": ("Fuel consumption", "l/100 km"),
     "energy_wh_per_100km": ("Electrical energy", "Wh/100 km"),
     "co2_g_total": ("CO₂ over the run", "g CO₂"),
+}
+
+#: Display names for the columns a chart can be plotted against.
+X_LABELS: dict[str, str] = {
+    "distance_m": "Distance (m)",
+    "time_s": "Time (s)",
+    "step": "Step",
 }
 
 

@@ -21,6 +21,7 @@ import streamlit as st
 from dashboard import charts
 from dashboard.layout import (
     CANONICAL_QUANTITIES,
+    X_LABELS,
     configure,
     download,
     mark_gap_value,
@@ -133,7 +134,6 @@ st.subheader("Traces overlaid")
 traces = [trace_for(row["powertrain"], row["cycle"]) for _, row in members.iterrows()]
 
 shared_axes = set.intersection(*(set(axis_columns(t)) for t in traces))
-X_LABELS = {"distance_m": "Distance (m)", "time_s": "Time (s)", "step": "Step"}
 axis_options = [c for c in ("distance_m", "time_s", "step") if c in shared_axes]
 
 shared_columns = sorted(set.intersection(*(set(numeric_trace_columns(t)) for t in traces)))
@@ -147,7 +147,7 @@ else:
         default = next((i for i, c in enumerate(plottable) if c == "speed_kph"), 0)
         column = st.selectbox("Column", options=plottable, index=default)
     with axis_picker:
-        x_column = st.selectbox("Against", options=axis_options, format_func=X_LABELS.get)
+        x_column = st.selectbox("Against", options=axis_options, format_func=lambda c: X_LABELS[c])
 
     if x_column == "step":
         traces = [t.assign(step=range(len(t))) for t in traces]
@@ -178,7 +178,7 @@ else:
             "Plotted against step number: these workbooks share no distance or time column "
             "that runs forward across all of them."
         )
-    if field == "powertrain":
+    if field == "powertrain" and x_column == "distance_m":
         st.caption(
             "These runs are on different cycles, so the x-axes cover different ground: the "
             "Francorchamps lap is 7 km, NEDC about 11 km."

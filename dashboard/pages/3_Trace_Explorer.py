@@ -13,6 +13,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    X_LABELS,
     configure,
     download,
     render_run_notices,
@@ -50,7 +51,6 @@ if trace.empty:
 available = numeric_trace_columns(trace)
 x_options = axis_columns(trace)
 st.sidebar.subheader("Axis")
-X_LABELS = {"distance_m": "Distance (m)", "time_s": "Time (s)", "step": "Step"}
 x_column = st.sidebar.selectbox(
     "Plot against", options=x_options, format_func=lambda c: X_LABELS[c]
 )

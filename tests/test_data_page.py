@@ -19,7 +19,7 @@ from pwt.build import runs_frame
 from pwt.catalog import CATALOG, course_file
 from pwt.workbook import read_block, read_run
 
-DATA = str(ROOT / "dashboard" / "pages" / "4_Data.py")
+DATA = str(ROOT / "dashboard" / "pages" / "5_Data.py")
 DATASETS = ["Runs", "Totals", "Parameters", "Traces", "Workbook cells"]
 
 
