@@ -86,12 +86,14 @@ def conventions_for(source_file: str) -> Conventions:
     raise KeyError(f"no conventions recorded for {source_file!r}")
 
 
-def harmonised(trace_kind: str, grid_g_per_kwh: float) -> Conventions:
+def harmonised(trace_kind: str, family: str, grid_g_per_kwh: float) -> Conventions:
     """One convention for every powertrain and cycle (stage B).
 
-    Shift speeds and effective mass as most files have them; the engine idles at standstill
-    whatever the powertrain; regeneration is uncapped; CO2 per kg of fuel, so fuel density no
-    longer moves it; one grid factor; and the Francorchamps EV distance quirks are gone.
+    Shift speeds and effective mass as most files have them; a conventional petrol engine
+    idles at standstill while a hybrid's is off; the hybrids' battery threshold is the
+    plug-in's 23 % or the full hybrid's 30 % by `family`; regeneration is uncapped; heating
+    value and CO2 from `constants` (CO2 per kg of fuel, so density no longer moves it); one
+    grid factor; no Francorchamps EV distance quirks.
     """
     from pwt.model.constants import CO2_G_PER_G_PETROL, FUEL_G_PER_WH
 
@@ -99,8 +101,10 @@ def harmonised(trace_kind: str, grid_g_per_kwh: float) -> Conventions:
         trace_kind=trace_kind,
         shift_kph=FRANCO_SHIFTS,
         eff_mass="outside",
-        idle_l_per_h=0.8,
+        idle_l_per_h=0.8 if family == "petrol" else None,
         regen_cap_w=None,
+        soc_min=0.23 if family == "phev" else 0.3,
+        fictive_recharge=family == "hybrid",
         fuel_g_per_wh=FUEL_G_PER_WH,
         fictive_g_per_wh=FUEL_G_PER_WH,
         co2_g_per_l=None,
