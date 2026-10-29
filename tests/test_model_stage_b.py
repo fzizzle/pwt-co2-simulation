@@ -131,7 +131,7 @@ def test_soc_band_beats_the_sheet_rule_from_the_same_start():
 
     band = _wltc_hybrid(SocBandStrategy()).headline["fuel_l_100km"]
     nelis = _wltc_hybrid().headline["fuel_l_100km"]
-    assert band == pytest.approx(5.6087, rel=1e-4)
+    assert band == pytest.approx(5.6115, rel=1e-4)
     assert nelis == pytest.approx(7.2211, rel=1e-4)
 
 

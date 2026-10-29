@@ -28,6 +28,9 @@ class Cycle:
     z: np.ndarray | None = None
     #: Phase label per point, for phase totals. None: one phase.
     phase: np.ndarray | None = None
+    #: Gear per point, when the cycle comes with its own gear choice (`pwt.model.profile`).
+    #: None: the convention's shift speeds decide.
+    gear: np.ndarray | None = None
 
     def __len__(self) -> int:
         return len(self.v_kph)

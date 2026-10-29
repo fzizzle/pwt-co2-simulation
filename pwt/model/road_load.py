@@ -59,7 +59,7 @@ def road_load(cycle: Cycle, vehicle: Vehicle, conv: Conventions) -> pd.DataFrame
         gear = None
         accel_force = vehicle.effective_mass(ratio, conv.eff_mass) * a
     else:
-        gear = gears(cycle.v_kph, conv.shift_kph)
+        gear = cycle.gear if cycle.gear is not None else gears(cycle.v_kph, conv.shift_kph)
         ratios = np.array((np.nan,) + vehicle.ratios)
         engine = np.where(gear == 0, vehicle.idle_rads, ratios[gear] * wheel)
         m_eff = np.array(

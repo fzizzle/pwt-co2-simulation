@@ -45,7 +45,8 @@ class SocBandStrategy:
 
     Below the band the engine runs at least at its best-efficiency load, x* = −A2 / 2A1 of
     P_max, capped by its full-load curve at the current speed, and the surplus over demand
-    charges the battery, up to the motor's rating. Above
+    charges the battery, up to the motor's rating; when demand exceeds the full-load curve,
+    the motor boosts while the battery is above `soc_min`. Above
     it the motor takes the demand up to its rating. Inside it, Nelis's rule. Unlike the
     sheets, the efficiency curve is read at the power the engine actually delivers.
     """
@@ -66,7 +67,13 @@ class SocBandStrategy:
             return self._nelis.step(vehicle, conv, soc, demand_w, dt, braking=braking)
         rating = vehicle.p_motor_w
         if soc < self.low:
-            target = min(self.best_load_w(vehicle), float(full_load_w(vehicle, engine_rads)))
+            full = float(full_load_w(vehicle, engine_rads))
+            if demand_w > full and soc > conv.soc_min:
+                # Boost: the engine at full load, the motor covers the rest.
+                share = min((demand_w - full) / demand_w, rating / demand_w)
+                engine_w = (1 - share) * demand_w
+                return share, engine_w * dt / 3600, engine_w, 0.0
+            target = min(self.best_load_w(vehicle), full)
             engine_w = min(max(demand_w, target), demand_w + rating)
             charge_w = engine_w - demand_w
             return 0.0, engine_w * dt / 3600, engine_w, charge_w * dt / 3600
