@@ -29,10 +29,10 @@ def totals(frame: pd.DataFrame, vehicle: Vehicle, conv: Conventions,
            recharge: dict | None = None) -> dict[Key, float]:
     if vehicle.family == "bev":
         return _electric(frame, conv)
-    return _engine(frame, vehicle, recharge)
+    return _engine(frame, vehicle, conv, recharge)
 
 
-def _engine(frame, vehicle, recharge) -> dict[Key, float]:
+def _engine(frame, vehicle, conv, recharge) -> dict[Key, float]:
     km = _km(frame)
     extra = recharge or {}
     litres = frame["qfuel_l"].sum() + extra.get("qfuel_l", 0.0)
@@ -59,7 +59,9 @@ def _engine(frame, vehicle, recharge) -> dict[Key, float]:
         out[("battery energy used", "wh")] = used
         out[("battery energy used", "wh/100km")] = 100 * used / km
         for region, factor in GRID_REPORTING.items():
-            out[(f"grid emission {region}", "g co2/km")] = factor / 1000 * used / km
+            out[(f"grid emission {region}", "g co2/km")] = (
+                factor / 1000 * used / km / conv.charger_efficiency
+            )
     return out
 
 

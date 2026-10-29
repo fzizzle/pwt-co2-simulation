@@ -67,12 +67,17 @@ def _battery_wh(run: Run) -> float | None:
 
 
 def make_cell(powertrain: str, cycle: str, variant: str, fuel: float | None,
-              battery: float | None, co2: float, source: str) -> Cell:
-    """A cell from its figures, adding the EU-grid CO2 of any electricity from outside."""
+              battery: float | None, co2: float, source: str,
+              charger_efficiency: float = 1.0) -> Cell:
+    """A cell from its figures, adding the EU-grid CO2 of any electricity from outside.
+
+    `battery` is energy drawn from the battery; the grid supplied it divided by
+    `charger_efficiency`.
+    """
     if powertrain == "bev":
-        eu = battery * GRID_G_PER_KWH["EU"] / 100
+        eu = battery * GRID_G_PER_KWH["EU"] / 100 / charger_efficiency
     elif powertrain == "phev":
-        eu = co2 + battery * GRID_G_PER_KWH["EU"] / 100
+        eu = co2 + battery * GRID_G_PER_KWH["EU"] / 100 / charger_efficiency
     else:
         # The full hybrid buys back its battery's charge with fuel, so no electricity comes
         # from outside.

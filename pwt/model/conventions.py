@@ -41,6 +41,8 @@ class Conventions:
     co2_g_per_g_fuel: float | None = None
     #: Electric CO2 factor in the sheet's own CO2 column.
     grid_g_per_kwh: float | None = None
+    #: Battery energy per unit of grid energy; the sheets count no charger loss.
+    charger_efficiency: float = 1.0
     #: Francorchamps EV totals: CO2/km over the distance at the second-to-last point, and
     #: Wh/100 km over a hard-coded 7 km.
     ev_franco_totals: bool = False
@@ -94,9 +96,9 @@ def harmonised(trace_kind: str, family: str, grid_g_per_kwh: float) -> Conventio
     plug-in's 23 % or the full hybrid's 30 % by `family`; electric regeneration is capped at
     the Francorchamps sheets' 120 kW (the assignment sheet's motor peaks at 125 kW); heating
     value and CO2 from `constants` (CO2 per kg of fuel, so density no longer moves it); one
-    grid factor; no Francorchamps EV distance quirks.
+    grid factor, with a charger loss; no Francorchamps EV distance quirks.
     """
-    from pwt.model.constants import CO2_G_PER_G_PETROL, FUEL_G_PER_WH
+    from pwt.model.constants import CHARGER_EFFICIENCY, CO2_G_PER_G_PETROL, FUEL_G_PER_WH
 
     return Conventions(
         trace_kind=trace_kind,
@@ -111,5 +113,6 @@ def harmonised(trace_kind: str, family: str, grid_g_per_kwh: float) -> Conventio
         co2_g_per_l=None,
         co2_g_per_g_fuel=CO2_G_PER_G_PETROL,
         grid_g_per_kwh=grid_g_per_kwh,
+        charger_efficiency=CHARGER_EFFICIENCY,
         ev_franco_totals=False,
     )

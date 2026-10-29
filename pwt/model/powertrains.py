@@ -80,7 +80,7 @@ def electric(frame: pd.DataFrame, vehicle: Vehicle, conv: Conventions) -> pd.Dat
             np.where(drive < conv.regen_cap_w, conv.regen_cap_w * eff, drive * eff),
         )
     energy = battery * dt / 3600
-    co2 = (conv.grid_g_per_kwh or 0.0) / 1000 * energy
+    co2 = (conv.grid_g_per_kwh or 0.0) / 1000 * energy / conv.charger_efficiency
 
     prev_omega = np.concatenate(([omega[0]], omega[:-1]))
     with np.errstate(divide="ignore", invalid="ignore"):

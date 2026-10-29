@@ -55,7 +55,7 @@ def test_harmonised_electric_uses_the_real_lap_distance():
     harm = simulate(vehicle, cycle, harmonised("distance", "bev", 250))
     km = harm.steps["delta_distance_m"].sum() / 1000
     assert harm.headline["co2_g_km"] == pytest.approx(
-        harm.steps["energy_wh"].sum() * 0.25 / km, rel=1e-12
+        harm.steps["energy_wh"].sum() * 0.25 / km / 0.9, rel=1e-12  # 90 % charger
     )
 
 
@@ -203,7 +203,9 @@ def test_phase2_scenarios():
     stage_b, shortfall = scenario_cells("stage B")
     assert co2(exact, "petrol", "franco_eco") == pytest.approx(245.7298, rel=1e-6)
     assert co2(harm, "petrol", "franco_eco") == pytest.approx(203.0023, rel=1e-6)
-    # The electric car's figures do not move: its regen cap and grid factor stay.
-    assert co2(harm, "bev", "franco_sport") == pytest.approx(co2(exact, "bev", "franco_sport"))
+    # The electric car moves only by the charger loss: its regen cap and grid factor stay.
+    assert co2(harm, "bev", "franco_sport") == pytest.approx(
+        co2(exact, "bev", "franco_sport") / 0.9
+    )
     assert co2(stage_b, "hybrid", "wltc") < co2(harm, "hybrid", "wltc")
     assert shortfall[("petrol", "franco_sport")][0] == 16

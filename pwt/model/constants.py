@@ -20,3 +20,8 @@ PETROL_DENSITY = 750.0
 
 #: g CO2 per kWh of electricity, from the assignment sheet (EEA).
 GRID_G_PER_KWH = {"EU": 250.0, "FR": 73.0}
+
+#: Battery energy per unit of grid energy. An assumption inside the measured range: one-way
+#: AC charging losses of 12-36 % (Apostolaki-Iosifidou, Codani & Kempton, Energy 127, 2017)
+#: and 5-7 % on an 11-22 kW wallbox to 13-24 % on a 2.3 kW socket (ADAC, 2026).
+CHARGER_EFFICIENCY = 0.90

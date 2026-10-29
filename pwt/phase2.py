@@ -86,7 +86,7 @@ def _shortfall(powertrain, cycle, vehicle, cyc, scenario, soc0=None) -> tuple[in
 def _cell(powertrain, cycle, variant, result) -> Cell:
     h = result.headline
     return make_cell(powertrain, cycle, variant, h["fuel_l_100km"], h["battery_kwh_100km"],
-                     h["co2_g_km"], result.cycle.name)
+                     h["co2_g_km"], result.cycle.name, result.conventions.charger_efficiency)
 
 
 def scenario_cells(scenario: str) -> tuple[list[Cell], dict]:
