@@ -17,7 +17,8 @@ from pwt.model.vehicle import Vehicle
 def full_load_w(vehicle: Vehicle, engine_rads: np.ndarray) -> np.ndarray:
     """Maximum engine power at a speed: linear to the knee, then flat (assignment sheet)."""
     rpm = engine_rads * 60 / (2 * np.pi)
-    return vehicle.p_max_w * np.clip(rpm / vehicle.full_load_knee_rpm, 0.0, 1.0)
+    rated = vehicle.p_rated_w or vehicle.p_max_w
+    return rated * np.clip(rpm / vehicle.full_load_knee_rpm, 0.0, 1.0)
 
 
 def _co2(conv: Conventions, fuel_l, fuel_g):
@@ -133,9 +134,12 @@ def hybrid(frame: pd.DataFrame, vehicle: Vehicle, conv: Conventions, strategy=No
         soc[i] = soc[i - 1] - (share * battv[i] - charge_wh) / vehicle.battery_wh
 
     if conv.capability:
-        limit = full_load_w(vehicle, f["engine_speed_rads"].to_numpy())
-        engine_share_w = np.where(dt > 0, engine_wh * 3600 / np.where(dt > 0, dt, 1), 0.0)
-        f["shortfall_w"] = np.maximum(engine_share_w - limit, 0.0)
+        # Clip the engine's share at its full-load curve; the motor's share is unchanged.
+        limit_wh = full_load_w(vehicle, f["engine_speed_rads"].to_numpy()) * dt / 3600
+        over_wh = np.maximum(engine_wh - limit_wh, 0.0)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            f["shortfall_w"] = np.where(dt > 0, over_wh * 3600 / dt, 0.0)
+        engine_wh = engine_wh - over_wh
 
     eff = np.where(engine_wh > 0, vehicle.efficiency(engine_power), 0.0)
     with np.errstate(divide="ignore", invalid="ignore"):

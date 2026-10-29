@@ -37,8 +37,11 @@ class Vehicle:
     #: Motor efficiency η(N) = a N² + b N + c, in %.
     motor_eff: tuple[float, float, float] | None = None
     soc0: float = 1.0
-    #: Full-load engine power: linear to `full_load_knee_rpm`, flat to the rated speed.
+    #: Full-load engine power: linear to `full_load_knee_rpm`, flat to the rated speed, at
+    #: `p_rated_w`. The sheets have no rated power, only `p_max_w` scaling the efficiency
+    #: curve, so it defaults to that; the assignment sheet's engine is 74 kW.
     full_load_knee_rpm: float = 5000.0
+    p_rated_w: float | None = None
     notes: tuple[str, ...] = field(default=())
 
     @property

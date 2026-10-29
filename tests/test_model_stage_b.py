@@ -57,3 +57,49 @@ def test_harmonised_electric_uses_the_real_lap_distance():
     assert harm.headline["co2_g_km"] == pytest.approx(
         harm.steps["energy_wh"].sum() * 0.25 / km, rel=1e-12
     )
+
+
+# --- Task 8: engine capability ------------------------------------------------------------
+
+PETROL_SPORT = "13 SPA Franco PETROL car SPORT Driving.xlsx"
+
+
+def _capable(name, kind, rated=74_000.0):
+    run, vehicle, cycle = _inputs(name, kind)
+    from pwt.model.conventions import conventions_for
+
+    conv = replace(conventions_for(name), capability=True)
+    return simulate(replace(vehicle, p_rated_w=rated), cycle, conv), run
+
+
+@pytest.mark.parametrize("name, flat_over", [(PETROL_ECO, 1), (PETROL_SPORT, 7)])
+def test_shortfall_covers_every_step_over_the_rating(name, flat_over):
+    result, run = _capable(name, "distance")
+    demand = from_workbook(run).steps["engine_power_drivetrain_w"]
+    assert (demand[1:] > 74_000).sum() == flat_over
+    short = result.steps["shortfall_w"]
+    # Every step over the flat rating is short; the rpm-dependent curve can only add steps.
+    assert (short[demand > 74_000] > 0).all()
+    assert (short > 0).sum() >= flat_over
+
+
+def test_delivered_power_never_exceeds_the_curve():
+    from pwt.model.powertrains import full_load_w
+
+    result, _ = _capable(PETROL_SPORT, "distance")
+    steps = result.steps
+    limit = full_load_w(result.vehicle, steps["engine_speed_rads"].to_numpy())
+    assert (steps["engine_power_drivetrain_w"].to_numpy() <= limit + 1e-9).all()
+
+
+def test_capability_lowers_the_hybrid_engine_share_only():
+    result, run = _capable("15 SPA Franco HYBRID engine SPORT Driving.xlsx", "distance")
+    exact = from_workbook(run)
+    assert (result.steps["shortfall_w"] > 0).any()
+    assert (result.steps["energy_wh"] <= exact.steps["energy_wh"] + 1e-9).all()
+    assert result.steps["batt_soc"].equals(exact.steps["batt_soc"])
+
+
+def test_capability_is_off_for_the_workbook_exact_path():
+    result = from_workbook(read_run(course_file(PETROL_SPORT)))
+    assert "shortfall_w" not in result.steps
