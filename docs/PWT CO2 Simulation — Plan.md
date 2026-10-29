@@ -10,7 +10,7 @@ dashboard: https://pwt-co2-simulation-iihscdva9b3woycsyuk7dp.streamlit.app
 # PWT CO2 Simulation — Plan
 
 **Goal:** Present a 20-minute group analysis that compares four powertrains on urban, rural and highway cycles and goes further than the supplied spreadsheets in one area.
-**Brief:** [[PWT CO2 Simulation — Brief]] · **Log:** [[PWT CO2 Simulation Log]]
+**Brief:** [[PWT CO2 Simulation — Brief]] · **Log:** [[PWT CO2 Simulation Log]] · **Findings:** [[PWT CO2 Simulation — Findings]]
 
 > [!info] Dates this plan works back from
 > - **Presentation date: unknown.** TD2 (Mon 30 Nov) is "answers to questions before submission of projects", so the plan freezes results by then.

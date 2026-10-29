@@ -10,7 +10,7 @@ dashboard: https://pwt-co2-simulation-iihscdva9b3woycsyuk7dp.streamlit.app
 # PWT CO2 Simulation — Brief
 
 **Course:** [[PWT MOC|PWT — Powertrains]] · Marc Nelis · **Format:** group of 3, 20-minute presentation
-**Plan:** [[PWT CO2 Simulation — Plan]] · **Log:** [[PWT CO2 Simulation Log]]
+**Plan:** [[PWT CO2 Simulation — Plan]] · **Log:** [[PWT CO2 Simulation Log]] · **Findings:** [[PWT CO2 Simulation — Findings]]
 
 ## What the project is
 
