@@ -56,7 +56,7 @@ sport" is the Francorchamps sport category. That changes when the WLTC highway c
 at which point `regulatory` will cover both NEDC and WLTC.
 
 The Data page carries five datasets: `Runs` (12 × 74), `Totals` and `Parameters` in long form,
-`Traces` (677 steps), and `Workbook cells` — one workbook's labelled block exactly as the
+`Traces` (676 steps), and `Workbook cells` — one workbook's labelled block exactly as the
 sheet holds it, with the original label and unit text, the row number, and how the reader
 classified each row. That last one is where to look when a figure elsewhere seems wrong.
 
@@ -113,7 +113,7 @@ The twelve result workbooks share a shape but not a layout. Found by inspecting 
   and `32 NEDC ELECTRIC.xlsx` has the column but never fills it. A column is offered as a
   chart axis only when it actually runs forward.
 - Each trace ends with a cumulative summary row and a unit-annotation row. Real steps fill
-  50-100% of their columns and these artifacts 22-29%, so a density threshold separates them.
+  96-100% of their columns and these artifacts 22-50%, so a density threshold separates them.
 - Three titles contradict their filename, so run identity comes from `pwt/catalog.py`.
 
 Spa laps are **32 variable-length segments**, not per-second traces; NEDC runs are ~105 steps.

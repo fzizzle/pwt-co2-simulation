@@ -53,6 +53,11 @@ def test_wltc_phase_distances_match_the_supplied_file(filename):
         assert run.params[(f"{phase.lower()} distance", "m")] == approx(metres)
 
 
+@pytest.mark.parametrize("filename", [s.filename for s in SPECS if s.cycle == "wltc"])
+def test_wltc_traces_are_1801_steps(filename):
+    assert len(read_derived(spec(filename)).trace) == 1801
+
+
 def test_gear_formula_matches_the_supplied_nested_if():
     assert _gear_formula("J4", SHIFT_KPH) == (
         "=IF(J4=0,0,IF(J4<=35,1,IF(J4<=57,2,IF(J4<=82,3,IF(J4<=115,4,5)))))"
