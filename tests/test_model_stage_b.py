@@ -103,3 +103,42 @@ def test_capability_lowers_the_hybrid_engine_share_only():
 def test_capability_is_off_for_the_workbook_exact_path():
     result = from_workbook(read_run(course_file(PETROL_SPORT)))
     assert "shortfall_w" not in result.steps
+
+
+# --- Task 9: charge-sustaining full hybrid ------------------------------------------------
+
+
+def _wltc_hybrid(strategy=None, soc0=0.6):
+    from pwt.derived import SPECS, read_derived
+    from pwt.model.conventions import conventions_for
+
+    run = read_derived(next(s for s in SPECS if s.filename == "WLTC3 HYBRID.xlsx"))
+    vehicle = replace(Vehicle.from_run(run), soc0=soc0)
+    return simulate(vehicle, Cycle.from_run(run, "time"), conventions_for(run.source_file),
+                    strategy)
+
+
+def test_soc_band_holds_the_battery_in_the_band():
+    from pwt.model.strategy import SocBandStrategy
+
+    soc = _wltc_hybrid(SocBandStrategy(0.5, 0.7)).steps["batt_soc"]
+    assert soc.min() >= 0.45 and soc.max() <= 0.75
+    assert abs(soc.iloc[-1] - soc.iloc[0]) <= 0.1
+
+
+def test_soc_band_beats_the_sheet_rule_from_the_same_start():
+    from pwt.model.strategy import SocBandStrategy
+
+    band = _wltc_hybrid(SocBandStrategy()).headline["fuel_l_100km"]
+    nelis = _wltc_hybrid().headline["fuel_l_100km"]
+    assert band == pytest.approx(5.5401, rel=1e-4)
+    assert nelis == pytest.approx(7.2211, rel=1e-4)
+
+
+def test_best_efficiency_load_is_the_curve_maximum():
+    from pwt.model.strategy import SocBandStrategy
+
+    _, vehicle, _ = _inputs("10 SPA Franco HYBRID engine ECO Driving.xlsx", "distance")
+    best = SocBandStrategy().best_load_w(vehicle)
+    assert vehicle.efficiency(best) >= vehicle.efficiency(best * 0.95)
+    assert vehicle.efficiency(best) >= vehicle.efficiency(best * 1.05)
