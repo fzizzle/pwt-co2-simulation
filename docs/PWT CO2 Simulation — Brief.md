@@ -58,7 +58,7 @@ Nelis supplies the model for four powertrains — petrol, battery-electric, full
 - **Ask:** criticise and improve the model, and say what the next step is.
 - **Conversions:** petrol 0.75 kg/l, 2392 g CO2/l (diesel 2640, LPG 1665, CNG 2536 g/kg); electricity 250 g/kWh EU, 73 g/kWh France.
 
-The sheet's vehicle data does not match the workbooks in four places:
+The sheet's vehicle data does not match the workbooks in five places:
 
 | Parameter | Assignment sheet | Workbooks |
 |---|---|---|
@@ -66,6 +66,7 @@ The sheet's vehicle data does not match the workbooks in four places:
 | Engine maximum power | 74 kW at 6000 rpm | 85 000 W in the efficiency curve |
 | Fuel density | 0.75 kg/l | 720 kg/m³ |
 | Battery specific energy | 150 Wh/kg | 80, 150 or 160 Wh/kg, doubled for pack mass |
+| Electric car battery and mass | 22 kWh, 1460 kg | 50 kWh, 1777 kg (battery 497 kg) |
 
 ## Open questions for Nelis
 

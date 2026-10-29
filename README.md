@@ -10,8 +10,9 @@ full hybrid and plug-in hybrid over NEDC, Spa-Francorchamps (eco and sport) and 
 | Path | Contents |
 |---|---|
 | `data/course-files/` | The 23 files Nelis supplied, unchanged — the 22 handed out at L3 plus the assignment sheet, `1 Simulation of cars on driving cycles.pdf`. Read-only: never edit these. |
-| `docs/` | Snapshot of the brief and plan. The live copies are in the vault, `40 Projects/PWT CO2 Simulation/`. |
-| `pwt/` | Reader for the supplied workbooks. No Streamlit import — a plain library. |
+| `data/derived/` | Workbooks built from the supplied ones by `python -m pwt.derived`: WLTC for all four powertrains, and the plug-in hybrid's charge-depleting and charge-sustaining runs. |
+| `docs/` | Snapshot of the brief and plan, plus `model-equations.md` (every column as an equation) and `phase-1-results.md` (the 4 × 4 table). The live brief and plan are in the vault, `40 Projects/PWT CO2 Simulation/`. |
+| `pwt/` | Reader for the supplied workbooks, the derived-workbook builder and the checkpoint tables. No Streamlit import — a plain library. |
 | `dashboard/` | Streamlit app for exploring what the workbooks contain. |
 | `tests/` | Golden tests: the reader must reproduce each workbook's totals before anything changes. |
 
@@ -61,6 +62,26 @@ classified each row. That last one is where to look when a figure elsewhere seem
 
 `python -m pwt.build` writes `data/processed/*.parquet` to speed startup. It is optional and
 gitignored — the app reads the workbooks directly when the parquet is absent.
+
+## Derived workbooks
+
+`python -m pwt.derived` builds `data/derived/` from the supplied NEDC workbooks. It needs
+LibreOffice (`soffice`) to recalculate. Each derived file keeps its template's parameter block
+and formulas and changes only the trace, the starting state of charge or the shift speeds.
+Rebuilding a template on its own trace reproduces its supplied totals exactly, which
+`tests/test_derived.py` checks whenever LibreOffice is present.
+
+| File | Template | What changed |
+|---|---|---|
+| `WLTC3 PETROL.xlsx` | `33` | WLTC Class 3 trace; shift speeds 35/57/82/115 km/h |
+| `WLTC3 ELECTRIC.xlsx` | `32` | WLTC Class 3 trace |
+| `WLTC3 HYBRID.xlsx` | `35` | WLTC Class 3 trace |
+| `WLTC3 PHYBRID CD.xlsx` / `CS.xlsx` | `34` | WLTC Class 3 trace; CS starts at the 23 % engine threshold |
+| `NEDC PHYBRID CD.xlsx` / `CS.xlsx` | `34` | CD as supplied; CS starts at 23 % |
+
+Each adds rows below the parameter block: WLTC phase distance, consumption and emission, plus
+battery energy used and grid CO2 for the hybrids. `python -m pwt.checkpoint` prints the
+4 × 4 table in `docs/phase-1-results.md`. The dashboard does not show derived runs yet.
 
 ## Known gaps in the supplied data
 
