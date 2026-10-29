@@ -91,7 +91,8 @@ def harmonised(trace_kind: str, family: str, grid_g_per_kwh: float) -> Conventio
 
     Shift speeds and effective mass as most files have them; a conventional petrol engine
     idles at standstill while a hybrid's is off; the hybrids' battery threshold is the
-    plug-in's 23 % or the full hybrid's 30 % by `family`; regeneration is uncapped; heating
+    plug-in's 23 % or the full hybrid's 30 % by `family`; electric regeneration is capped at
+    the Francorchamps sheets' 120 kW (the assignment sheet's motor peaks at 125 kW); heating
     value and CO2 from `constants` (CO2 per kg of fuel, so density no longer moves it); one
     grid factor; no Francorchamps EV distance quirks.
     """
@@ -102,7 +103,7 @@ def harmonised(trace_kind: str, family: str, grid_g_per_kwh: float) -> Conventio
         shift_kph=FRANCO_SHIFTS,
         eff_mass="outside",
         idle_l_per_h=0.8 if family == "petrol" else None,
-        regen_cap_w=None,
+        regen_cap_w=-120_000.0,
         soc_min=0.23 if family == "phev" else 0.3,
         fictive_recharge=family == "hybrid",
         fuel_g_per_wh=FUEL_G_PER_WH,

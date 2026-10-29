@@ -83,6 +83,23 @@ Each adds rows below the parameter block: WLTC phase distance, consumption and e
 battery energy used and grid CO2 for the hybrids. `python -m pwt.checkpoint` prints the
 4 × 4 table in `docs/phase-1-results.md`. The dashboard does not show derived runs yet.
 
+## The Python model
+
+`pwt/model/` is the spreadsheet model ported to Python. `from_workbook(run)` reproduces any
+supplied or derived workbook exactly, totals and every per-step column
+(`tests/test_model_golden.py`). `simulate(vehicle, cycle, conventions, strategy)` takes
+them separately, which is how anything gets changed:
+
+| Module | Holds |
+|---|---|
+| `conventions.py` | Everything the workbooks disagree on, one record per file, and `harmonised()` |
+| `vehicle.py`, `cycle.py` | Inputs, read from a workbook's block and trace |
+| `road_load.py`, `powertrains.py` | Forces, then petrol, electric and hybrid chains |
+| `strategy.py` | The sheets' motor-share rule and a charge-sustaining band |
+| `constants.py`, `fleet.py` | Cited constants (`docs/sources.md`) and the assignment sheet's vehicles |
+
+`python -m pwt.phase2` prints the four-scenario comparison in `docs/phase-2-results.md`.
+
 ## Runs whose figures leave something out
 
 `34 NEDC PHYBRID engine.xlsx` reports 0 l/100 km and 0 g CO₂/km, and that zero is what its

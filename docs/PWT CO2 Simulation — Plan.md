@@ -59,25 +59,24 @@ Ranked. The first is compulsory; pick one of 2–4 as the group's headline analy
 > - **The twelve workbooks are three slightly different models** (shift speeds, effective mass, idle, regen cap, battery density, grid factor). The port must reproduce each file's conventions exactly before harmonising them.
 > - **Workbook vehicles ≠ assignment-sheet vehicles** (mass, engine power, fuel density, EV battery). Phase 2 runs both.
 
-## Phase 2 — Python model (direction 2, by Wed 4 Nov for TD1)
+## Phase 2 — Python model (done Thu 29 Oct)
 
-Detailed task list: `docs/superpowers/plans/2026-10-29-python-model.md`. Code lives in `pwt/model/`; the reader and derived workbooks stay as they are and become its test oracle.
+Detailed task list: `docs/superpowers/plans/2026-10-29-python-model.md`. Code in `pwt/model/`; results in `docs/phase-2-results.md` (`python -m pwt.phase2`).
 
-**Stage A — reproduce (by Sun 1 Nov).** One step function per powertrain family, configured from each workbook's own parameter block and conventions. Golden tests: all 12 supplied runs and the 7 derived ones, totals to 1e-6 and per-step columns to 1e-6.
+**Stage A — reproduce.** All 19 workbooks reproduced to ~1e-15, totals and every per-step column.
 
-- [ ] **Fix the reader's kept summary row** in `32 NEDC ELECTRIC.xlsx` (and the derived WLTC EV) before anything trusts the traces. *30 min*
-- [ ] **Traces and conventions:** distance-based (Francorchamps) and time-based (NEDC, WLTC) traces; a `Conventions` record per workbook holding everything the files disagree on. *2 h*
-- [ ] **Road load and the petrol chain** until all four petrol runs pass. *2–3 h*
-- [ ] **Electric, then hybrid and plug-in hybrid** (motor share, SOC, fictive recharge) until all 19 runs pass. *3–4 h*
+- [x] **Fix the reader's kept summary row** in `32 NEDC ELECTRIC.xlsx` (threshold 0.5 → 0.75; step counts now exact).
+- [x] **Traces and conventions:** `Cycle`, `Vehicle`, and a `Conventions` record per workbook.
+- [x] **Road load and the petrol chain,** then **electric, hybrid and plug-in hybrid.**
 
-**Stage B — change behaviour (by Tue 3 Nov), one test per change, each reported against the Stage A figure:**
+**Stage B — change behaviour,** each tested against the stage A figure:
 
-- [ ] **Engine capability:** clip demand at the full-load curve (power linear to 5000 rpm, plateau to 6000) and report the shortfall. *1.5 h*
-- [ ] **Full hybrid holds charge** in a band (e.g. 50–70 %) by loading the engine towards its best-efficiency point, instead of the fictive end-of-cycle line. *3 h*
-- [ ] **One set of cited constants:** heating value, density, CO2 per kg of fuel, grid factors (EU 250, FR 73), charger efficiency. *1 h*
-- [ ] **Two vehicle sets:** the workbooks' and the assignment sheet's (1280 kg, 74 kW, 0.75 kg/l, 150 Wh/kg, EV 22 kWh / 1460 kg), on one harmonised convention. *1 h*
+- [x] **Engine capability:** full-load curve (linear to 5000 rpm, 74 kW plateau). Reported as a shortfall beside the figures, not used to cut them: an infeasible trace clipped would only look frugal. The sport lap is short on 16 of 31 steps.
+- [x] **Full hybrid holds charge** (50–70 % band). Saves 15 % on WLTC. Along the way it exposed a sheet shortcut: hybrid efficiency is read at the whole demand, which hides 16.5 % fuel on the eco lap.
+- [x] **One set of cited constants:** IPCC 2006 heating value and CO2 factor, density 750, grid 250/73 (`docs/sources.md`). About −17 % CO2 for every engine.
+- [x] **Two vehicle sets:** the workbooks' and the assignment sheet's (`pwt/model/fleet.py`).
 
-**Checkpoint (bring to TD1, Wed 4 Nov):** the 4 × 4 table three ways — workbook-exact, harmonised, harmonised with Stage B changes — and the sport lap with the shortfall marked.
+**Checkpoint (bring to TD1, Wed 4 Nov):** `docs/phase-2-results.md` — the 4 × 4 table four ways, the full hybrid's change step by step, and where each engine cannot follow its trace.
 
 **Stretch, or direction 5:** generate the Francorchamps speed profiles from the assignment's rules (corner speed from tyre friction; eco: 0–100 km/h in 20 s, 0.4 g, 90 km/h cap; sport: engine-limited, 0.6 g, iterate the braking points). *6–8 h*
 
@@ -105,7 +104,7 @@ Detailed task list: `docs/superpowers/plans/2026-10-29-python-model.md`. Code li
 | 2–3 short analyses or one complete | Phase 3 plus the modelling slide |
 | Highway "must be done" | Phase 1, direction 1 — done (`data/derived/WLTC3 *.xlsx`) |
 | Create NEDC hybrid files | Phase 1 — done (NEDC PHEV charge-depleting and charge-sustaining) |
-| Recharge battery during the cycle; separate engine and grid energy | Phase 2 |
+| Recharge battery during the cycle; separate engine and grid energy | Phase 2 — done (charge-sustaining band; R101 with grid CO2) |
 | Powertrain size | Direction 3 |
 | One personal study per student (assignment sheet) | Phase 3 — one direction each |
-| Sport case limited by engine power | Phase 2 stage B, stretch |
+| Sport case limited by engine power | Shortfall measured (Phase 2); profile generator still to do (stretch / direction 5) |

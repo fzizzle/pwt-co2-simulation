@@ -126,9 +126,11 @@ def hybrid(frame: pd.DataFrame, vehicle: Vehicle, conv: Conventions, strategy=No
     soc = np.zeros(n)
     engine_power = np.zeros(n)  # the power the efficiency curve is read at
     soc[0] = vehicle.soc0
+    omega = f["engine_speed_rads"].to_numpy()
     for i in range(1, n):
         share, engine_wh[i], engine_power[i], charge_wh = strategy.step(
             vehicle, conv, soc[i - 1], demand[i], dt[i], braking=force[i] < 0,
+            engine_rads=omega[i],
         )
         fact[i] = share
         soc[i] = soc[i - 1] - (share * battv[i] - charge_wh) / vehicle.battery_wh

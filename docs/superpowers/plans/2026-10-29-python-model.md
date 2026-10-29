@@ -12,6 +12,14 @@
 
 **Deadline:** stage A by Sun 1 Nov, stage B by Tue 3 Nov, checkpoint at TD1, Wed 4 Nov.
 
+**Status (Thu 29 Oct):** Tasks 1–10 done; the stretch is open. Where the build departed from this plan:
+
+- **Hard-coded zeros** (the table below): they are not repeated timestamps. Most equal what the formula gives anyway. The one exception is sheet row 24's engine torque in the six Francorchamps engine files, a dead cell the golden test skips.
+- **Task 7:** the harmonised convention keeps a 120 kW regeneration cap. Without it, the electric car's sport lap recovers braking power no motor could absorb. A conventional petrol engine idles at standstill; a hybrid's is off.
+- **Task 8:** capability is reported as a shortfall beside the figures, not used to cut them.
+- **Task 9:** the strategy receives the engine speed, so charging is capped at the full-load curve. `NelisStrategy(efficiency_at="engine")` was added to separate the sheets' efficiency shortcut from the strategy change.
+- **Task 10:** the scenarios live in `pwt/phase2.py`, not `fleet.py`.
+
 ## Global Constraints
 
 - **Reproduce before changing.** No stage B task starts until all 19 golden runs pass. Every stage B change is a new `Conventions` or `Vehicle` value, or a new strategy, reached by a flag. The workbook-exact path stays available and tested.
@@ -47,7 +55,7 @@ This is what `Conventions` must encode. Source: `docs/model-equations.md`, plus 
 | `fictive_recharge` | `True` · `False` | `10`, `15`, `35`, `WLTC3 HYBRID` · plug-ins |
 | `fuel_g_per_wh`, `co2_g_per_l` | 0.0909, 2392 | all |
 | `grid_g_per_kwh` | 220 · 440 · `None` | Franco EVs · NEDC/WLTC EVs · hybrids |
-| hard-coded zeros | rows where NEDC repeats a timestamp ($\Delta t = 0$) | `32`, `33`, `34`, `35` |
+| hard-coded cells | zeros equal to the formula's value; row 24 engine torque (dead cell) | all NEDC files; Francorchamps engine files |
 
 ---
 
