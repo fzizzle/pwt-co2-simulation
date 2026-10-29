@@ -269,8 +269,8 @@ def build_workbook(spec: DerivedSpec, out_path: Path) -> None:
                 else:
                     value = initial
             elif steps is None and _is_formula(proto) and not _is_formula(original):
-                # NEDC repeats a timestamp where its sub-cycles join; the template hard-codes
-                # a zero there to avoid dividing by a zero time step.
+                # The template hard-codes a few cells over their formula (zeros where the
+                # formula gives zero anyway, and one dead torque cell); keep them as supplied.
                 value = original
             elif _is_formula(proto):
                 value = Translator(proto, origin=f"{letter}{_PROTOTYPE_ROW}").translate_formula(
