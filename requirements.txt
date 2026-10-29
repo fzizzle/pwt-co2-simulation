@@ -9,3 +9,4 @@ pyarrow>=17.0
 
 # Dev only; harmless on Cloud.
 pytest>=8.0
+tabulate>=0.9  # pwt.checkpoint prints Markdown tables

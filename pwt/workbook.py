@@ -80,9 +80,10 @@ _HEADER_ROW = 2
 _FIRST_DATA_ROW = 3
 
 #: A trace row counts as a step when at least this fraction of its columns hold numbers.
-#: Measured across all 12 workbooks, real steps fill 50-100% of their columns while the
-#: trailing summary and unit-annotation rows fill only 22-29%, so the split is unambiguous.
-_STEP_FILL_THRESHOLD = 0.5
+#: Measured across all 12 supplied and 7 derived workbooks, real steps fill 96-100% of their
+#: columns while the trailing summary and unit-annotation rows fill 22-50% (the 50% is the
+#: electric NEDC sums row), so 0.75 sits clear of both.
+_STEP_FILL_THRESHOLD = 0.75
 
 
 def normalise(value: object) -> str:

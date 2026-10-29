@@ -84,7 +84,7 @@ if selected.empty:
 st.subheader(f"{display_name} — every run")
 st.caption(
     f"Unit: {unit}. A blank cell means that workbook does not report this figure; a cell "
-    "marked “to be filled” is a known gap in the supplied file."
+    "marked “electricity not counted” leaves out the energy a plug-in run drew from its battery."
 )
 
 render_run_notices(*(row for _, row in selected.iterrows()))

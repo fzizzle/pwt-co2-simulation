@@ -80,12 +80,12 @@ def test_overview_flags_the_missing_nedc_phev_data():
     as a bare zero that reads like a result."""
     app = run(OVERVIEW)
     warnings = " ".join(w.value for w in app.warning)
-    assert "Data missing — to be filled" in warnings
+    assert "Charge-depleting run — electricity not counted" in warnings
     assert "Plug-in hybrid" in warnings
 
     # and the cell itself carries the label, not just the banner
     matrix = app.dataframe[0].value
-    assert matrix.loc["Plug-in hybrid", "NEDC"] == "0.000 — to be filled"
+    assert matrix.loc["Plug-in hybrid", "NEDC"] == "0.000 — electricity not counted"
 
 
 def test_overview_still_reports_the_negative_energy_rows():
@@ -226,7 +226,7 @@ def test_missing_data_is_flagged_on_every_page_showing_that_run(page):
     app.selectbox(key=key).set_value(run_index("phev", "nedc")).run()
     assert not app.exception, [e.value for e in app.exception]
     warnings = " ".join(w.value for w in app.warning)
-    assert "to be filled" in warnings
+    assert "electricity not counted" in warnings
 
 
 def test_complete_runs_are_not_flagged():
@@ -234,7 +234,7 @@ def test_complete_runs_are_not_flagged():
     app = run(TRACE)
     app.selectbox(key="trace_run").set_value(run_index("petrol", "franco_eco")).run()
     warnings = " ".join(w.value for w in app.warning)
-    assert "to be filled" not in warnings
+    assert "electricity not counted" not in warnings
 
 
 def test_axis_exclusion_reason_distinguishes_empty_from_per_step():

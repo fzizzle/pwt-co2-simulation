@@ -219,11 +219,17 @@ def test_summary_rows_are_skipped_and_counted():
     assert len(run.trace) == 32  # the Spa lap is 32 segments
 
 
-def test_step_counts_are_stable_across_all_runs():
-    """Francorchamps runs are 32 segments; NEDC runs are ~105 steps."""
+def test_step_counts_are_exact_across_all_runs():
+    """Francorchamps runs are 32 segments; NEDC runs are 105 steps (0-1240 s)."""
     for entry in CATALOG:
         run = read_run(course_file(entry.filename))
         expected = 32 if entry.cycle.startswith("franco") else 105
-        assert len(run.trace) == pytest.approx(expected, abs=2), (
-            f"{entry.filename}: {len(run.trace)} rows"
-        )
+        assert len(run.trace) == expected, f"{entry.filename}: {len(run.trace)} rows"
+
+
+def test_electric_nedc_sums_row_is_not_a_step():
+    """`32`'s sums row fills exactly half its columns; it once passed as a 106th step at
+    1240 s with the whole cycle's distance."""
+    run = read_run(course_file("32 NEDC ELECTRIC.xlsx"))
+    assert run.summary_rows_skipped == 1
+    assert run.trace["delta_distance_m"].max() < 1000  # the sums row held 11 222 m

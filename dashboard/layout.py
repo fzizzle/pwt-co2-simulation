@@ -11,6 +11,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from dashboard.charts import GAP_LABEL
 from dashboard.theme import POWERTRAIN_ORDER, Palette, palette
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
@@ -92,18 +93,17 @@ def cycle_facts(trace: pd.DataFrame) -> str:
     return " · ".join(bits)
 
 
-#: Runs with a known gap in the supplied workbook, keyed by (powertrain, cycle).
-#: This is recorded fact, not inference: the lecturer confirmed the data is missing rather
-#: than a modelling result. Kept here in the dashboard package so Community Cloud picks it up
-#: without a reboot.
+#: Runs whose reported figures leave something out, keyed by (powertrain, cycle). Kept here
+#: in the dashboard package so Community Cloud picks it up without a reboot.
 RUN_NOTICES: dict[tuple[str, str], str] = {
     ("phev", "nedc"): (
-        "**Data missing — to be filled.** `34 NEDC PHYBRID engine.xlsx` has no fuel or "
-        "emission figures: `Qfuel (g)`, `Qfuel (l)` and `Emission (g CO₂)` are 0 on all 105 "
-        "steps, so the run reports 0 l/100 km and 0 g CO₂/km. Engine power *is* present "
-        "(non-zero on 79 steps), so the step converting it into fuel was never entered. "
-        "Confirmed with the lecturer as missing data, not a result — treat every zero for "
-        "this run as a blank awaiting the file being completed, not as a figure to quote."
+        "**Charge-depleting run — electricity not counted.** `34 NEDC PHYBRID engine.xlsx` "
+        "reports 0 l/100 km and 0 g CO₂/km, and that is what its formulas compute: the 40 kW "
+        "motor covers every NEDC demand, and the battery falls only from 98 % to 78 %, never "
+        "reaching the 23 % that brings the engine in. The sheet does not count the electricity "
+        "the run draws (14.3 kWh/100 km, about 36 g CO₂/km at the EU grid's 250 g/kWh), so the "
+        "zeros are not the car's footprint. `data/derived/` adds a charge-sustaining run "
+        "(5.96 l/100 km); weighted the UN R101 way the two give 2.22 l/100 km."
     ),
 }
 
@@ -121,18 +121,18 @@ def mark_gap_value(
 ) -> str:
     """Format a reported figure for display, labelling a known gap in place.
 
-    A figure the workbook does not report becomes an em dash. A figure from a run whose
-    workbook is flagged in RUN_NOTICES keeps its value but carries "to be filled", so a zero
-    that exists only because the data is missing cannot be read as a measurement.
+    A figure the workbook does not report becomes an em dash. A figure from a run flagged in
+    RUN_NOTICES keeps its value but carries `GAP_LABEL`, so a zero that leaves the electricity
+    out cannot be read as the run's whole footprint.
     """
     if value is None or pd.isna(value):
         return "—"
     formatted = f"{value:,.{decimals}f}"
-    return f"{formatted} — to be filled" if run_notice(powertrain, cycle) else formatted
+    return f"{formatted} — {GAP_LABEL}" if run_notice(powertrain, cycle) else formatted
 
 
 def render_run_notices(*runs: pd.Series) -> None:
-    """Warn about any run on screen whose workbook is known to be incomplete."""
+    """Warn about any run on screen whose figures leave something out."""
     seen: set[tuple[str, str]] = set()
     for row in runs:
         key = (row.get("powertrain") or "", row.get("cycle") or "")
