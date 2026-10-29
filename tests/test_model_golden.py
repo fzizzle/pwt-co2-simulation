@@ -116,3 +116,16 @@ def test_conventions_record_the_disagreements():
     assert conventions_for("35 NEDC HYBRID engine.xlsx").fictive_recharge
     assert not conventions_for("34 NEDC PHYBRID engine.xlsx").fictive_recharge
     assert conventions_for("WLTC3 PHYBRID CS.xlsx").soc_min == 0.23
+
+
+def test_the_checkpoint_is_the_same_from_the_model():
+    from pwt.checkpoint import cells
+
+    workbook, model = cells("workbooks"), cells("model")
+    assert len(workbook) == len(model) == 20
+    for w, m in zip(workbook, model):
+        for field in ("fuel_l_100km", "battery_kwh_100km", "co2_reported", "co2_eu_grid"):
+            a, b = getattr(w, field), getattr(m, field)
+            assert (a is None) == (b is None), (w.source, field)
+            if a is not None:
+                assert b == pytest.approx(a, rel=REL, abs=ABS), (w.source, field)

@@ -66,20 +66,34 @@ def _battery_wh(run: Run) -> float | None:
     return capacity * (soc.iloc[0] - soc.iloc[-1])
 
 
-def _cell(run: Run, cycle: str, variant: str = "") -> Cell:
-    fuel = run.consumption_l_per_100km
-    co2 = run.co2_g_per_km
-    if run.powertrain == "bev":
-        battery = run.energy_wh_per_100km / 1000
+def make_cell(powertrain: str, cycle: str, variant: str, fuel: float | None,
+              battery: float | None, co2: float, source: str) -> Cell:
+    """A cell from its figures, adding the EU-grid CO2 of any electricity from outside."""
+    if powertrain == "bev":
         eu = battery * GRID_G_PER_KWH["EU"] / 100
-    elif run.powertrain == "phev":
-        battery = _battery_wh(run) / _km(run) / 10
+    elif powertrain == "phev":
         eu = co2 + battery * GRID_G_PER_KWH["EU"] / 100
     else:
-        # The full hybrid's sheet buys back the battery's charge with fuel at the end of the
-        # cycle, so no electricity comes from outside.
+        # The full hybrid buys back its battery's charge with fuel, so no electricity comes
+        # from outside.
         battery, eu = None, co2
-    return Cell(run.powertrain, cycle, variant, fuel, battery, co2, eu, run.source_file)
+    return Cell(powertrain, cycle, variant, fuel, battery, co2, eu, source)
+
+
+def _cell(run: Run, cycle: str, variant: str = "", source: str = "workbooks") -> Cell:
+    if source == "model":
+        from pwt.model import from_workbook
+
+        h = from_workbook(run).headline
+        fuel, battery, co2 = h["fuel_l_100km"], h["battery_kwh_100km"], h["co2_g_km"]
+    else:
+        fuel, co2 = run.consumption_l_per_100km, run.co2_g_per_km
+        battery = None
+        if run.powertrain == "bev":
+            battery = run.energy_wh_per_100km / 1000
+        elif run.powertrain == "phev":
+            battery = _battery_wh(run) / _km(run) / 10
+    return make_cell(run.powertrain, cycle, variant, fuel, battery, co2, run.source_file)
 
 
 def _r101(cd: Cell, cs: Cell, usable_wh: float) -> Cell:
@@ -97,21 +111,22 @@ def _r101(cd: Cell, cs: Cell, usable_wh: float) -> Cell:
     )
 
 
-def cells() -> list[Cell]:
+def cells(source: str = "workbooks") -> list[Cell]:
+    """Every headline cell, from the workbooks' cached values or from `pwt.model`."""
     out: list[Cell] = []
     for cycle in ("franco_eco", "franco_sport"):
         for powertrain in POWERTRAIN_NAMES:
             entry = find(powertrain=powertrain, cycle=cycle)
-            out.append(_cell(read_run(course_file(entry.filename)), cycle))
+            out.append(_cell(read_run(course_file(entry.filename)), cycle, source=source))
     for powertrain in ("petrol", "bev", "hybrid"):
         entry = find(powertrain=powertrain, cycle="nedc")
-        out.append(_cell(read_run(course_file(entry.filename)), "nedc"))
+        out.append(_cell(read_run(course_file(entry.filename)), "nedc", source=source))
     derived = {(s.powertrain, s.cycle, s.mode): s for s in SPECS}
     for powertrain in ("petrol", "bev", "hybrid"):
-        out.append(_cell(read_derived(derived[(powertrain, "wltc", None)]), "wltc"))
+        out.append(_cell(read_derived(derived[(powertrain, "wltc", None)]), "wltc", source=source))
     for cycle in ("nedc", "wltc"):
-        cd = _cell(read_derived(derived[("phev", cycle, "cd")]), cycle, "cd")
-        cs = _cell(read_derived(derived[("phev", cycle, "cs")]), cycle, "cs")
+        cd = _cell(read_derived(derived[("phev", cycle, "cd")]), cycle, "cd", source)
+        cs = _cell(read_derived(derived[("phev", cycle, "cs")]), cycle, "cs", source)
         capacity = read_derived(derived[("phev", cycle, "cd")]).params[
             ("batt energy content", "wh")
         ]
