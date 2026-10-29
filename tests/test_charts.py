@@ -139,17 +139,17 @@ def test_gap_bars_are_labelled_rather_than_showing_a_zero(runs):
     fig = charts.grouped_totals(runs, "co2_g_per_km", DARK, unit="g", gaps=gaps)
     phev = next(b for b in fig.data if b.name == "Plug-in hybrid")
     labels = list(phev.text)
-    assert "to be filled" in labels
-    assert labels.count("to be filled") == 1  # only the flagged cycle
+    assert "electricity not counted" in labels
+    assert labels.count("electricity not counted") == 1  # only the flagged cycle
     # the other powertrains are untouched
     petrol = next(b for b in fig.data if b.name == "Petrol")
-    assert "to be filled" not in petrol.text
+    assert "electricity not counted" not in petrol.text
 
 
 def test_no_gap_labels_when_none_are_flagged(runs):
     fig = charts.grouped_totals(runs, "co2_g_per_km", DARK, unit="g")
     for bar in fig.data:
-        assert "to be filled" not in list(bar.text)
+        assert "electricity not counted" not in list(bar.text)
 
 
 def test_varying_parameters_lists_only_what_differs(runs):

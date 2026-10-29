@@ -23,6 +23,8 @@ LINE_WIDTH = 2
 MARKER_SIZE = 8
 CORNER_RADIUS = 4
 BAR_GAP_PX = 2
+#: Shown in place of a figure from a run flagged in `layout.RUN_NOTICES`.
+GAP_LABEL = "electricity not counted"
 
 #: Dash patterns in a fixed order, used as a secondary encoding when several lines share a
 #: colour. Position determines pattern, so a member keeps its pattern as the selection changes.
@@ -64,9 +66,9 @@ def grouped_totals(
     about — technologies on the same cycle — is the one read left to right within a group.
     Runs that do not report this quantity are simply absent rather than drawn as zero.
 
-    `gaps` names (powertrain, cycle) pairs whose workbook is known to be incomplete. Their bar
-    is labelled "to be filled" rather than with its value, so a zero-height bar cannot be read
-    as a measured result.
+    `gaps` names (powertrain, cycle) pairs whose figures leave something out. Their bar is
+    labelled with `GAP_LABEL` rather than its value, so a zero-height bar cannot be read as the
+    whole result.
     """
     gaps = gaps or set()
     fig = go.Figure()
@@ -90,7 +92,7 @@ def grouped_totals(
                 line=dict(color=pal.surface, width=BAR_GAP_PX),
             ),
             text=[
-                "to be filled" if (powertrain, cycle) in gaps else _fmt(value)
+                GAP_LABEL if (powertrain, cycle) in gaps else _fmt(value)
                 for cycle, value in zip(cycles, values)
             ],
             textposition="outside",

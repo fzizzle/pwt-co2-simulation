@@ -83,18 +83,14 @@ Each adds rows below the parameter block: WLTC phase distance, consumption and e
 battery energy used and grid CO2 for the hybrids. `python -m pwt.checkpoint` prints the
 4 × 4 table in `docs/phase-1-results.md`. The dashboard does not show derived runs yet.
 
-## Known gaps in the supplied data
+## Runs whose figures leave something out
 
-`34 NEDC PHYBRID engine.xlsx` has no fuel or emission figures: `Qfuel (g)`, `Qfuel (l)` and
-`Emission (g CO₂)` are 0 on all 105 steps, so the run reports 0 l/100 km and 0 g CO₂/km.
-Confirmed with the lecturer as missing data, not a result. The app labels it "to be filled"
-wherever it appears rather than showing a bare zero.
-
-The formulas are all present, though: the zero is what the sheet computes. The 40 kW motor
-covers every power demand on NEDC, so the motor's share of power (`FACT`) stays at 1, and the
-battery only falls from 98 % to 78 %. That never reaches the 23 % level that brings the engine
-in. What the file lacks is the electricity side: the energy drawn from the battery and its
-CO₂. `data/derived/` holds a finished version (see below).
+`34 NEDC PHYBRID engine.xlsx` reports 0 l/100 km and 0 g CO₂/km, and that zero is what its
+formulas compute. The 40 kW motor covers every NEDC demand, so the motor's share of power
+(`FACT`) stays at 1 and the battery only falls from 98 % to 78 %, never reaching the 23 % that
+brings the engine in. What the sheet leaves out is the electricity: the energy drawn from the
+battery and its CO₂. The app marks the run "electricity not counted" wherever its figures
+appear. `data/derived/` adds the electricity and a charge-sustaining run (see above).
 
 Record further gaps in `RUN_NOTICES` in `dashboard/layout.py`, keyed by `(powertrain, cycle)`;
 every page picks them up automatically.

@@ -99,8 +99,9 @@ st.dataframe(
     figures, width="stretch", hide_index=True, height=len(figures) * 35 + 38
 )
 st.caption(
-    "A dash means that workbook does not report the figure; “to be filled” marks a known gap "
-    "in the supplied file. Values are as reported — nothing here is converted or recomputed."
+    "A dash means that workbook does not report the figure; “electricity not counted” marks "
+    "a run whose figure leaves out its battery energy. Values are as reported — nothing here "
+    "is converted or recomputed."
 )
 download(figures, f"pwt-category-{choice}.csv", "Download these figures as CSV")
 

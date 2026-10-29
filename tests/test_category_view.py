@@ -71,7 +71,7 @@ def test_incomplete_run_is_flagged_in_its_categories():
     for axis_name, choice in (("Cycle", "nedc"), ("Powertrain", "phev")):
         app = run(axis_name, choice)
         warnings = " ".join(w.value for w in app.warning)
-        assert "to be filled" in warnings, f"{axis_name}={choice}"
+        assert "electricity not counted" in warnings, f"{axis_name}={choice}"
 
 
 def test_varying_parameters_are_listed():
@@ -119,7 +119,7 @@ def test_figures_table_marks_the_known_gap():
     """The NEDC plug-in hybrid has no fuel data; its zeros must not read as results."""
     app = run("Cycle", "nedc")
     table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Plug-in hybrid", "CO₂ per km (g CO₂/km)"] == "0.000 — to be filled"
+    assert table.loc["Plug-in hybrid", "CO₂ per km (g CO₂/km)"] == "0.000 — electricity not counted"
     # a complete run in the same table is untouched
     assert table.loc["Petrol", "CO₂ per km (g CO₂/km)"] == "158.288"
 
