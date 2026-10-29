@@ -8,7 +8,7 @@ The harmonised model (`pwt/model/constants.py`) replaces the sheets' constants w
 | Petrol CO2 factor | 2392 g/l (3.32 g/g at 720 kg/m³) | **69.3 g CO2/MJ = 3.070 g CO2 per g fuel** | Same table |
 | Petrol density | 720 kg/m³ | **750 kg/m³** | Assignment sheet (0.75 kg/l). EN 228 allows 720–775 kg/m³ at 15 °C ([supplier's copy of the EN 228 table](https://inverenergy.ie/wp-content/uploads/2019/11/Petrol.pdf); [CEN/TR 18238:2025](https://standards.iteh.ai/catalog/standards/cen/0676e1d2-e089-4198-840a-d5909fe0b938/cen-tr-18238-2025)); the WLTP E10 reference fuel is 743–756 kg/m³ ([Regulation (EU) 2017/1151](https://legislation.gov.uk/eur/2017/1151/attachment/40?view=plain)) |
 | Grid electricity | 220 (Franco EV), 440 (NEDC EV), none (PHEV) | **250 g/kWh EU, 73 g/kWh France** | Assignment sheet, citing the EEA |
-| Charger efficiency | not modelled | **not modelled** | No source found yet; grid CO2 is per kWh drawn from the battery, so it is understated by the charger loss |
+| Charger efficiency | 100 % (no loss) | **90 %**, an assumption | Measured one-way AC charging losses of 12–36 % ([Apostolaki-Iosifidou, Codani & Kempton, *Energy* 127 (2017) 730–742](https://ideas.repec.org/a/eee/energy/v127y2017icp730-742.html)); 5–7 % on an 11–22 kW wallbox up to 13–24 % on a 2.3 kW socket (ADAC, 2026, via [secondary report](https://zecar.com/reviews/ev-charging-losses-adac-study); original not checked) |
 
 The IPCC values are defaults for motor gasoline as a fuel category, not for a specific EN 228 blend. With CO2 computed per kg of fuel, density only changes litres, not CO2.
 

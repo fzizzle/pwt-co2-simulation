@@ -12,7 +12,7 @@
 
 **Deadline:** stage A by Sun 1 Nov, stage B by Tue 3 Nov, checkpoint at TD1, Wed 4 Nov.
 
-**Status (Thu 29 Oct):** Tasks 1–10 done; the stretch is open. Where the build departed from this plan:
+**Status (Thu 29 Oct):** Tasks 1–10 and the stretch done. Added after the plan: a 90 % charger efficiency in the harmonised grid CO2, motor boost in the band strategy, and the dashboard's Model page. Where the build departed from this plan:
 
 - **Hard-coded zeros** (the table below): they are not repeated timestamps. Most equal what the formula gives anyway. The one exception is sheet row 24's engine torque in the six Francorchamps engine files, a dead cell the golden test skips.
 - **Task 7:** the harmonised convention keeps a 120 kW regeneration cap. Without it, the electric car's sport lap recovers braking power no motor could absorb. A conventional petrol engine idles at standstill; a hybrid's is off.

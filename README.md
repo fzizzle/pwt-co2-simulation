@@ -45,10 +45,10 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Five pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
+Six pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
 one category together — all the petrols, all the NEDC runs, all the sport runs), **Trace
 Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
-listed first), and **Data** (the raw datasets as plain tables). Every table has a CSV download.
+listed first), **Data** (the raw datasets as plain tables), and **Model** (what `pwt.model` computes — the one page that is not pass-through). Every table has a CSV download.
 
 A category is a slice of the 4×3 grid along one field: powertrain (4 categories of 3) or cycle
 (3 categories of 4). Driving style is not a third axis — it maps 1:1 onto cycle today, so "all the
@@ -97,8 +97,12 @@ them separately, which is how anything gets changed:
 | `road_load.py`, `powertrains.py` | Forces, then petrol, electric and hybrid chains |
 | `strategy.py` | The sheets' motor-share rule and a charge-sustaining band |
 | `constants.py`, `fleet.py` | Cited constants (`docs/sources.md`) and the assignment sheet's vehicles |
+| `profile.py` | Francorchamps laps generated from the assignment's eco and sport rules |
 
-`python -m pwt.phase2` prints the four-scenario comparison in `docs/phase-2-results.md`.
+`python -m pwt.phase2` prints the four-scenario comparison in `docs/phase-2-results.md`; the
+dashboard's **Model** page shows it, the generated laps, and any single run. Reboot the
+Cloud app after deploying this — the page imports `pwt.model`, which a running app has not
+loaded.
 
 ## Runs whose figures leave something out
 

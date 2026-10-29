@@ -1,6 +1,6 @@
 # Phase 2 results — the Python model
 
-`pwt/model/` reproduces all twelve supplied workbooks and the seven derived ones: every total to about 1e-15, and every per-step column (`tests/test_model_golden.py`). From there the model changes one tested step at a time. Regenerate everything below with `python -m pwt.phase2`; no LibreOffice needed.
+`pwt/model/` reproduces all twelve supplied workbooks and the seven derived ones: every total to about 1e-15, and every per-step column (`tests/test_model_golden.py`). From there the model changes one tested step at a time. Regenerate everything below with `python -m pwt.phase2`; no LibreOffice needed. The dashboard's **Model** page shows the same tables and lets you explore any single run.
 
 ## The four scenarios
 
@@ -11,12 +11,12 @@
    - idle only for the conventional petrol car;
    - electric regeneration capped at 120 kW;
    - petrol at 44.3 MJ/kg and 3.07 g CO2 per g (IPCC 2006 defaults);
-   - grid electricity at 250 g/kWh.
+   - grid electricity at 250 g/kWh through a 90 % efficient charger.
    
    See `docs/sources.md`.
 3. **stage B**: harmonised, plus two corrections to the hybrids:
    - engine efficiency is read at the power the engine delivers, not at the whole demand;
-   - the full hybrid holds its battery in a 50–70 % band.
+   - the full hybrid holds its battery in a 50–70 % band, boosting with the motor when the engine is at full load.
 4. **assignment**: stage B with the assignment sheet's vehicles in place of the workbooks':
    - petrol: 1280 kg, 74 kW, 0.75 kg/l;
    - electric: 22 kWh, 1460 kg;
@@ -26,7 +26,7 @@
    
    Where the sheet gives a range, the midpoint is used.
 
-CO2 below always includes electricity at 250 g/kWh, so all four powertrains compare on one footing. The plug-in hybrid on NEDC and WLTC is the UN R101 weighting of a charge-depleting and a charge-sustaining run, as in Phase 1.
+CO2 below always includes electricity at 250 g/kWh, so all four powertrains compare on one footing. The plug-in hybrid on NEDC and WLTC is the UN R101 weighting of a charge-depleting and a charge-sustaining run, as in Phase 1. The "exact" column counts no charger loss, as the sheets do.
 
 ## All four, CO2 with electricity at 250 g/kWh (g/km)
 
@@ -36,18 +36,18 @@ CO2 below always includes electricity at 250 g/kWh, so all four powertrains comp
 | ('Petrol', 'Francorchamps — eco')             |   245.7 |        203   |     203   |        198.1 |
 | ('Petrol', 'Francorchamps — sport')           |   373.1 |        308.3 |     308.3 |        308.2 |
 | ('Petrol', 'WLTC Class 3')                    |   177.8 |        146.9 |     146.9 |        145.1 |
-| ('Battery electric', 'NEDC')                  |    37.3 |         37.3 |      37.3 |         34.2 |
-| ('Battery electric', 'Francorchamps — eco')   |    51.2 |         51.2 |      51.2 |         46.3 |
-| ('Battery electric', 'Francorchamps — sport') |    95.9 |         95.9 |      95.9 |         86.1 |
-| ('Battery electric', 'WLTC Class 3')          |    44.5 |         44.5 |      44.5 |         41.2 |
+| ('Battery electric', 'NEDC')                  |    37.3 |         41.4 |      41.4 |         38   |
+| ('Battery electric', 'Francorchamps — eco')   |    51.2 |         56.9 |      56.9 |         51.5 |
+| ('Battery electric', 'Francorchamps — sport') |    95.9 |        106.5 |     106.5 |         95.6 |
+| ('Battery electric', 'WLTC Class 3')          |    44.5 |         49.4 |      49.4 |         45.8 |
 | ('Full hybrid', 'NEDC')                       |   129.1 |        106.7 |     105.7 |         98.7 |
-| ('Full hybrid', 'Francorchamps — eco')        |   181.2 |        149.7 |     174.4 |        160.7 |
-| ('Full hybrid', 'Francorchamps — sport')      |   331.9 |        274.2 |     304.6 |        276.8 |
-| ('Full hybrid', 'WLTC Class 3')               |   157.5 |        130.1 |     110.8 |        104.7 |
-| ('Plug-in hybrid', 'NEDC')                    |    75.7 |         66.4 |      66.4 |         55.7 |
-| ('Plug-in hybrid', 'Francorchamps — eco')     |    75.4 |         69.5 |      72.2 |         63.7 |
-| ('Plug-in hybrid', 'Francorchamps — sport')   |   198.3 |        171.9 |     182.2 |        185.5 |
-| ('Plug-in hybrid', 'WLTC Class 3')            |    77.5 |         67.8 |      68.2 |         56.7 |
+| ('Full hybrid', 'Francorchamps — eco')        |   181.2 |        149.7 |     174.4 |        160.8 |
+| ('Full hybrid', 'Francorchamps — sport')      |   331.9 |        274.2 |     306.5 |        276.7 |
+| ('Full hybrid', 'WLTC Class 3')               |   157.5 |        130.1 |     110.9 |        104.8 |
+| ('Plug-in hybrid', 'NEDC')                    |    75.7 |         68.9 |      68.9 |         58.7 |
+| ('Plug-in hybrid', 'Francorchamps — eco')     |    75.4 |         74.1 |      76.7 |         68.3 |
+| ('Plug-in hybrid', 'Francorchamps — sport')   |   198.3 |        177.1 |     187.4 |        190.2 |
+| ('Plug-in hybrid', 'WLTC Class 3')            |    77.5 |         70.3 |      70.6 |         59.7 |
 
 ## The full hybrid's change, step by step (l/100 km)
 
@@ -56,7 +56,16 @@ CO2 below always includes electricity at 250 g/kWh, so all four powertrains comp
 | sheets' rule, efficiency at the whole demand   |   4.83 |                  6.77 |                   12.4  |           5.89 |
 | sheets' rule, efficiency at the engine's share |   4.83 |                  7.89 |                   14.07 |           5.93 |
 | same, starting at 60 %                         |   6.37 |                  8.6  |                   13.8  |           6.48 |
-| charge-sustaining band 50-70 %, from 60 %      |   4.78 |                  7.89 |                   13.78 |           5.01 |
+| charge-sustaining band 50-70 %, from 60 %      |   4.78 |                  7.89 |                   13.87 |           5.02 |
+
+## Francorchamps, generated by the assignment's rules (g CO2/km, electricity at 250 g/kWh, assignment vehicles)
+
+|                             |   Petrol |   Battery electric |   Full hybrid |   Plug-in hybrid |
+|:----------------------------|---------:|-------------------:|--------------:|-----------------:|
+| eco — generated, 310 s      |    217.5 |               56.5 |         197   |             96.8 |
+| eco — supplied lap, 325 s   |    198.1 |               51.5 |         160.8 |             68.3 |
+| sport — generated, 235 s    |    385.2 |              132.2 |         382.8 |            274.6 |
+| sport — supplied lap, 248 s |    308.2 |               95.6 |         276.7 |            190.2 |
 
 ## exact
 
@@ -94,17 +103,17 @@ CO2 below always includes electricity at 250 g/kWh, so all four powertrains comp
 |                  |   NEDC |   Francorchamps — eco |   Francorchamps — sport |   WLTC Class 3 |
 |:-----------------|-------:|----------------------:|------------------------:|---------------:|
 | Petrol           |  134.8 |                 203   |                   308.3 |          146.9 |
-| Battery electric |   37.3 |                  51.2 |                    95.9 |           44.5 |
+| Battery electric |   41.4 |                  56.9 |                   106.5 |           49.4 |
 | Full hybrid      |  106.7 |                 149.7 |                   274.2 |          130.1 |
-| Plug-in hybrid   |   66.4 |                  69.5 |                   171.9 |           67.8 |
+| Plug-in hybrid   |   68.9 |                  74.1 |                   177.1 |           70.3 |
 
 ### Steps the engine cannot deliver (74 kW full-load curve)
 
 |                | NEDC                 | Francorchamps — eco   | Francorchamps — sport   | WLTC Class 3            |
 |:---------------|:---------------------|:----------------------|:------------------------|:------------------------|
-| Petrol         | —                    | 5 of 31, up to 38 kW  | 16 of 31, up to 90 kW   | 16 of 1800, up to 9 kW  |
-| Full hybrid    | 1 of 104, up to 1 kW | 2 of 31, up to 15 kW  | 8 of 31, up to 70 kW    | 27 of 1800, up to 11 kW |
-| Plug-in hybrid | 1 of 104, up to 2 kW | 2 of 31, up to 12 kW  | 6 of 31, up to 61 kW    | 32 of 1800, up to 13 kW |
+| Petrol         | —                    | 5 of 31, up to 38 kW  | 15 of 31, up to 90 kW   | 15 of 1800, up to 9 kW  |
+| Full hybrid    | 1 of 104, up to 1 kW | 2 of 31, up to 15 kW  | 8 of 31, up to 70 kW    | 25 of 1800, up to 11 kW |
+| Plug-in hybrid | 1 of 104, up to 2 kW | 2 of 31, up to 12 kW  | 6 of 31, up to 61 kW    | 31 of 1800, up to 13 kW |
 
 ## stage B
 
@@ -114,7 +123,7 @@ CO2 below always includes electricity at 250 g/kWh, so all four powertrains comp
 |:-----------------|:-------|:----------------------|:------------------------|:---------------|
 | Petrol           | 6.10   | 9.18                  | 13.95                   | 6.65           |
 | Battery electric | —      | —                     | —                       | —              |
-| Full hybrid      | 4.78   | 7.89                  | 13.78                   | 5.01           |
+| Full hybrid      | 4.78   | 7.89                  | 13.87                   | 5.02           |
 | Plug-in hybrid   | 1.99   | 1.40                  | 6.13                    | 2.09           |
 
 ### CO2 with electricity at 250 g/kWh (g/km)
@@ -122,17 +131,17 @@ CO2 below always includes electricity at 250 g/kWh, so all four powertrains comp
 |                  |   NEDC |   Francorchamps — eco |   Francorchamps — sport |   WLTC Class 3 |
 |:-----------------|-------:|----------------------:|------------------------:|---------------:|
 | Petrol           |  134.8 |                 203   |                   308.3 |          146.9 |
-| Battery electric |   37.3 |                  51.2 |                    95.9 |           44.5 |
-| Full hybrid      |  105.7 |                 174.4 |                   304.6 |          110.8 |
-| Plug-in hybrid   |   66.4 |                  72.2 |                   182.2 |           68.2 |
+| Battery electric |   41.4 |                  56.9 |                   106.5 |           49.4 |
+| Full hybrid      |  105.7 |                 174.4 |                   306.5 |          110.9 |
+| Plug-in hybrid   |   68.9 |                  76.7 |                   187.4 |           70.6 |
 
 ### Steps the engine cannot deliver (74 kW full-load curve)
 
 |                | NEDC                 | Francorchamps — eco   | Francorchamps — sport   | WLTC Class 3            |
 |:---------------|:---------------------|:----------------------|:------------------------|:------------------------|
-| Petrol         | —                    | 5 of 31, up to 38 kW  | 16 of 31, up to 90 kW   | 16 of 1800, up to 9 kW  |
-| Full hybrid    | —                    | 2 of 31, up to 15 kW  | 13 of 31, up to 70 kW   | 26 of 1800, up to 11 kW |
-| Plug-in hybrid | 1 of 104, up to 2 kW | 2 of 31, up to 12 kW  | 6 of 31, up to 61 kW    | 32 of 1800, up to 13 kW |
+| Petrol         | —                    | 5 of 31, up to 38 kW  | 15 of 31, up to 90 kW   | 15 of 1800, up to 9 kW  |
+| Full hybrid    | —                    | 2 of 31, up to 15 kW  | 8 of 31, up to 70 kW    | —                       |
+| Plug-in hybrid | 1 of 104, up to 2 kW | 2 of 31, up to 12 kW  | 6 of 31, up to 61 kW    | 31 of 1800, up to 13 kW |
 
 ## assignment
 
@@ -150,41 +159,54 @@ CO2 below always includes electricity at 250 g/kWh, so all four powertrains comp
 |                  |   NEDC |   Francorchamps — eco |   Francorchamps — sport |   WLTC Class 3 |
 |:-----------------|-------:|----------------------:|------------------------:|---------------:|
 | Petrol           |  134.1 |                 198.1 |                   308.2 |          145.1 |
-| Battery electric |   34.2 |                  46.3 |                    86.1 |           41.2 |
-| Full hybrid      |   98.7 |                 160.7 |                   276.8 |          104.7 |
-| Plug-in hybrid   |   55.7 |                  63.7 |                   185.5 |           56.7 |
+| Battery electric |   38   |                  51.5 |                    95.6 |           45.8 |
+| Full hybrid      |   98.7 |                 160.8 |                   276.7 |          104.8 |
+| Plug-in hybrid   |   58.7 |                  68.3 |                   190.2 |           59.7 |
 
 ### Steps the engine cannot deliver (74 kW full-load curve)
 
 |                | NEDC                 | Francorchamps — eco   | Francorchamps — sport   | WLTC Class 3            |
 |:---------------|:---------------------|:----------------------|:------------------------|:------------------------|
-| Petrol         | —                    | 5 of 31, up to 37 kW  | 15 of 31, up to 88 kW   | 16 of 1800, up to 9 kW  |
-| Full hybrid    | 1 of 104, up to 1 kW | 4 of 31, up to 19 kW  | 12 of 31, up to 74 kW   | 25 of 1800, up to 11 kW |
-| Plug-in hybrid | 1 of 104, up to 2 kW | 1 of 31, up to 6 kW   | 6 of 31, up to 63 kW    | 35 of 1800, up to 13 kW |
+| Petrol         | —                    | 5 of 31, up to 37 kW  | 15 of 31, up to 88 kW   | 15 of 1800, up to 9 kW  |
+| Full hybrid    | —                    | 3 of 31, up to 19 kW  | 8 of 31, up to 74 kW    | —                       |
+| Plug-in hybrid | 1 of 104, up to 2 kW | 1 of 31, up to 6 kW   | 6 of 31, up to 63 kW    | 34 of 1800, up to 13 kW |
 
 ## What each change moved
 
 - **Cited constants: about −17 % CO2 for every engine.** Petrol at 44.3 MJ/kg instead of the sheets' 39.6 cuts fuel 10.6 %. CO2 at 3.07 g per g of fuel, instead of the sheets' 3.32 (2392 g/l at 720 kg/m³), cuts a further 7.6 %. NEDC petrol moves less (−14.8 %) because it also changes from NEDC's prescribed shift speeds to the common ones, worth +1.9 %.
-- **The electric car does not move until the vehicle changes.** The regen cap stays (removing it would credit braking power far beyond any motor), and the 250 g/kWh grid factor was already applied in the comparison table.
+- **The charger loss adds 11 % to the electric car** (1/0.9) and to the plug-in hybrid's grid share. Its regeneration cap stays: removing it would credit braking power far beyond any motor.
 - **The sheets' hybrid efficiency shortcut hides fuel on Spa.** The sheets read the engine's efficiency at the whole demand, even when the motor supplies most of it, and a high reading flatters the engine. Reading it at the engine's own share adds 16.5 % fuel on the eco lap and 13.5 % on the sport lap. NEDC and WLTC barely move: there, the motor either covers the demand entirely or the engine covers most of it.
 - **Charge-sustaining pays on WLTC, not on Spa.** Compared with the sheets' rule with the efficiency read honestly, holding the battery in its band:
-  - saves 15.5 % on WLTC (5.93 → 5.01 l/100 km) and 1 % on NEDC;
-  - is level on the eco lap and saves 2 % on the sport lap.
+  - saves 15 % on WLTC (5.93 → 5.02 l/100 km) and 1 % on NEDC and on the sport lap;
+  - is level on the eco lap.
   
-  Against the sheets' rule as supplied, the eco lap is +16.5 %, but that is the efficiency shortcut above, not the strategy. On WLTC the band loads the engine towards its best point and stores the surplus for the urban phases. A 7 km lap of corners and climbs has little light-load driving for the stored energy to replace. Against the same rule starting at 60 % (the fair start), the band saves 25 % on NEDC, 23 % on WLTC and 8 % on the eco lap.
-- **The assignment sheet's vehicles favour the electric car and the plug-in hybrid.** The electric car is 237 kg lighter (22 kWh instead of 50) and emits 7–10 % less. The plug-in hybrid's 15 kWh battery nearly doubles its electric range on NEDC and WLTC, which cuts its weighted CO2 by 16 %. The petrol car barely changes: its 74 kW rating only rescales the efficiency curve.
+  On WLTC the band loads the engine towards its best point and stores the surplus for the urban phases. A 7 km lap of corners and climbs has little light-load driving for the stored energy to replace. Against the same rule starting at 60 % (the fair start), the band saves 25 % on NEDC, 23 % on WLTC and 8 % on the eco lap.
+- **The assignment sheet's vehicles favour the electric car and the plug-in hybrid.** The electric car is 237 kg lighter (22 kWh instead of 50) and emits 7–10 % less. The plug-in hybrid's 15 kWh battery nearly doubles its electric range on NEDC and WLTC, which cuts its weighted CO2 by about 15 %. The petrol car barely changes: its 74 kW rating only rescales the efficiency curve.
 
-## Feasibility
+## Feasibility, and laps the cars can drive
 
-No supplied sheet checks whether the engine can deliver what the trace asks. The model does, against the assignment sheet's full-load curve: power rising linearly to 5000 rpm, then 74 kW to 6000 rpm. This check does not change the figures above. Clipping the power would only make an infeasible lap look frugal, so the shortfall is reported instead.
+No supplied sheet checks whether the engine can deliver what the trace asks. The model does, against the assignment sheet's full-load curve: power rising linearly to 5000 rpm, then 74 kW to 6000 rpm. The check does not cut the figures in the four scenarios, because clipping would make an infeasible lap look frugal. On the supplied laps the shortfalls are:
 
-- **The sport lap is not the assignment's sport case.** The petrol car falls short on 16 of 31 steps, by up to 90 kW. The assignment wants the sport speed profile limited by engine power, with the braking points found by iteration. That needs the profile generator (the Phase 2 stretch, or direction 5).
-- **Even the eco lap is infeasible on 5 of 31 steps,** by up to 38 kW. The sheets choose the gear from speed alone, so the car accelerates in 4th at 2580 rpm, where the curve allows only ~38 kW. A driver would shift down, so this is the shift rule as much as the engine.
-- **WLTC is nearly feasible:** 16 of 1800 steps, by up to 9 kW, all low-rpm pulls in a high gear.
+- **sport lap:** the petrol car falls short on 15 of 31 steps, by up to 90 kW;
+- **eco lap:** 5 of 31 steps, by up to 38 kW, largely because the sheets choose the gear from speed alone;
+- **WLTC:** 15 of 1800 steps, by up to 9 kW.
+
+`pwt/model/profile.py` builds the laps the assignment describes instead:
+
+- **The corners are boundary conditions,** at the template speeds (16 and 17 are taken as straights).
+- **Eco:** accelerate at 0–100 km/h in 20 s, capped at 90 km/h and at what the engine gives (it cannot keep that rate up the climb out of Eau Rouge); brake at 0.4 g.
+- **Sport:** accelerate as hard as the 74 kW engine can in its best gear; brake at 0.6 g.
+- **Speed:** the lower of the two passes, on a 5 m grid around a closed lap.
+- **Gears:** shift down whenever the engine cannot deliver the step.
+
+The petrol car can drive both generated laps on every step. The table "Francorchamps, generated" above runs the four assignment vehicles on them:
+
+- **The supplied laps understate sport driving by a quarter.** The generated sport lap reaches 149 km/h on the Kemmel straight, where the template caps it at 130. Petrol emits 385 g/km against 308, and the lap is 13 s faster.
+- **The full hybrid's advantage shrinks on a lap it can drive.** It saves 19 % on the supplied eco lap but 9 % on the generated one, and almost nothing on the generated sport lap (383 against 385 g/km). Driven hard, its battery drains below the band, and a 25 kW motor recovers only a fraction of 0.6 g braking.
 
 ## What is still a modelling choice
 
 - **The hybrids' battery has no losses,** in either direction. Neither does the motor in the hybrid sheets; only the electric car has a motor map.
-- **Grid CO2 is per kWh drawn from the battery,** with no charger loss (no source yet; `docs/sources.md`).
-- **Gear choice is by speed alone,** which is behind the eco lap's infeasibility above.
+- **The charger efficiency of 90 % is an assumption** inside a measured range of roughly 64–95 % (`docs/sources.md`).
+- **The generated laps take the corner speeds as given.** A tyre-grip model would replace them with $v = \sqrt{\mu g R}$, but the templates give no radii.
 - **The assignment sheet gives no rolling resistance and no efficiency-curve shape.** The workbooks' values are kept (`pwt/model/fleet.py`).

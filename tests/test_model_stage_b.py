@@ -208,4 +208,4 @@ def test_phase2_scenarios():
         co2(exact, "bev", "franco_sport") / 0.9
     )
     assert co2(stage_b, "hybrid", "wltc") < co2(harm, "hybrid", "wltc")
-    assert shortfall[("petrol", "franco_sport")][0] == 16
+    assert shortfall[("petrol", "franco_sport")][0] == 15  # steps short by over 0.1 kW

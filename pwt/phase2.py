@@ -32,6 +32,8 @@ SCENARIOS = ("exact", "harmonised", "stage B", "assignment")
 GRID = 250.0
 RATED_W = 74_000.0
 BAND_SOC0 = 0.6
+#: Shortfalls below this are discretisation, not a car that cannot follow the trace.
+SHORTFALL_NOISE_W = 100.0
 
 
 def _source(powertrain: str, cycle: str):
@@ -84,7 +86,8 @@ def _shortfall(powertrain, cycle, vehicle, cyc, scenario, soc0=None) -> tuple[in
     short = _simulate(powertrain, cycle, vehicle, cyc, scenario, soc0, capability=True).steps[
         "shortfall_w"
     ]
-    return int((short > 0).sum()), float(short.max()) / 1000
+    short = short[short > SHORTFALL_NOISE_W]
+    return int(len(short)), float(short.max()) / 1000 if len(short) else 0.0
 
 
 def _cell(powertrain, cycle, variant, result) -> Cell:
@@ -212,7 +215,7 @@ def generated_laps() -> pd.DataFrame:
             short, worst = _shortfall(powertrain, mode, vehicle, cyc, "assignment")
             text = f"{cell.co2_eu_grid:.1f}"
             if short:
-                text += f" (short on {short} steps, ≤ {worst:.1f} kW)"
+                text += f" (short on {short} step{'s' if short > 1 else ''}, ≤ {worst:.0f} kW)"
             rows[label][name] = text
         supplied = scenario_cells("assignment")[0]
         template = track(mode).template_time_s

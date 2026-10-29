@@ -71,14 +71,14 @@ Detailed task list: `docs/superpowers/plans/2026-10-29-python-model.md`. Code in
 
 **Stage B — change behaviour,** each tested against the stage A figure:
 
-- [x] **Engine capability:** full-load curve (linear to 5000 rpm, 74 kW plateau). Reported as a shortfall beside the figures, not used to cut them: an infeasible trace clipped would only look frugal. The sport lap is short on 16 of 31 steps.
+- [x] **Engine capability:** full-load curve (linear to 5000 rpm, 74 kW plateau). Reported as a shortfall beside the figures, not used to cut them: an infeasible trace clipped would only look frugal. The sport lap is short on 15 of 31 steps (by more than 0.1 kW).
 - [x] **Full hybrid holds charge** (50–70 % band). Saves 15 % on WLTC. Along the way it exposed a sheet shortcut: hybrid efficiency is read at the whole demand, which hides 16.5 % fuel on the eco lap.
-- [x] **One set of cited constants:** IPCC 2006 heating value and CO2 factor, density 750, grid 250/73 (`docs/sources.md`). About −17 % CO2 for every engine.
+- [x] **One set of cited constants:** IPCC 2006 heating value and CO2 factor, density 750, grid 250/73, 90 % charger (`docs/sources.md`). About −17 % CO2 for every engine; +11 % for the electric car's grid side.
 - [x] **Two vehicle sets:** the workbooks' and the assignment sheet's (`pwt/model/fleet.py`).
 
 **Checkpoint (bring to TD1, Wed 4 Nov):** `docs/phase-2-results.md` — the 4 × 4 table four ways, the full hybrid's change step by step, and where each engine cannot follow its trace.
 
-**Stretch, or direction 5:** generate the Francorchamps speed profiles from the assignment's rules (corner speed from tyre friction; eco: 0–100 km/h in 20 s, 0.4 g, 90 km/h cap; sport: engine-limited, 0.6 g, iterate the braking points). *6–8 h*
+- [x] **Stretch — generated Francorchamps laps** (`pwt/model/profile.py`): corner speeds as boundary conditions, eco and sport rules, braking points by forward/backward passes. The petrol car can drive both on every step; the supplied sport lap understates sport CO2 by a quarter. Direction 5 (tyre grip and downforce → corner speed) can now feed corner speeds straight into it.
 
 ## Phase 3 — headline analysis (by Fri 20 Nov)
 
@@ -107,4 +107,4 @@ Detailed task list: `docs/superpowers/plans/2026-10-29-python-model.md`. Code in
 | Recharge battery during the cycle; separate engine and grid energy | Phase 2 — done (charge-sustaining band; R101 with grid CO2) |
 | Powertrain size | Direction 3 |
 | One personal study per student (assignment sheet) | Phase 3 — one direction each |
-| Sport case limited by engine power | Shortfall measured (Phase 2); profile generator still to do (stretch / direction 5) |
+| Sport case limited by engine power | Phase 2 — done (generated sport lap, feasible on every step) |
