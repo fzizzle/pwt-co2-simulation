@@ -10,7 +10,7 @@ titles contradict their filename and contents:
 Trusting the title would file those runs under the wrong cycle and driving style, so the
 catalog is the source of truth and the title is kept only for display.
 
-Ten of the 22 supplied files carry no run: `02`, `03`, `04`, `31`, `36` are empty cycle
+Eleven of the 23 supplied files carry no run: `02`, `03`, `04`, `31`, `36` are empty cycle
 templates, `05` is an engine-efficiency reference, and the PDFs/PPTX/DOCX are documents.
 """
 
