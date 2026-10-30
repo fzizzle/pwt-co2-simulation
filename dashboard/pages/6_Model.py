@@ -35,6 +35,8 @@ SCENARIO_NOTES = {
     "stage B": "Harmonised; hybrid engine efficiency read at the engine's share; the full "
                "hybrid holds its battery in a 50–70 % band.",
     "assignment": "Stage B with the assignment sheet's vehicles instead of the workbooks'.",
+    "storage losses": "Assignment, with 85 % one way through the hybrids' motor, inverter "
+                      "and battery.",
 }
 CYCLE_CHOICES = {**CYCLE_LABELS, "franco_eco_generated": "Francorchamps — eco, generated",
                  "franco_sport_generated": "Francorchamps — sport, generated"}
@@ -64,9 +66,9 @@ st.markdown(
     "for every powertrain, so the four compare on one footing."
 )
 
-# --- the four scenarios ---------------------------------------------------------------------
+# --- the five scenarios ---------------------------------------------------------------------
 
-st.subheader("Four scenarios, g CO₂/km")
+st.subheader("Five scenarios, g CO₂/km")
 for scenario, note in SCENARIO_NOTES.items():
     st.markdown(f"- **{scenario}** — {note}")
 table = comparison()
@@ -97,7 +99,7 @@ cycle = middle.selectbox("Cycle", list(CYCLE_ORDER) + list(GENERATED),
 scenario = right.selectbox("Scenario", list(SCENARIOS), index=2, key="model_scenario",
                            disabled=cycle in GENERATED)
 if cycle in GENERATED:
-    st.caption("A generated lap has no workbook, so it runs as the assignment scenario.")
+    st.caption("A generated lap has no workbook, so it only exists with the assignment vehicles.")
 if powertrain == "phev" and cycle in ("nedc", "wltc"):
     st.caption("The plug-in hybrid's charge-depleting run (from 98 %); the scenario table "
                "weights it with the charge-sustaining run.")

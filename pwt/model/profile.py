@@ -134,8 +134,12 @@ def _accelerate(vehicle: Vehicle, rules: Rules, v0: float, slope: float, ds: flo
     return v1
 
 
-def generate(mode: str, vehicle: Vehicle, ds: float = 5.0) -> Cycle:
-    """The `mode` lap ("eco" or "sport") as `vehicle` can drive it, every `ds` metres."""
+def generate(mode: str, vehicle: Vehicle, ds: float = 5.0, corner_speed=None) -> Cycle:
+    """The `mode` lap ("eco" or "sport") as `vehicle` can drive it, every `ds` metres.
+
+    `corner_speed(distance_m, speed_ms)`, if given, replaces each template corner speed, so
+    a tyre or downforce study can feed its own in.
+    """
     rules = RULES[mode]
     lap = track(mode)
     s = np.arange(0.0, lap.distance[-1] + ds / 2, ds)
@@ -147,7 +151,7 @@ def generate(mode: str, vehicle: Vehicle, ds: float = 5.0) -> Cycle:
     cap = np.full(n, rules.vmax_ms)
     for dist, speed in lap.corners.items():
         i = int(round(dist / ds))
-        cap[i] = min(cap[i], speed)
+        cap[i] = min(cap[i], corner_speed(dist, speed) if corner_speed else speed)
 
     # The lap is closed: the last grid point is the first. Both passes run over the m unique
     # points twice, so each lap's start inherits its end; the second lap is kept.

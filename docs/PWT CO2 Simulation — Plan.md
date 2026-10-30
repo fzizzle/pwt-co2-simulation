@@ -33,6 +33,9 @@ Ranked. The first is compulsory; pick one of 2–4 as the group's headline analy
 | 5 | **Cornering speed → sport lap**: tyre grip and spoiler downforce raise corner speed; feed that back into the Francorchamps sport trace | Links vehicle dynamics (L4) to CO2; uses the trajectory sheet | 8 h | Medium |
 | 6 | **Technology review**: hydrogen, e-fuels, bio-fuels | Low risk, no modelling; L6 (H2) is only on 30 Nov | 5 h | Low |
 
+> [!note] Superseded for Phase 3
+> The Brief requires one personal study per student, so Phase 3 is three studies, not one headline. See Phase 3 below.
+
 > [!tip] Recommendation
 > **1 + 2, with 3 or 4 as the finished analysis.** Once the model runs in Python, 3 and 4 are loops over parameters, not new spreadsheets. With three people: one builds the highway files (1), one ports and extends the model (2), one owns the sweep and the figures (3 or 4). Direction 2 suits you — it is a programming job with a mechanics check on every line.
 
@@ -82,8 +85,12 @@ Detailed task list: `docs/superpowers/plans/2026-10-29-python-model.md`. Code in
 
 ## Phase 3 — headline analysis (by Fri 20 Nov)
 
-- [ ] **Direction 3:** sweep battery 1–20 kWh and motor 20–80 kW on each cycle; battery mass from the workbooks' own rule (160 Wh/kg plus fixed mass). Plot g CO2/km against battery size. *4 h*
-- [ ] *or* **Direction 4:** ±10 % on each parameter, one at a time, per technology and cycle; tornado chart. *3 h*
+Three personal studies, one owner each. Owners still to be agreed.
+
+- [x] **Shared groundwork:** hybrid storage losses (85 % each way, an assumption), motor mass by size, sweep harness (`pwt/sweep.py`), corner-speed hook in `generate`.
+- [x] **Study A, direction 3 (owner assumed Phred):** battery 1–20 kWh by motor 20–80 kW on each cycle at 150 Wh/kg → `docs/phase-3-sizing.md`. Storage losses overturn the band's Phase 2 saving. Next: re-tune the band for storage losses.
+- [ ] **Study B, direction 4:** ±10 % on each parameter, one at a time, per technology and cycle; tornado chart. Use `pwt.sweep.sweep`. *3 h*
+- [ ] **Study C, direction 5:** tyre grip and downforce → corner speed → lap. Use `generate(corner_speed=...)`. Grip needs no radii ($v \propto \sqrt{\mu}$); for downforce take $R = v_0^2/(\mu_0 g)$ for an assumed $\mu_0$. *8 h*
 - [ ] **Write the "influence of modelling" slide:** what each correction from Phase 1 changed. *1 h*
 
 ## Phase 4 — presentation (draft by Sun 22 Nov, rehearse Fri 27 Nov)
@@ -105,6 +112,6 @@ Detailed task list: `docs/superpowers/plans/2026-10-29-python-model.md`. Code in
 | Highway "must be done" | Phase 1, direction 1 — done (`data/derived/WLTC3 *.xlsx`) |
 | Create NEDC hybrid files | Phase 1 — done (NEDC PHEV charge-depleting and charge-sustaining) |
 | Recharge battery during the cycle; separate engine and grid energy | Phase 2 — done (charge-sustaining band; R101 with grid CO2) |
-| Powertrain size | Direction 3 |
+| Powertrain size | Study A, done (`docs/phase-3-sizing.md`) |
 | One personal study per student (assignment sheet) | Phase 3 — one direction each |
 | Sport case limited by engine power | Phase 2 — done (generated sport lap, feasible on every step) |

@@ -133,7 +133,11 @@ def hybrid(frame: pd.DataFrame, vehicle: Vehicle, conv: Conventions, strategy=No
             engine_rads=omega[i],
         )
         fact[i] = share
-        soc[i] = soc[i - 1] - (share * battv[i] - charge_wh) / vehicle.battery_wh
+        out_wh = share * battv[i] - charge_wh
+        stored_wh = out_wh / conv.storage_efficiency if out_wh > 0 else (
+            out_wh * conv.storage_efficiency
+        )
+        soc[i] = soc[i - 1] - stored_wh / vehicle.battery_wh
 
     if conv.capability:
         # Clip the engine's share at its full-load curve; the motor's share is unchanged.
@@ -166,10 +170,11 @@ def hybrid(frame: pd.DataFrame, vehicle: Vehicle, conv: Conventions, strategy=No
     recharge = None
     if conv.fictive_recharge:
         wh = vehicle.battery_wh * (soc[0] - soc[-1])
-        g = wh * conv.fictive_g_per_wh / vehicle.eta_max if wh > 0 else 0.0
+        engine_wh_needed = wh / conv.storage_efficiency if wh > 0 else wh
+        g = engine_wh_needed * conv.fictive_g_per_wh / vehicle.eta_max if wh > 0 else 0.0
         litres = g / vehicle.fuel_density
         recharge = {
-            "energy_wh": wh,
+            "energy_wh": engine_wh_needed,
             "batt_soc": soc[-1] + wh / vehicle.battery_wh,
             "qfuel_g": g,
             "qfuel_l": litres,

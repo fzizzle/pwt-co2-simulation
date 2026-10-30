@@ -204,9 +204,25 @@ The petrol car can drive both generated laps on every step. The table "Francorch
 - **The supplied laps understate sport driving by a quarter.** The generated sport lap reaches 149 km/h on the Kemmel straight, where the template caps it at 130. Petrol emits 385 g/km against 308, and the lap is 13 s faster.
 - **The full hybrid's advantage shrinks on a lap it can drive.** It saves 19 % on the supplied eco lap but 9 % on the generated one, and almost nothing on the generated sport lap (383 against 385 g/km). Driven hard, its battery drains below the band, and a 25 kW motor recovers only a fraction of 0.6 g braking.
 
+## Slide content: the influence of modelling
+
+Each row is one modelling choice, with what it moved.
+
+| Choice | Effect |
+|---|---|
+| Cited heating value and CO2 factor | −17 % CO2 for every engine |
+| 90 % charger | +11 % for the electric car |
+| Hybrid engine efficiency read at the engine's share | +16.5 % fuel on the eco lap, +13.5 % on the sport lap |
+| Laps the cars can drive, not the supplied ones | +25 % sport CO2 (petrol 308 → 385 g/km) |
+| Assignment sheet's vehicles | −7 to −10 % for the electric car; petrol barely changes |
+| Charge-sustaining band, free storage | −15 % fuel on WLTC |
+| 15 % storage loss each way | +23 % full hybrid CO2 on WLTC (104.8 → 128.8 g/km), behind the sheets' rule |
+
+The message: the ranking petrol > full hybrid > plug-in hybrid > electric survives on the regulatory cycles, but the size of the full hybrid's gain depends on what the model assumes about storage.
+
 ## What is still a modelling choice
 
-- **The hybrids' battery has no losses,** in either direction. Neither does the motor in the hybrid sheets; only the electric car has a motor map.
+- **The hybrids' battery has no losses,** in either direction, in the four scenarios above. Neither does the motor in the hybrid sheets; only the electric car has a motor map. This flatters them heavily: with a 15 % loss each way, `python -m pwt.phase2` adds a "storage losses" scenario and the full hybrid rises from 104.8 to 128.8 g/km on WLTC, behind the sheets' rule. See `docs/phase-3-sizing.md`, which supersedes the band saving quoted above.
 - **The charger efficiency of 90 % is an assumption** inside a measured range of roughly 64–95 % (`docs/sources.md`).
 - **The generated laps take the corner speeds as given.** A tyre-grip model would replace them with $v = \sqrt{\mu g R}$, but the templates give no radii.
 - **The assignment sheet gives no rolling resistance and no efficiency-curve shape.** The workbooks' values are kept (`pwt/model/fleet.py`).

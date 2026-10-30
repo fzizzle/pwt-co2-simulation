@@ -5,6 +5,7 @@
 3. **stage B** — harmonised; hybrid engine efficiency read at the engine's share of the
    demand rather than all of it; the full hybrid charge-sustaining.
 4. **assignment** — stage B with the assignment sheet's vehicles instead of the workbooks'.
+5. **storage losses** — assignment, with a loss each way through motor, inverter and battery.
 
 Engine capability does not change these figures: clipping power the car cannot deliver
 would only make an infeasible trace look frugal. It is reported beside them instead, as the
@@ -24,11 +25,14 @@ from pwt.checkpoint import CYCLE_LABELS, CYCLE_ORDER, Cell, _r101, cells, make_c
 from pwt.derived import PHEV_ENGINE_SOC, SPECS, read_derived
 from pwt.model import Cycle, Vehicle, simulate
 from pwt.model import fleet
+from pwt.model.constants import STORAGE_EFFICIENCY
 from pwt.model.conventions import harmonised
 from pwt.model.strategy import NelisStrategy, SocBandStrategy
 from pwt.workbook import read_run
 
-SCENARIOS = ("exact", "harmonised", "stage B", "assignment")
+SCENARIOS = ("exact", "harmonised", "stage B", "assignment", "storage losses")
+#: Scenarios that drive the assignment sheet's vehicles.
+ASSIGNMENT_VEHICLES = ("assignment", "storage losses")
 GRID = 250.0
 RATED_W = 74_000.0
 BAND_SOC0 = 0.6
@@ -49,7 +53,7 @@ def _source(powertrain: str, cycle: str):
 
 
 def _vehicle(powertrain: str, run, scenario: str) -> Vehicle:
-    if scenario == "assignment":
+    if scenario in ASSIGNMENT_VEHICLES:
         soc0 = None
         if powertrain in ("hybrid", "phev"):
             soc0 = Vehicle.from_run(run).soc0 if run is not None else (
@@ -66,8 +70,10 @@ def _vehicle(powertrain: str, run, scenario: str) -> Vehicle:
 
 def _simulate(powertrain, cycle, vehicle, cyc, scenario, soc0=None, capability=False):
     conv = replace(harmonised(cyc.kind, powertrain, GRID), capability=capability)
+    if scenario == "storage losses":
+        conv = replace(conv, storage_efficiency=STORAGE_EFFICIENCY)
     strategy = None
-    if scenario in ("stage B", "assignment"):
+    if scenario in ("stage B", *ASSIGNMENT_VEHICLES):
         if powertrain == "hybrid":
             strategy = SocBandStrategy()
             vehicle = replace(vehicle, soc0=BAND_SOC0)
@@ -96,6 +102,26 @@ def _cell(powertrain, cycle, variant, result) -> Cell:
                      h["co2_g_km"], result.cycle.name, result.conventions.charger_efficiency)
 
 
+def powertrain_cells(powertrain, cycle, vehicle, cyc, scenario) -> tuple[list[Cell], tuple]:
+    """One vehicle on one cycle: its cells (headline first) and its shortfall.
+
+    The plug-in hybrid on NEDC and WLTC is the R101 weighting of its two runs, listed after it.
+    """
+    if powertrain == "phev" and cycle in ("nedc", "wltc"):
+        cd = _cell(powertrain, cycle, "cd",
+                   _simulate(powertrain, cycle, vehicle, cyc, scenario, soc0=0.98))
+        cs = _cell(powertrain, cycle, "cs",
+                   _simulate(powertrain, cycle, vehicle, cyc, scenario, soc0=PHEV_ENGINE_SOC))
+        usable = vehicle.battery_wh * (0.98 - PHEV_ENGINE_SOC)
+        return [_r101(cd, cs, usable), cd, cs], _shortfall(
+            powertrain, cycle, vehicle, cyc, scenario, soc0=PHEV_ENGINE_SOC
+        )
+    result = _simulate(powertrain, cycle, vehicle, cyc, scenario)
+    return [_cell(powertrain, cycle, "", result)], _shortfall(
+        powertrain, cycle, vehicle, cyc, scenario
+    )
+
+
 def scenario_cells(scenario: str) -> tuple[list[Cell], dict]:
     """Cells for one scenario, and each engine cell's shortfall against its full-load curve."""
     if scenario == "exact":
@@ -108,21 +134,10 @@ def scenario_cells(scenario: str) -> tuple[list[Cell], dict]:
             kind = "distance" if cycle.startswith("franco") else "time"
             cyc = Cycle.from_run(run, kind, name=run.source_file)
             vehicle = _vehicle(powertrain, run, scenario)
-            if powertrain == "phev" and cycle in ("nedc", "wltc"):
-                cd = _cell(powertrain, cycle, "cd",
-                           _simulate(powertrain, cycle, vehicle, cyc, scenario, soc0=0.98))
-                cs = _cell(powertrain, cycle, "cs",
-                           _simulate(powertrain, cycle, vehicle, cyc, scenario,
-                                     soc0=PHEV_ENGINE_SOC))
-                usable = vehicle.battery_wh * (0.98 - PHEV_ENGINE_SOC)
-                out += [_r101(cd, cs, usable), cd, cs]
-                shortfall[(powertrain, cycle)] = _shortfall(
-                    powertrain, cycle, vehicle, cyc, scenario, soc0=PHEV_ENGINE_SOC
-                )
-                continue
-            result = _simulate(powertrain, cycle, vehicle, cyc, scenario)
-            out.append(_cell(powertrain, cycle, "", result))
-            shortfall[(powertrain, cycle)] = _shortfall(powertrain, cycle, vehicle, cyc, scenario)
+            rows, shortfall[(powertrain, cycle)] = powertrain_cells(
+                powertrain, cycle, vehicle, cyc, scenario
+            )
+            out += rows
     return out, shortfall
 
 
@@ -154,7 +169,7 @@ def result_for(powertrain: str, cycle: str, scenario: str):
     """One powertrain on one cycle under one scenario, as a full `Result` (steps included).
 
     The plug-in hybrid on NEDC and WLTC is its charge-depleting run. On a generated lap the
-    exact scenario does not exist (no workbook), so it runs as "assignment".
+    only the assignment vehicles exist, so any other scenario runs as "assignment".
     """
     from pwt.model import from_workbook
     from pwt.model.profile import generate
@@ -162,7 +177,8 @@ def result_for(powertrain: str, cycle: str, scenario: str):
     if cycle in GENERATED:
         vehicle = _vehicle(powertrain, None, "assignment")
         cyc = generate(GENERATED[cycle], fleet.petrol())
-        return _simulate(powertrain, cycle, vehicle, cyc, "assignment")
+        scenario = scenario if scenario in ASSIGNMENT_VEHICLES else "assignment"
+        return _simulate(powertrain, cycle, vehicle, cyc, scenario)
     run = _source(powertrain, cycle)
     if scenario == "exact":
         return from_workbook(run)

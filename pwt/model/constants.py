@@ -25,3 +25,7 @@ GRID_G_PER_KWH = {"EU": 250.0, "FR": 73.0}
 #: AC charging losses of 12-36 % (Apostolaki-Iosifidou, Codani & Kempton, Energy 127, 2017)
 #: and 5-7 % on an 11-22 kW wallbox to 13-24 % on a 2.3 kW socket (ADAC, 2026).
 CHARGER_EFFICIENCY = 0.90
+
+#: One way through motor, inverter and battery. An assumption: 0.85² is about the 70 %
+#: round-trip regenerative braking efficiency Boretti reports (SAE 2013-01-2872).
+STORAGE_EFFICIENCY = 0.85

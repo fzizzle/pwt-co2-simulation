@@ -12,6 +12,12 @@ from pwt.model.vehicle import Vehicle
 #: Wh per kg: the sheet's 150 Wh/kg, cell-level (the workbooks double it for the pack).
 BATTERY_WH_PER_KG = 150.0
 
+#: Traction drive specific power, the DOE target in `docs/sources.md`. Motor size must cost
+#: mass or a sweep would always pick the biggest.
+DRIVE_KW_PER_KG = 1.4
+#: Fixed so that 35 kW weighs the sheet's 100 kg.
+MACHINE_FIXED_KG = 100.0 - 35.0 / DRIVE_KW_PER_KG
+
 _BODY = dict(
     wheel_diameter_m=0.6345,  # 195-65-R15, 634.5 mm
     m_driver=80.0,
@@ -41,6 +47,11 @@ _NOTES = (
 )
 
 
+def machine_mass_kg(motor_kw: float) -> float:
+    """Motor, inverter and fittings: the sheet's +100 kg at the midpoint of its 25-45 kW."""
+    return MACHINE_FIXED_KG + motor_kw / DRIVE_KW_PER_KG
+
+
 def petrol() -> Vehicle:
     return Vehicle(family="ice", m_vehicle=1280.0, notes=_NOTES, **_BODY, **_ENGINE)
 
@@ -68,4 +79,14 @@ def plugin(soc0: float = 0.98) -> Vehicle:
         family="hybrid", m_vehicle=1280.0, m_machine=100.0,
         m_battery=15_000.0 / BATTERY_WH_PER_KG, battery_wh=15_000.0, p_motor_w=45_000.0,
         soc0=soc0, notes=_NOTES, **_BODY, **_ENGINE,
+    )
+
+
+def sized_hybrid(battery_kwh: float, motor_kw: float, soc0: float = 0.98,
+                 wh_per_kg: float = BATTERY_WH_PER_KG) -> Vehicle:
+    """The petrol car with any battery and motor, each carrying its own mass."""
+    return Vehicle(
+        family="hybrid", m_vehicle=1280.0, m_machine=machine_mass_kg(motor_kw),
+        m_battery=battery_kwh * 1000.0 / wh_per_kg, battery_wh=battery_kwh * 1000.0,
+        p_motor_w=motor_kw * 1000.0, soc0=soc0, notes=_NOTES, **_BODY, **_ENGINE,
     )
