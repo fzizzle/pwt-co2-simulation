@@ -11,10 +11,12 @@ full hybrid and plug-in hybrid over NEDC, Spa-Francorchamps (eco and sport) and 
 |---|---|
 | `data/course-files/` | The 23 files Nelis supplied, unchanged — the 22 handed out at L3 plus the assignment sheet, `1 Simulation of cars on driving cycles.pdf`. Read-only: never edit these. |
 | `data/derived/` | Workbooks built from the supplied ones by `python -m pwt.derived`: WLTC for all four powertrains, and the plug-in hybrid's charge-depleting and charge-sustaining runs. |
+| `data/track/` | The Spa-Francorchamps outline from [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits), with its MIT licence. |
 | `docs/` | Snapshot of the brief and plan, plus `model-equations.md` (every column as an equation) and `phase-1-results.md` (the 4 × 4 table). The live brief and plan are in the vault, `40 Projects/PWT CO2 Simulation/`. |
-| `pwt/` | Reader for the supplied workbooks, the derived-workbook builder and the checkpoint tables. No Streamlit import — a plain library. |
-| `dashboard/` | Streamlit app for exploring what the workbooks contain. |
-| `tests/` | Golden tests: the reader must reproduce each workbook's totals before anything changes. |
+| `pwt/` | Reader for the supplied workbooks, the derived-workbook builder, the checkpoint tables and the sweeps. No Streamlit import — a plain library. |
+| `pwt/model/` | The spreadsheet model in Python (see below). |
+| `dashboard/` | Streamlit app for exploring the workbooks and the model. |
+| `tests/` | Golden tests: the reader and the model must reproduce each workbook's totals before anything changes. |
 
 ## The dashboard
 
@@ -33,9 +35,9 @@ invite-only — teammates need their email added under *Settings → Sharing* be
 works for them. It sleeps after extended inactivity; the next visitor waits ~30 s for it to
 wake, so open it once before any session where you need it immediately.
 
-An **internal viewer, not a project deliverable**. It shows the supplied figures exactly as the
-workbooks report them — no unit conversion, no recomputation, no corrections, no conclusions.
-Analysis belongs to the Python model phase, which is separate work.
+An **internal viewer, not a project deliverable**. Five of its eight pages show the supplied figures
+exactly as the workbooks report them — no unit conversion, no recomputation, no corrections, no
+conclusions. The **Model**, **Sizing** and **Track map** pages are the exceptions: they show what `pwt.model` computes.
 
 Run it locally with:
 
@@ -45,10 +47,10 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Six pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
+Eight pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
 one category together — all the petrols, all the NEDC runs, all the sport runs), **Trace
 Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
-listed first), **Data** (the raw datasets as plain tables), and **Model** (what `pwt.model` computes — the one page that is not pass-through). Every table has a CSV download.
+listed first), **Data** (the raw datasets as plain tables), **Model** (what `pwt.model` computes), **Sizing** (the hybrid sizing findings, one chart each), and **Track map** (a generated lap on the real circuit, animated). Every table has a CSV download.
 
 A category is a slice of the 4×3 grid along one field: powertrain (4 categories of 3) or cycle
 (3 categories of 4). Driving style is not a third axis — it maps 1:1 onto cycle today, so "all the
@@ -99,7 +101,11 @@ them separately, which is how anything gets changed:
 | `constants.py`, `fleet.py` | Cited constants (`docs/sources.md`) and the assignment sheet's vehicles |
 | `profile.py` | Francorchamps laps generated from the assignment's eco and sport rules |
 
-`python -m pwt.phase2` prints the four-scenario comparison in `docs/phase-2-results.md`; the
+`python -m pwt.sweep` runs the hybrid sizing study in `docs/phase-3-sizing.md`. Its `sweep()`
+takes any set of `Vehicle` variants, for other parameter studies. `generate(...,
+corner_speed=...)` replaces the template corner speeds, for tyre and downforce studies.
+
+`python -m pwt.phase2` prints the five-scenario comparison in `docs/phase-2-results.md`; the
 dashboard's **Model** page shows it, the generated laps, and any single run. Reboot the
 Cloud app after deploying this — the page imports `pwt.model`, which a running app has not
 loaded.

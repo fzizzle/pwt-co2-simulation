@@ -43,6 +43,9 @@ class Conventions:
     grid_g_per_kwh: float | None = None
     #: Battery energy per unit of grid energy; the sheets count no charger loss.
     charger_efficiency: float = 1.0
+    #: Hybrids: one way through motor, inverter and battery, either direction. The sheets
+    #: count no loss, so storing energy is free in them.
+    storage_efficiency: float = 1.0
     #: Francorchamps EV totals: CO2/km over the distance at the second-to-last point, and
     #: Wh/100 km over a hard-coded 7 km.
     ev_franco_totals: bool = False
