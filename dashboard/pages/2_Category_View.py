@@ -32,6 +32,7 @@ from dashboard.layout import (
 )
 from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import POWERTRAIN_ORDER, style_axes
+from dashboard.track_charts import is_lap, lap_section, mark_corners
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
 pal = configure("Category view")
@@ -166,6 +167,10 @@ else:
     )
     style_axes(fig, pal, x_title=X_LABELS[x_column], y_title=column)
     fig.update_layout(height=420)
+    cycles = set(members["cycle"])
+    # Eco and sport reach a corner at different times, so only distance suits both.
+    if all(is_lap(c) for c in cycles) and (x_column == "distance_m" or len(cycles) == 1):
+        mark_corners(fig, traces[0], x_column, pal)
     st.plotly_chart(fig, width="stretch", theme=None)
 
     if member_dashes:
@@ -184,6 +189,12 @@ else:
             "These runs are on different cycles, so the x-axes cover different ground: the "
             "Francorchamps lap is 7 km, NEDC about 11 km."
         )
+
+laps = {name: trace for name, trace, cycle in zip(member_names, traces, members["cycle"])
+        if is_lap(cycle)}
+if laps:
+    st.subheader("On the circuit")
+    lap_section(laps, "category", pal)
 
 # --- what differs ------------------------------------------------------------------------------
 

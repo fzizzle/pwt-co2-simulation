@@ -26,6 +26,7 @@ from dashboard.layout import (
 )
 from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import style_axes
+from dashboard.track_charts import is_lap, lap_section, mark_corners
 
 pal = configure("Compare")
 runs = load_runs()
@@ -143,6 +144,10 @@ fig = charts.compare_traces(
 )
 style_axes(fig, pal, x_title=X_LABELS.get(x_column, x_column), y_title=column)
 fig.update_layout(height=420)
+both_laps = is_lap(left_row["cycle"]) and is_lap(right_row["cycle"])
+# Eco and sport reach a corner at different times, so only distance suits both.
+if both_laps and (x_column == "distance_m" or left_row["cycle"] == right_row["cycle"]):
+    mark_corners(fig, left_trace, x_column, pal)
 st.plotly_chart(fig, width="stretch", theme=None)
 
 if left_row["cycle"] != right_row["cycle"]:
@@ -158,3 +163,9 @@ elif (
         f"Both runs report the same {column} at every step, so the two lines coincide — "
         "these workbooks drive the identical cycle."
     )
+
+laps = {name: t for name, t, r in ((left_name, left_trace, left_row),
+                                   (right_name, right_trace, right_row)) if is_lap(r["cycle"])}
+if laps:
+    st.subheader("On the circuit")
+    lap_section(laps, "compare", pal)

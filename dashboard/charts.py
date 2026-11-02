@@ -30,6 +30,13 @@ GAP_LABEL = "electricity not counted"
 #: colour. Position determines pattern, so a member keeps its pattern as the selection changes.
 DASH_CYCLE: tuple[str, ...] = ("solid", "dash", "dot", "dashdot")
 
+MAX_MARKED_STEPS = 200
+
+
+def _mode(trace: pd.DataFrame) -> str:
+    """Markers show a workbook's segments; on a 5 m lap their halos would hide the line."""
+    return "lines+markers" if len(trace) <= MAX_MARKED_STEPS else "lines"
+
 
 def _rgba(hex_colour: str, alpha: float) -> str:
     """A hex colour as rgba(), so fills track the active palette."""
@@ -124,7 +131,7 @@ def trace_lines(
             name=column,
             x=trace[x_column],
             y=trace[column],
-            mode="lines+markers",
+            mode=_mode(trace),
             line=dict(color=colour, width=LINE_WIDTH),
             marker=dict(size=MARKER_SIZE, color=colour, line=dict(color=pal.surface, width=2)),
             hovertemplate=f"<b>{column}</b><br>{x_column} %{{x:.4g}}<br>%{{y:.4g}}<extra></extra>",
@@ -155,7 +162,7 @@ def speed_and_altitude(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.F
         name="Speed (kph)",
         x=trace[x_column],
         y=trace["speed_kph"],
-        mode="lines+markers",
+        mode=_mode(trace),
         line=dict(color=pal.series[0], width=LINE_WIDTH, shape="linear"),
         marker=dict(size=MARKER_SIZE, color=pal.series[0], line=dict(color=pal.surface, width=2)),
         hovertemplate="Speed %{y:.1f} kph<extra></extra>",
@@ -194,7 +201,7 @@ def gear_steps(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.Figure:
         name="Gear",
         x=trace[x_column],
         y=trace["gear"],
-        mode="lines+markers",
+        mode=_mode(trace),
         line=dict(color=pal.series[1], width=LINE_WIDTH, shape="hv"),
         marker=dict(size=MARKER_SIZE, color=pal.series[1], line=dict(color=pal.surface, width=2)),
         hovertemplate="Gear %{y}<extra></extra>",
