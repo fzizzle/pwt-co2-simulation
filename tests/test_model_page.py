@@ -40,6 +40,11 @@ def test_one_run_renders(app, powertrain, cycle):
     assert len(app.metric) == 3
 
 
+def test_the_page_opens_on_a_lap_with_its_map():
+    app = AppTest.from_file(MODEL, default_timeout=180).run()
+    assert [b.label for b in app.button_group] == ["Paint the track with"]
+
+
 def test_the_map_comes_with_laps_only(app):
     app.selectbox(key="model_cycle").set_value("franco_eco").run()
     assert [b.label for b in app.button_group] == ["Paint the track with"]

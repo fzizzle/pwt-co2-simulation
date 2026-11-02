@@ -94,7 +94,8 @@ st.subheader("What happens along the drive?")
 left, middle, right = st.columns(3)
 powertrain = left.selectbox("Powertrain", list(POWERTRAIN_NAMES),
                             format_func=POWERTRAIN_NAMES.get, key="model_powertrain")
-cycle = middle.selectbox("Drive", list(CYCLE_ORDER) + list(GENERATED),
+drives = list(CYCLE_ORDER) + list(GENERATED)
+cycle = middle.selectbox("Drive", drives, index=drives.index("franco_sport_generated"),
                          format_func=CYCLE_CHOICES.get, key="model_cycle")
 scenario = right.selectbox("Scenario", list(SCENARIOS), index=2, key="model_scenario",
                            format_func=SCENARIO_LABELS.get, disabled=cycle in GENERATED)
@@ -114,6 +115,9 @@ figures[2].metric("CO₂ (fuel, or grid for the electric car)", f"{co2:.1f} g/km
 on_lap = is_lap(cycle)
 if on_lap:
     lap_section({CYCLE_CHOICES[cycle]: trace}, "model", pal)
+else:
+    st.caption("This is a test cycle, not a circuit, so it has no track map. Pick a "
+               "Francorchamps drive to see one.")
 
 x_column = "distance_m" if on_lap else "time_s"
 st.markdown("**Speed and elevation**")
