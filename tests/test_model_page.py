@@ -25,8 +25,8 @@ def app():
 
 def test_scenario_table_shows_the_model(app):
     table = app.dataframe[0].value.set_index(["powertrain", "cycle"])
-    assert table.loc[("Petrol", "Francorchamps — eco"), "exact"] == "245.7"
-    assert table.loc[("Petrol", "Francorchamps — eco"), "harmonised"] == "203.0"
+    assert table.loc[("Petrol", "Francorchamps — eco"), "1 · As in the workbooks"] == "245.7"
+    assert table.loc[("Petrol", "Francorchamps — eco"), "2 · One convention"] == "203.0"
 
 
 @pytest.mark.parametrize(
@@ -38,3 +38,10 @@ def test_one_run_renders(app, powertrain, cycle):
     app.selectbox(key="model_cycle").set_value(cycle).run()
     assert not app.exception, [e.value for e in app.exception]
     assert len(app.metric) == 3
+
+
+def test_the_map_comes_with_laps_only(app):
+    app.selectbox(key="model_cycle").set_value("franco_eco").run()
+    assert [b.label for b in app.button_group] == ["Paint the track with"]
+    app.selectbox(key="model_cycle").set_value("wltc").run()
+    assert not app.exception and not app.button_group

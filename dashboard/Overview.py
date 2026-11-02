@@ -32,6 +32,7 @@ from dashboard.layout import (
 )
 from dashboard.theme import POWERTRAIN_ORDER, style_axes
 from dashboard.loaders import load_runs, trace_for
+from dashboard.track_charts import lap_section
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
 pal = configure("Overview")
@@ -61,6 +62,8 @@ if strip is not None:
         "Spa-Francorchamps elevation over the 7 km lap — the grade term behind every "
         "Francorchamps figure below."
     )
+    with st.expander("See this lap on the circuit"):
+        lap_section({"Petrol, Francorchamps eco": lap}, "overview", pal, paint="Altitude")
 
 # --- controls -------------------------------------------------------------------------------
 

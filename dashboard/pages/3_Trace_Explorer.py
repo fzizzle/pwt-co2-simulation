@@ -17,6 +17,7 @@ from dashboard.layout import (
     configure,
     download,
     render_run_notices,
+    run_label,
     run_picker,
     source_caption,
 )
@@ -28,6 +29,7 @@ from dashboard.loaders import (
     trace_for,
 )
 from dashboard.theme import style_axes
+from dashboard.track_charts import is_lap, lap_section, mark_corners
 
 pal = configure("Trace Explorer")
 runs = load_runs()
@@ -65,6 +67,7 @@ if x_column == "step":
 
 source_caption(row)
 render_run_notices(row)
+on_lap = is_lap(row["cycle"]) and "distance_m" in x_options
 
 # --- the three standing views ---------------------------------------------------------------
 
@@ -72,7 +75,13 @@ st.subheader("Speed and elevation")
 fig = charts.speed_and_altitude(trace, x_column, pal)
 style_axes(fig, pal, x_title=x_label)
 fig.update_layout(height=420)
+if on_lap:
+    mark_corners(fig, trace, x_column, pal)
 st.plotly_chart(fig, width="stretch", theme=None)
+
+if on_lap:
+    st.subheader("On the circuit")
+    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal)
 
 left, right = st.columns(2)
 
@@ -82,6 +91,8 @@ with left:
         fig = charts.gear_steps(trace, x_column, pal)
         style_axes(fig, pal, x_title=x_label, y_title="Gear")
         fig.update_layout(height=300)
+        if on_lap:
+            mark_corners(fig, trace, x_column, pal, labels=False)
         st.plotly_chart(fig, width="stretch", theme=None)
     else:
         st.subheader("Gear")
@@ -94,6 +105,8 @@ with right:
     fig = charts.force_breakdown(trace, x_column, pal)
     style_axes(fig, pal, x_title=x_label, y_title="Force (N)")
     fig.update_layout(height=300)
+    if on_lap:
+        mark_corners(fig, trace, x_column, pal, labels=False)
     st.plotly_chart(fig, width="stretch", theme=None)
     st.caption(
         "Overlaid rather than stacked: both components are signed in the supplied data — "
@@ -111,6 +124,8 @@ if columns:
     fig = charts.trace_lines(trace, columns, x_column, pal)
     style_axes(fig, pal, x_title=x_label)
     fig.update_layout(height=380)
+    if on_lap:
+        mark_corners(fig, trace, x_column, pal)
     st.plotly_chart(fig, width="stretch", theme=None)
     if len(columns) > 1:
         st.caption(
