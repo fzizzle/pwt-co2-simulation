@@ -70,6 +70,18 @@ def test_full_report_and_download_are_available(app):
     assert app.selectbox(key="study_b_artifact").options
 
 
+def test_running_page_recovers_when_cached_chart_module_lacks_new_helper(monkeypatch):
+    from dashboard import sensitivity_charts
+
+    # Reproduce a server that imported the chart module before research_table existed.
+    monkeypatch.delattr(sensitivity_charts, "research_table")
+    page = AppTest.from_file(PAGE, default_timeout=30).run()
+    assert not page.exception, [error.value for error in page.exception]
+    page.selectbox(key="study_b_experiment").set_value("regenerated").run()
+    assert not page.exception
+    assert "Lap time (s)" in page.dataframe[1].value
+
+
 def test_chart_preserves_reversed_engine_endpoints_and_individual_shortfalls():
     frame = pd.read_csv(ROOT / "docs/study-b-results.csv")
     ranked = swings(frame)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import re
 import sys
 from pathlib import Path
@@ -14,6 +15,14 @@ import pandas as pd
 import streamlit as st
 
 from dashboard.layout import configure, download
+from dashboard import sensitivity_charts as _sensitivity_charts
+
+# A running Streamlit process may retain an imported helper after the page updates.
+# Recover the same way dashboard.loaders handles newly added workbook helpers.
+if any(not hasattr(_sensitivity_charts, name)
+       for name in ("comparison_table", "leaders", "research_table", "tornado")):
+    _sensitivity_charts = importlib.reload(_sensitivity_charts)
+
 from dashboard.sensitivity_charts import comparison_table, leaders, research_table, tornado
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.sensitivity import swings
