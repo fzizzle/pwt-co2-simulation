@@ -105,6 +105,10 @@ them separately, which is how anything gets changed:
 takes any set of `Vehicle` variants, for other parameter studies. `generate(...,
 corner_speed=...)` replaces the template corner speeds, for tyre and downforce studies.
 
+Study B's one-factor sensitivity is in [docs/study-b-sensitivity.md](docs/study-b-sensitivity.md).
+Install `requirements-study-b.txt` locally, then run `python -m pwt.sensitivity_report`
+to regenerate the 168 runs, ranked spans, tornado figures and five-slide review draft.
+
 `python -m pwt.phase2` prints the five-scenario comparison in `docs/phase-2-results.md`; the
 dashboard's **Model** page shows it, the generated laps, and any single run. Reboot the
 Cloud app after deploying this — the page imports `pwt.model`, which a running app has not
