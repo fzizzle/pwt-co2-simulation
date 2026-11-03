@@ -10,7 +10,11 @@
 
 **Deadline:** results by Fri 20 Nov, slide draft by Sun 22 Nov, numbers frozen at TD2, Mon 30 Nov.
 
-**Status:** Not started. Owner to be agreed.
+**Status:** Implemented on `study-b` using the owner's approved starter assumptions (3 November 2026). Results and five-slide draft are in `docs/study-b-sensitivity.md`; interpretation and slides await the owner's review.
+
+Review follow-up is on the canonical `study-b-sensitivity` branch. The owner requested all
+research extensions: these are separate from the approved fixed-trace study. See
+`docs/study-b-review-response.md` for the feedback mapping and remaining model limitations.
 
 ## Global Constraints
 
@@ -34,7 +38,7 @@ g CO2/km with electricity at 250 g/kWh:
 
 ## Task 1: Set up
 
-- [ ] Clone the repo, then create the environment and run the tests:
+- [x] Clone the repo, then create the environment and run the tests:
 
 ```sh
 python3 -m venv .venv
@@ -44,7 +48,7 @@ python3 -m venv .venv
 
 Every test should pass.
 
-- [ ] Create your branch:
+- [x] Create your branch:
 
 ```sh
 git checkout -b study-b
@@ -54,15 +58,15 @@ git checkout -b study-b
 
 Create `docs/study-b-sensitivity.md` and write down these choices before running anything:
 
-- [ ] **Mass:** does ±10 % apply to the car alone (`m_vehicle`) or to total mass, including driver and battery?
-- [ ] **Engine efficiency:** will you scale its peak (`eta_max`), change the curve's shape (`a1`, `a2`, `a3`), or both? Workbooks `10`, `15` and `35` hold other curves.
-- [ ] **Laps:** keep the generated lap fixed, or regenerate it for each changed car? `cycles()` builds it once for the baseline petrol car. Regenerating means calling `generate` with the changed vehicle.
+- [x] **Mass:** does ±10 % apply to the car alone (`m_vehicle`) or to total mass, including driver and battery?
+- [x] **Engine efficiency:** will you scale its peak (`eta_max`), change the curve's shape (`a1`, `a2`, `a3`), or both? Workbooks `10`, `15` and `35` hold other curves.
+- [x] **Laps:** keep the generated lap fixed, or regenerate it for each changed car? `cycles()` builds it once for the baseline petrol car. Regenerating means calling `generate` with the changed vehicle.
 
 ## Task 3: Build the variants
 
 **Files:** create `pwt/sensitivity.py`.
 
-- [ ] Start from this. It is tested, and uses the simplest option for each choice in Task 2, so replace anything you decided differently.
+- [x] Start from this. It is tested, and uses the simplest option for each choice in Task 2, so replace anything you decided differently.
 
 ```python
 """Study B: change one factor at a time and measure the CO2 swing."""
@@ -105,7 +109,7 @@ There should be 42 variants, which is 168 rows over the four cycles.
 
 **Files:** modify `pwt/sensitivity.py`.
 
-- [ ] Run the variants:
+- [x] Run the variants:
 
 ```python
 from pwt.sweep import cycles, sweep
@@ -113,17 +117,17 @@ from pwt.sweep import cycles, sweep
 table = sweep(variants(), cycles()).rename(columns={"v1": "factor", "v2": "scale"})
 ```
 
-- [ ] Add a function that returns, for each powertrain, cycle and factor, CO2 at 0.9, CO2 at 1.1 and the swing between them.
-- [ ] Check the `baseline` rows against the table above. If they differ, stop and find out why.
+- [x] Add a function that returns, for each powertrain, cycle and factor, CO2 at 0.9, CO2 at 1.1 and the swing between them.
+- [x] Check the `baseline` rows against the table above. If they differ, stop and find out why.
 
 ## Task 5: Test it
 
 **Files:** create `tests/test_sensitivity.py`.
 
-- [ ] Test that the `baseline` rows match the table above, to one decimal place.
-- [ ] Test that more mass gives more CO2 for every powertrain and cycle. This already holds with the starter code.
-- [ ] Test that every expected row is present and `co2_eu` has no gaps.
-- [ ] Run the tests:
+- [x] Test that the `baseline` rows match the table above, to one decimal place.
+- [x] Test that more mass gives more CO2 for every powertrain and cycle. This already holds with the starter code.
+- [x] Test that every expected row is present and `co2_eu` has no gaps.
+- [x] Run the tests:
 
 ```sh
 .venv/bin/python -m pytest tests/test_sensitivity.py
@@ -131,17 +135,17 @@ table = sweep(variants(), cycles()).rename(columns={"v1": "factor", "v2": "scale
 
 ## Task 6: Draw the tornado charts
 
-- [ ] Sort the factors by swing, largest on top, and draw a bar from the 0.9 result to the 1.1 result around the baseline.
-- [ ] Pick the most telling combinations. Do not show all of them.
-- [ ] Use the powertrain colours in `dashboard/theme.py`, name the axes in words, and state the cycle and car on each chart.
+- [x] Sort the factors by swing, largest on top, and draw a bar from the 0.9 result to the 1.1 result around the baseline.
+- [x] Pick the most telling combinations. Do not show all of them.
+- [x] Use the powertrain colours in `dashboard/theme.py`, name the axes in words, and state the cycle and car on each chart.
 
 ## Task 7: Explain the results
 
 **Files:** modify `docs/study-b-sensitivity.md`.
 
-- [ ] For each main finding, explain the ranking through the forces and the energy chain. Numbers without a reason are not the finding.
-- [ ] Compare the rankings between powertrains and between cycles.
-- [ ] State these limits:
+- [x] For each main finding, explain the ranking through the forces and the energy chain. Numbers without a reason are not the finding.
+- [x] Compare the rankings between powertrains and between cycles.
+- [x] State these limits:
   - **Gear ratios:** engine efficiency depends only on power, not rpm, so ratios act mainly through rotating mass and the full-load limit.
   - **±10 % is not equally plausible** for every factor. Say where a realistic range would differ.
   - **Interactions:** changing one factor at a time misses combined effects.
@@ -149,5 +153,5 @@ table = sweep(variants(), cycles()).rename(columns={"v1": "factor", "v2": "scale
 
 ## Task 8: Slides
 
-- [ ] Make about 3 to 5 slides, with one clear claim on each.
-- [ ] Close with the study's limits and the next step.
+- [x] Make about 3 to 5 slides, with one clear claim on each.
+- [x] Close with the study's limits and the next step.

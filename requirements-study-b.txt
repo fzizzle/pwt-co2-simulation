@@ -1,0 +1,4 @@
+# Optional local reporting dependencies; Cloud continues using requirements.txt.
+-r requirements.txt
+matplotlib>=3.9
+python-pptx>=1.0

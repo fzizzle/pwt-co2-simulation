@@ -1,5 +1,18 @@
 # Sources for the model's constants
 
+## Study B extension ranges
+
+These motivate exploratory screening scenarios, not vehicle-specific achievable bounds or cost estimates. No shared model constants change.
+
+- **Mass:** [US DOE, Lightweight Materials for Cars and Trucks](https://www.energy.gov/cmei/vehicles/lightweight-materials-cars-and-trucks) discusses a 10% vehicle-weight reduction and larger reductions for selected components. Study B uses body-only −5%/−10% as analyst-selected scenarios; translating vehicle weight into body mass is an assumption. A separate experiment reaches ±10% total mass by adjusting body mass while retaining driver and powertrain masses.
+- **Drag and tyres:** [EPA-420-R-16-021, November 2016 technical support document](https://nepis.epa.gov/Exe/ZyPURL.cgi?Dockey=P100Q3L4.txt), sections on vehicle road-load technologies and sections 2.3.4.4–2.3.4.5, uses 10% and 20% aerodynamic and rolling-resistance reduction levels. We apply these as coefficient reductions with frontal area fixed. These are historical technology scenarios, not a claim that the same improvements are available for this assignment car.
+- **Engine multiplier:** the assignment and `pwt/model/fleet.py` give a 20–40% range, with baseline 0.35. The exploratory +5%/+10% increments (0.3675/0.385) are assumptions within that range; no equal cost or real-engine attainability is claimed.
+- **Curve shape:** the alternatives in `data/course-files/10 SPA Franco HYBRID engine ECO Driving.xlsx`, `15 SPA Franco HYBRID engine SPORT Driving.xlsx` and `35 NEDC HYBRID engine.xlsx`, parameter menus in columns B–D. The reader verifies all menus agree and exports their exact coefficients. Shape-only retains the baseline multiplier; the complete-menu experiment also changes that multiplier.
+- **Gears:** ±5% is an unsourced exploration of the existing gearing model. There is no established universal physically feasible or economically attractive ratio range here. It is excluded from any claim about sourced technology potential.
+- **Near-ties:** the 2% span-gap rule is a reporting assumption, not measurement uncertainty. Finite-difference elasticities remain interval-dependent for nonlinear responses.
+
+## Existing shared model constants
+
 The harmonised model (`pwt/model/constants.py`) replaces the sheets' constants with these.
 
 | Quantity | Sheets | Harmonised | Source |
