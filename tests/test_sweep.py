@@ -114,3 +114,15 @@ def test_mass_costs_fuel_when_the_battery_sits_idle(cycle_map):
 
 def test_france_is_never_dirtier_than_the_eu_grid(frame):
     assert (frame["co2_fr"] <= frame["co2_eu"] + 1e-9).all()
+
+
+def test_france_replaces_rather_than_adds_to_bev_electricity():
+    """A BEV's CO2 is all grid electricity, so the French figure is its energy alone."""
+    from pwt.checkpoint import Cell
+    from pwt.model.constants import CHARGER_EFFICIENCY, GRID_G_PER_KWH
+    from pwt.sweep import france_co2
+
+    cell = Cell("bev", "wltc", "", None, 15.0, 37.5, 41.7, "model")
+    assert france_co2(cell) == pytest.approx(15.0 * GRID_G_PER_KWH["FR"] / CHARGER_EFFICIENCY / 100)
+    phev = Cell("phev", "wltc", "", 2.0, 10.0, 46.0, 73.8, "model")
+    assert france_co2(phev) == pytest.approx(46.0 + 10.0 * GRID_G_PER_KWH["FR"] / CHARGER_EFFICIENCY / 100)

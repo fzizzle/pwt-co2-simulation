@@ -85,7 +85,7 @@ BEV WLTC gear endpoint deltas: +0.084 and +0.074 g/km (span 0.010). Hybrid sport
 
 ## Feasibility: petrol sport rankings are provisional
 
-The petrol sport mass ranking uses a car that cannot follow the requested trace. All daggered comparisons are provisional. Currently flagged petrol sport endpoints:
+The petrol sport ranking of car mass, drag coefficient and gear ratios uses cars that cannot follow the requested trace. All daggered comparisons are provisional. Currently flagged petrol sport endpoints:
 
 | factor   |   scale |   short_steps |   short_kw |
 |:---------|--------:|--------------:|-----------:|
@@ -361,7 +361,7 @@ Body mass −5%/−10%; drag −10%/−20%; rolling −10%/−20%; engine eta_ma
 
 Every petrol/hybrid variant receives its own generated lap and gears, then the engine shortfall check. Speed and lap time change with CO2, so the driving task differs. Hybrids use the generator's combustion-engine-only acceleration envelope, not optimal combined power. Only comparisons whose baseline and both endpoints pass are ranked below; this does not establish full vehicle feasibility. BEV regeneration is omitted because the shared generator lacks its motor/battery capability model. CSV rows retain lap time and residual shortfalls.
 
-Changes in the strictly highest-span factor: Plug-in hybrid on Francorchamps sport, generated: Car mass → Peak engine efficiency. This shows sensitivity to the driving-task assumption; it is not an independent technology benefit.
+Changes in the strictly highest-span factor: Plug-in hybrid on Francorchamps sport, generated: Car mass → Peak engine efficiency (lap time at −10%/+10%: Car mass -4.1 s / +4.3 s, Peak engine efficiency +0.0 s / +0.0 s). A factor that slows the car also lowers its demand per km, so part of that span change comes from driving slower, not from the factor alone. This shows sensitivity to the driving-task assumption; it is not an independent technology benefit.
 
 | Car    | Cycle                  | Fixed trace                                                                                   | Regenerated, passing comparisons                                                        |
 |:-------|:-----------------------|:----------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------|
@@ -403,7 +403,7 @@ A 3×3 grid (0.9, 1.0, 1.1) tests mass × drag and mass × gears for all powertr
 
 **Technical feedback implemented; interpretation and slides remain an owner-review draft. No final approval or merge is implied.** The owner should confirm the conclusions and adapt the presentation before submission.
 
-The approved study keeps body-only mass, fixed laps, peak-only efficiency and unchanged strategies. Separate extensions test those choices; they do not change shared model code or course files. Technology-inspired ranges answer a different question from equal ±10%. Costs and trade-offs are outside the model. Next: validate ranges and hybrid/BEV capability, then refine sampled minima and interactions on comparable feasible tasks.
+The approved study keeps body-only mass, fixed laps, peak-only efficiency and unchanged strategies. Separate extensions test those choices. They leave the model physics and course files unchanged; the one shared-code change is the BEV correction to `pwt.sweep.france_co2` described above. Technology-inspired ranges answer a different question from equal ±10%. Costs and trade-offs are outside the model. Next: validate ranges and hybrid/BEV capability, then refine sampled minima and interactions on comparable feasible tasks.
 
 ## Deliverables
 

@@ -46,7 +46,9 @@ st.markdown(
     "the spreadsheets. Figures are shown exactly as the workbooks report them: nothing here "
     "converts units, recomputes a result, or fills in a missing value."
 )
-st.page_link("pages/9_Study_B.py", label="Study B · Explore CO₂ sensitivity, research checks and the report")
+st.caption("The Model, Sizing, Track map and Study B pages are different: they show what the "
+           "Python model computes, not the workbooks' figures.")
+st.page_link("pages/9_Study_B.py", label="Study B · Python-model CO₂ sensitivity, research checks and the report")
 
 with st.expander("What the cycles are"):
     for code, definition in CYCLE_DEFINITIONS.items():
