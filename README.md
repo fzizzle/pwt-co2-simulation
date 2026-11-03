@@ -35,9 +35,9 @@ invite-only — teammates need their email added under *Settings → Sharing* be
 works for them. It sleeps after extended inactivity; the next visitor waits ~30 s for it to
 wake, so open it once before any session where you need it immediately.
 
-An **internal viewer, not a project deliverable**. Five of its eight pages show the supplied figures
+An **internal viewer, not a project deliverable**. Five of its nine pages show the supplied figures
 exactly as the workbooks report them — no unit conversion, no recomputation, no corrections, no
-conclusions. The **Model**, **Sizing** and **Track map** pages are the exceptions: they show what `pwt.model` computes.
+conclusions. **Model**, **Sizing**, **Track map** and **Study B** show Python-model results.
 
 Run it locally with:
 
@@ -47,10 +47,15 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Eight pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
+Nine pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
 one category together — all the petrols, all the NEDC runs, all the sport runs), **Trace
 Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
-listed first), **Data** (the raw datasets as plain tables), **Model** (what `pwt.model` computes), **Sizing** (the hybrid sizing findings, one chart each), and **Track map** (a generated lap on the real circuit, animated). Any page showing one Francorchamps lap carries the same interactive map, and its charts mark the corners. Every table has a CSV download.
+listed first), **Data** (the raw datasets as plain tables), **Model** (what `pwt.model` computes),
+**Sizing** (the hybrid sizing findings), **Track map** (a generated lap, animated), and
+**Study B** (interactive sensitivity charts, EU/French grids, passing-comparison filtering,
+research checks, the full report and artifact downloads). Study B uses saved results without
+rerunning the sweeps. Workbook/model pages showing one Francorchamps lap carry the same
+interactive map, and their charts mark the corners. Every table has a CSV download.
 
 A category is a slice of the 4×3 grid along one field: powertrain (4 categories of 3) or cycle
 (3 categories of 4). Driving style is not a third axis — it maps 1:1 onto cycle today, so "all the
