@@ -108,6 +108,10 @@ corner_speed=...)` replaces the template corner speeds, for tyre and downforce s
 Study B's one-factor sensitivity is in [docs/study-b-sensitivity.md](docs/study-b-sensitivity.md).
 Install `requirements-study-b.txt` locally, then run `python -m pwt.sensitivity_report`
 to regenerate the 168 runs, ranked spans, tornado figures and five-slide review draft.
+The same command also generates the review extensions: intermediate points, total-mass
+and engine-curve checks, French-grid rankings, technology-inspired ranges, regenerated
+petrol/hybrid laps and two-factor interactions. The report marks provisional comparisons
+and keeps the original approved assumptions separate from these exploratory checks.
 
 `python -m pwt.phase2` prints the five-scenario comparison in `docs/phase-2-results.md`; the
 dashboard's **Model** page shows it, the generated laps, and any single run. Reboot the

@@ -60,3 +60,26 @@ def test_missing_endpoint_is_rejected(frame):
     missing = frame.drop(frame[frame.factor != "baseline"].index[0])
     with pytest.raises(ValueError, match="endpoints"):
         swings(missing)
+
+
+def test_elasticities_keep_direction_and_shortfalls_cover_both_endpoints(frame):
+    ranked = swings(frame)
+    engine = ranked[(ranked.powertrain == "hybrid") & (ranked.factor == "engine")]
+    assert engine.elasticity.to_numpy() == pytest.approx([-1 / 0.99] * 4)
+    sport_mass = ranked[(ranked.powertrain == "petrol")
+                       & (ranked.cycle == "franco_sport_generated") & (ranked.factor == "mass")].iloc[0]
+    assert sport_mass.short_steps_high > 0
+    assert not sport_mass.engine_check_pass
+    # A passing endpoint is insufficient if the baseline cannot follow the trace.
+    wltc = ranked[(ranked.powertrain == "petrol") & (ranked.cycle == "wltc")]
+    assert not wltc.engine_check_pass.any()
+
+
+def test_french_grid_changes_phev_rankings_without_changing_feasibility(frame):
+    eu = swings(frame).set_index(["powertrain", "cycle", "factor"])
+    fr = swings(frame, "co2_fr").set_index(["powertrain", "cycle", "factor"])
+    assert (fr.baseline <= eu.baseline.reindex(fr.index)).all()
+    assert fr.engine_check_pass.equals(eu.engine_check_pass.reindex(fr.index))
+    assert not np.allclose(fr.loc["phev"].swing, eu.loc["phev"].swing.reindex(fr.loc["phev"].index))
+    assert fr.loc["bev"].baseline.to_numpy() == pytest.approx(
+        eu.loc["bev"].baseline.reindex(fr.loc["bev"].index).to_numpy() * 73 / 250)

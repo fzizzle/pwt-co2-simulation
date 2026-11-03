@@ -12,6 +12,10 @@
 
 **Status:** Implemented on `study-b` using the owner's approved starter assumptions (3 November 2026). Results and five-slide draft are in `docs/study-b-sensitivity.md`; interpretation and slides await the owner's review.
 
+Review follow-up is on the canonical `study-b-sensitivity` branch. The owner requested all
+research extensions: these are separate from the approved fixed-trace study. See
+`docs/study-b-review-response.md` for the feedback mapping and remaining model limitations.
+
 ## Global Constraints
 
 - **This is personal, graded work.** The code below is starter plumbing. The choices, analysis, conclusions and slides are the owner's.

@@ -59,6 +59,9 @@ def france_co2(cell: Cell) -> float:
     if cell.powertrain == "hybrid" or cell.battery_kwh_100km is None:
         return cell.co2_eu_grid
     grid = GRID_G_PER_KWH["FR"] / CHARGER_EFFICIENCY
+    if cell.powertrain == "bev":
+        # Its reported CO2 already represents grid electricity, not fuel.
+        return cell.battery_kwh_100km * grid / 100
     return cell.co2_reported + cell.battery_kwh_100km * grid / 100
 
 

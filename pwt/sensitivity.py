@@ -70,7 +70,7 @@ def sensitivity() -> pd.DataFrame:
     return frame
 
 
-def swings(frame: pd.DataFrame) -> pd.DataFrame:
+def swings(frame: pd.DataFrame, co2: str = "co2_eu") -> pd.DataFrame:
     """Endpoint CO2 and unsigned span, ranked separately for each car and cycle.
 
     Preserve endpoint direction: improving efficiency can lower CO2 at scale 1.1.
@@ -83,14 +83,30 @@ def swings(frame: pd.DataFrame) -> pd.DataFrame:
     actual = pd.MultiIndex.from_frame(endpoints[keys + ["factor", "scale"]])
     if not actual.is_unique or set(actual) != expected or endpoints["co2_eu"].isna().any():
         raise ValueError("Sensitivity endpoints are missing, duplicated or contain CO2 gaps")
-    table = endpoints.pivot(index=keys + ["factor"], columns="scale", values="co2_eu")
+    if co2 not in ("co2_eu", "co2_fr"):
+        raise ValueError("Choose co2_eu or co2_fr")
+    table = endpoints.pivot(index=keys + ["factor"], columns="scale", values=co2)
     table = table.rename(columns={0.9: "co2_low", 1.1: "co2_high"}).rename_axis(columns=None)
-    baseline = frame[frame["factor"] == "baseline"].set_index(keys)["co2_eu"]
+    baseline = frame[frame["factor"] == "baseline"].set_index(keys)[co2]
     table = table.join(baseline.rename("baseline")).reset_index()
     table["delta_low"] = table["co2_low"] - table["baseline"]
     table["delta_high"] = table["co2_high"] - table["baseline"]
     table["swing"] = (table["co2_high"] - table["co2_low"]).abs()
     table["swing_percent"] = 100 * table["swing"] / table["baseline"]
+    # Signed, finite-difference elasticity: relative CO2 change / relative parameter change.
+    # Still depends on the sampled interval when the response is nonlinear.
+    table["elasticity"] = (table["co2_high"] - table["co2_low"]) / (0.2 * table["baseline"])
+    table["elasticity_low"] = table["delta_low"] / (-0.1 * table["baseline"])
+    table["elasticity_high"] = table["delta_high"] / (0.1 * table["baseline"])
+    for scale, suffix in ((0.9, "low"), (1.1, "high")):
+        flags = endpoints[endpoints.scale == scale].set_index(keys + ["factor"])
+        table = table.join(flags[["short_steps", "short_kw"]].add_suffix(f"_{suffix}"),
+                           on=keys + ["factor"])
+    baseline_flags = frame[frame.factor == "baseline"].set_index(keys).short_steps
+    table = table.join(baseline_flags.rename("baseline_short_steps"), on=keys)
+    table["engine_check_pass"] = ((table.short_steps_low == 0)
+                                  & (table.short_steps_high == 0)
+                                  & (table.baseline_short_steps == 0))
     table = table.sort_values(keys + ["swing", "factor"], ascending=[True, True, False, True])
     table["rank"] = table.groupby(keys).cumcount() + 1
     return table.reset_index(drop=True)
