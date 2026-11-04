@@ -1,4 +1,4 @@
-"""The app's entry point: the menu, in two labelled groups.
+"""The app's entry point: the menu, in three labelled groups.
 
 Run with: `streamlit run dashboard/Overview.py`. The file keeps its old name so the hosted app's
 entry point does not change; the pages themselves are in `views/`.
@@ -19,7 +19,7 @@ import streamlit as st
 
 PAGES = Path(__file__).resolve().parent / "views"
 
-#: The workbooks' figures as reported, then what `pwt.model` computes.
+#: The workbooks' figures as reported, what `pwt.model` computes, then the studies' reports.
 MENU = {
     "The workbooks": [
         st.Page(PAGES / "1_Overview.py", title="Overview", url_path="overview",
@@ -33,7 +33,10 @@ MENU = {
         st.Page(PAGES / "6_Model.py", title="Model", url_path="model"),
         st.Page(PAGES / "7_Sizing.py", title="Sizing", url_path="sizing"),
         st.Page(PAGES / "8_Track_Map.py", title="Track map", url_path="track-map"),
-        st.Page(PAGES / "9_Study_B.py", title="Study B", url_path="study-b"),
+    ],
+    "The reports": [
+        st.Page(PAGES / "9_CO2_Sensitivity.py", title="CO₂ sensitivity",
+                url_path="co2-sensitivity"),
     ],
 }
 

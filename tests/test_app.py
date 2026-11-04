@@ -293,7 +293,7 @@ def test_entry_point_opens_on_the_overview():
     assert app.title[0].value == run(OVERVIEW).title[0].value
 
 
-def test_menu_has_the_two_groups():
+def test_menu_has_the_three_groups():
     import ast
 
     source = Path(ENTRY).read_text()
@@ -302,8 +302,17 @@ def test_menu_has_the_two_groups():
         if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "MENU"
         or isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "MENU"
     )
-    assert [k.value for k in menu.keys] == ["The workbooks", "The model"]
+    assert [k.value for k in menu.keys] == ["The workbooks", "The model", "The reports"]
     pages = sorted(p.name for p in (ROOT / "dashboard" / "views").glob("*.py"))
     assert source.count("st.Page(") == len(pages)
     for name in pages:
         assert name in source, f"{name} is missing from the menu"
+
+
+def test_reports_have_their_own_group():
+    """Study pages sit under *The reports*, apart from the model pages, with a descriptive name."""
+    source = Path(ENTRY).read_text()
+    model, reports = source.split('"The model"')[1].split('"The reports"')
+    assert "9_CO2_Sensitivity.py" in reports and "9_CO2_Sensitivity.py" not in model
+    assert 'title="CO₂ sensitivity"' in reports
+    assert 'title="Study B"' not in source

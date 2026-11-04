@@ -37,7 +37,7 @@ wake, so open it once before any session where you need it immediately.
 
 An **internal viewer, not a project deliverable**. Five of its nine pages show the supplied figures
 exactly as the workbooks report them — no unit conversion, no recomputation, no corrections, no
-conclusions. **Model**, **Sizing**, **Track map** and **Study B** show Python-model results.
+conclusions. **Model**, **Sizing**, **Track map** and **CO₂ sensitivity** show Python-model results.
 
 Run it locally with:
 
@@ -47,7 +47,7 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Nine pages, in two groups in the sidebar menu. `dashboard/Overview.py` is the entry point and
+Nine pages, in three groups in the sidebar menu. `dashboard/Overview.py` is the entry point and
 holds only the menu; the pages are in `dashboard/views/`. Display names, units and number
 formats come from one lookup, `dashboard/labels.py`.
 
@@ -56,9 +56,9 @@ one category together — all the petrols, all the NEDC runs, all the sport runs
 Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
 listed first), **Data** (the raw datasets as plain tables). *The model* — what `pwt.model`
 computes: **Model** (what `pwt.model` computes),
-**Sizing** (the hybrid sizing findings), **Track map** (a generated lap, animated), and
-**Study B** (interactive sensitivity charts, EU/French grids, passing-comparison filtering,
-research checks, the full report and artifact downloads). Study B uses saved results without
+**Sizing** (the hybrid sizing findings) and **Track map** (a generated lap, animated). *The reports* — the
+studies' results: **CO₂ sensitivity** (Study B: interactive sensitivity charts, EU/French grids, passing-comparison filtering,
+research checks, the full report and artifact downloads). It uses saved results without
 rerunning the sweeps. Workbook/model pages showing one Francorchamps lap carry the same
 interactive map, and their charts mark the corners. Every table has a CSV download.
 
