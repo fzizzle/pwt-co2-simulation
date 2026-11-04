@@ -12,6 +12,8 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from dashboard.charts import GAP_LABEL
+from dashboard.labels import column as column_label
+from dashboard.labels import figure, parameter
 from dashboard.theme import POWERTRAIN_ORDER, Palette, palette
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
@@ -24,11 +26,7 @@ CANONICAL_QUANTITIES: dict[str, tuple[str, str]] = {
 }
 
 #: Display names for the columns a chart can be plotted against.
-X_LABELS: dict[str, str] = {
-    "distance_m": "Distance (m)",
-    "time_s": "Time (s)",
-    "step": "Step",
-}
+X_LABELS: dict[str, str] = {c: column_label(c) for c in ("distance_m", "time_s", "step")}
 
 
 #: What each cycle is. Kept in the dashboard package, not `pwt/`, because it is UI copy —
@@ -93,22 +91,25 @@ def cycle_facts(trace: pd.DataFrame) -> str:
     return " · ".join(bits)
 
 
-#: Runs whose reported figures leave something out, keyed by (powertrain, cycle). Kept here
-#: in the dashboard package so Community Cloud picks it up without a reboot.
-RUN_NOTICES: dict[tuple[str, str], str] = {
+#: Runs whose reported figures leave something out, keyed by (powertrain, cycle): the one
+#: sentence shown in the warning, and the explanation behind a "Why" toggle. Kept here in the
+#: dashboard package so Community Cloud picks it up without a reboot.
+RUN_NOTICES: dict[tuple[str, str], tuple[str, str]] = {
     ("phev", "nedc"): (
+        "electricity not counted: its 0 l/100 km and 0 g CO₂/km leave out the energy it draws "
+        "from the battery.",
         "**Charge-depleting run — electricity not counted.** `34 NEDC PHYBRID engine.xlsx` "
         "reports 0 l/100 km and 0 g CO₂/km, and that is what its formulas compute: the 40 kW "
         "motor covers every NEDC demand, and the battery falls only from 98 % to 78 %, never "
         "reaching the 23 % that brings the engine in. The sheet does not count the electricity "
         "the run draws (14.3 kWh/100 km, about 36 g CO₂/km at the EU grid's 250 g/kWh), so the "
         "zeros are not the car's footprint. `data/derived/` adds a charge-sustaining run "
-        "(5.96 l/100 km); weighted the UN R101 way the two give 2.22 l/100 km."
+        "(5.96 l/100 km); weighted the UN R101 way the two give 2.22 l/100 km.",
     ),
 }
 
 
-def run_notice(powertrain: str | None, cycle: str | None) -> str | None:
+def run_notice(powertrain: str | None, cycle: str | None) -> tuple[str, str] | None:
     return RUN_NOTICES.get((powertrain or "", cycle or ""))
 
 
@@ -116,8 +117,6 @@ def mark_gap_value(
     value: float | None,
     powertrain: str | None,
     cycle: str | None,
-    *,
-    decimals: int = 3,
 ) -> str:
     """Format a reported figure for display, labelling a known gap in place.
 
@@ -127,7 +126,7 @@ def mark_gap_value(
     """
     if value is None or pd.isna(value):
         return "—"
-    formatted = f"{value:,.{decimals}f}"
+    formatted = figure(value)
     return f"{formatted} — {GAP_LABEL}" if run_notice(powertrain, cycle) else formatted
 
 
@@ -141,7 +140,10 @@ def render_run_notices(*runs: pd.Series) -> None:
         seen.add(key)
         notice = RUN_NOTICES.get(key)
         if notice:
-            st.warning(f"**{run_label(*key)}** — {notice}", icon="⚠️")
+            short, why = notice
+            st.warning(f"**{run_label(*key)}** — {short}", icon="⚠️")
+            with st.expander("Why"):
+                st.markdown(why)
 
 
 def configure(title: str) -> Palette:
@@ -220,7 +222,7 @@ def varying_parameters(runs: pd.DataFrame) -> pd.DataFrame:
         distinct = {round(float(v), 9) for v in present}
         if len(distinct) == 1 and len(present) == len(values):
             continue  # every run agrees and none is missing it
-        record = {"Parameter": column.removeprefix("param:")}
+        record = {"Parameter": parameter(column.removeprefix("param:"))}
         record.update(dict(zip(labels, values)))
         record["Distinct values"] = len(distinct)
         record["_missing"] = len(values) - len(present)

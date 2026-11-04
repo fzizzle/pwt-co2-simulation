@@ -26,8 +26,9 @@ from pwt.sweep import (
 
 pal = configure("Sizing")
 
-SHORT = {"NEDC": "NEDC", "WLTC Class 3": "WLTC", "Francorchamps eco, generated": "Spa eco lap",
-         "Francorchamps sport, generated": "Spa sport lap"}
+SHORT = {"NEDC": "NEDC", "WLTC Class 3": "WLTC",
+         "Francorchamps eco, generated": "Francorchamps — eco",
+         "Francorchamps sport, generated": "Francorchamps — sport"}
 LOSSY = 0.85
 
 
@@ -63,7 +64,7 @@ tiles = (
     ("Band stops paying below", f"{crossing[0]:.0%}", "energy kept each way, on WLTC"),
     ("Best full hybrid on WLTC", f"{fit_wltc['best battery (kWh)']:g} kWh",
      f"with a {fit_wltc['best motor (kW)']:g} kW motor"),
-    ("Best full hybrid, Spa sport lap", f"{fit_sport['best battery (kWh)']:g} kWh",
+    ("Best full hybrid, Francorchamps — sport", f"{fit_sport['best battery (kWh)']:g} kWh",
      f"with a {fit_sport['best motor (kW)']:g} kW motor, set by the limits"),
 )
 for column, (label, value, note) in zip(st.columns(4), tiles):
@@ -104,7 +105,7 @@ st.plotly_chart(petrol_gap(free_gap, lossy_gap, pal), width="stretch", theme=Non
 # --- 3 ----------------------------------------------------------------------------------------
 
 st.divider()
-st.subheader("3. WLTC barely cares about size; the sport lap wants power")
+st.subheader("3. WLTC barely cares about size; the Francorchamps sport lap wants power")
 st.markdown(f"Each cell is one full hybrid. Both maps share a scale, capped at "
             f"{HEAT_MAX_PCT:.0f} % above the best, so the pale map really is flatter.")
 hybrid = frame[frame["powertrain"] == "hybrid"]
@@ -112,7 +113,7 @@ left, right = st.columns(2)
 left.markdown("**WLTC: every buildable size is within 11 % of the best**")
 left.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=False),
                   width="stretch", theme=None)
-right.markdown("**Spa sport lap: the spread reaches 27 %**")
+right.markdown("**Francorchamps — sport: the spread reaches 27 %**")
 right.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "franco_sport_generated"], pal),
                    width="stretch", theme=None)
 st.caption("The lap's best size sits where the 80 kW grid edge meets the 20C limit, so it marks "
@@ -131,7 +132,7 @@ left, right = st.columns(2)
 left.markdown("**WLTC: R101 weighting keeps rewarding range**")
 left.plotly_chart(phev_lines(eu[wltc], fr[wltc], ymax, (20.0, "Still falling at<br>the grid edge"),
                              pal), width="stretch", theme=None)
-right.markdown("**One sport lap: past 6 kWh, a battery is only mass**")
+right.markdown("**One Francorchamps sport lap: past 6 kWh, a battery is only mass**")
 right.plotly_chart(phev_lines(eu[sport], fr[sport], ymax, (6.0, "Enough for<br>the whole lap"),
                               pal), width="stretch", theme=None)
 

@@ -16,6 +16,8 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
+from dashboard.labels import column as column_label
+from dashboard.labels import figure
 from dashboard.theme import POWERTRAIN_ORDER, Palette
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
@@ -46,17 +48,10 @@ def _rgba(hex_colour: str, alpha: float) -> str:
 
 
 def _fmt(value: float) -> str:
-    """Compact value label: keeps small figures readable and large ones short."""
+    """Bar label, at the same precision as the tables."""
     if value is None or pd.isna(value):
         return ""
-    magnitude = abs(value)
-    if magnitude >= 10000:
-        return f"{value:,.0f}"
-    if magnitude >= 100:
-        return f"{value:,.1f}"
-    if magnitude >= 1:
-        return f"{value:,.2f}"
-    return f"{value:,.3f}"
+    return figure(value)
 
 
 def grouped_totals(
@@ -107,7 +102,7 @@ def grouped_totals(
             cliponaxis=False,
             hovertemplate=(
                 f"<b>{POWERTRAIN_NAMES[powertrain]}</b><br>%{{x}}<br>"
-                f"%{{y:.4g}} {unit}<extra></extra>"
+                f"%{{y:,.4~r}} {unit}<extra></extra>"
             ),
             textfont_size=11,
         )
@@ -127,14 +122,16 @@ def trace_lines(
     fig = go.Figure()
     for index, column in enumerate(columns):
         colour = pal.series[index % len(pal.series)]
+        name = column_label(column)
         fig.add_scatter(
-            name=column,
+            name=name,
             x=trace[x_column],
             y=trace[column],
             mode=_mode(trace),
             line=dict(color=colour, width=LINE_WIDTH),
             marker=dict(size=MARKER_SIZE, color=colour, line=dict(color=pal.surface, width=2)),
-            hovertemplate=f"<b>{column}</b><br>{x_column} %{{x:.4g}}<br>%{{y:.4g}}<extra></extra>",
+            hovertemplate=f"<b>{name}</b><br>{column_label(x_column)} %{{x:,.4~r}}"
+                          "<br>%{y:,.4~r}<extra></extra>",
         )
     fig.update_layout(showlegend=len(columns) > 1, hovermode="x unified")
     return fig
@@ -159,13 +156,13 @@ def speed_and_altitude(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.F
     )
 
     fig.add_scatter(
-        name="Speed (kph)",
+        name="Speed (km/h)",
         x=trace[x_column],
         y=trace["speed_kph"],
         mode=_mode(trace),
         line=dict(color=pal.series[0], width=LINE_WIDTH, shape="linear"),
         marker=dict(size=MARKER_SIZE, color=pal.series[0], line=dict(color=pal.surface, width=2)),
-        hovertemplate="Speed %{y:.1f} kph<extra></extra>",
+        hovertemplate="Speed %{y:.0f} km/h<extra></extra>",
         row=1,
         col=1,
     )
@@ -189,7 +186,7 @@ def speed_and_altitude(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.F
         pad = max((high - low) * 0.15, 1.0)
         fig.update_yaxes(range=[low - pad, high + pad], row=2, col=1)
 
-    fig.update_yaxes(title_text="Speed (kph)", row=1, col=1)
+    fig.update_yaxes(title_text="Speed (km/h)", row=1, col=1)
     fig.update_layout(showlegend=False, hovermode="x unified")
     return fig
 
@@ -271,7 +268,7 @@ def overlay_traces(
             mode="lines+markers",
             line=dict(color=colour, width=LINE_WIDTH, dash=dash),
             marker=dict(size=MARKER_SIZE, color=colour, line=dict(color=pal.surface, width=2)),
-            hovertemplate=f"<b>{label}</b><br>%{{y:.4g}}<extra></extra>",
+            hovertemplate=f"<b>{label}</b><br>%{{y:,.4~r}}<extra></extra>",
         )
     fig.update_layout(showlegend=len(fig.data) > 1, hovermode="x unified")
     return fig

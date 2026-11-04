@@ -11,7 +11,7 @@ if str(ROOT) not in sys.path:
 
 from streamlit.testing.v1 import AppTest
 
-CATEGORY_VIEW = str(ROOT / "dashboard" / "pages" / "2_Category_View.py")
+CATEGORY_VIEW = str(ROOT / "dashboard" / "views" / "2_Category_View.py")
 
 
 def run(axis_name: str | None = None, choice: str | None = None) -> AppTest:
@@ -62,8 +62,8 @@ def test_totals_table_carries_every_canonical_figure():
 def test_petrol_category_shows_the_workbook_figures():
     app = run("Powertrain", "petrol")
     table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.730"
-    assert table.loc["NEDC", "CO₂ per km (g CO₂/km)"] == "158.288"
+    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.7"
+    assert table.loc["NEDC", "CO₂ per km (g CO₂/km)"] == "158.3"
 
 
 def test_incomplete_run_is_flagged_in_its_categories():
@@ -77,12 +77,13 @@ def test_incomplete_run_is_flagged_in_its_categories():
 def test_varying_parameters_are_listed():
     app = run("Powertrain", "petrol")
     names = set(app.dataframe[1].value["Parameter"])
-    assert any(n.startswith("total mass") for n in names)
+    assert any(n.startswith("Total mass") for n in names)
 
 
 def test_axis_falls_back_when_the_category_shares_no_distance():
-    """The BEV category shares no usable distance or time column, so it plots against step."""
+    """The BEV laps and NEDC share no usable distance or time column, so they plot against step."""
     app = run("Powertrain", "bev")
+    app.multiselect(key="category_overlay_bev").select("NEDC").run()
     assert not app.exception, [e.value for e in app.exception]
     axis = app.selectbox[3]
     assert axis.options == ["Step"]
@@ -119,15 +120,23 @@ def test_figures_table_marks_the_known_gap():
     """The NEDC plug-in hybrid has no fuel data; its zeros must not read as results."""
     app = run("Cycle", "nedc")
     table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Plug-in hybrid", "CO₂ per km (g CO₂/km)"] == "0.000 — electricity not counted"
+    assert table.loc["Plug-in hybrid", "CO₂ per km (g CO₂/km)"] == "0 — electricity not counted"
     # a complete run in the same table is untouched
-    assert table.loc["Petrol", "CO₂ per km (g CO₂/km)"] == "158.288"
+    assert table.loc["Petrol", "CO₂ per km (g CO₂/km)"] == "158.3"
 
 
-def test_figures_table_formats_to_three_decimals():
+def test_overlay_opens_on_the_laps_against_distance():
+    app = run("Powertrain", "petrol")
+    assert app.multiselect(key="category_overlay_petrol").value == [
+        "Francorchamps — eco", "Francorchamps — sport"]
+    assert app.selectbox[3].value == "distance_m"
+
+
+def test_figures_table_rounds_to_one_decimal():
     app = run("Powertrain", "petrol")
     table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.730"
+    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.7"
+    assert table.loc["Francorchamps — eco", "Fuel consumption (l/100 km)"] == "10.3"
 
 
 def test_varying_table_explains_its_blanks():
@@ -149,8 +158,11 @@ def test_page_requests_dashes_only_for_a_powertrain_category(monkeypatch):
 
     monkeypatch.setattr(charts, "overlay_traces", spy)
 
-    run("Powertrain", "petrol")
+    app = run("Powertrain", "petrol")
     assert captured and captured[-1] is not None, "a powertrain category needs dashes"
+    assert len(set(captured[-1])) == 2  # it opens on the two laps
+
+    app.multiselect(key="category_overlay_petrol").select("NEDC").run()
     assert len(set(captured[-1])) == 3
 
     captured.clear()

@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
 
 from streamlit.testing.v1 import AppTest
 
-MODEL = str(ROOT / "dashboard" / "pages" / "6_Model.py")
+MODEL = str(ROOT / "dashboard" / "views" / "6_Model.py")
 
 
 @pytest.fixture(scope="module")
@@ -25,19 +25,21 @@ def app():
 
 def test_scenario_table_shows_the_model(app):
     table = app.dataframe[0].value.set_index(["powertrain", "cycle"])
-    assert table.loc[("Petrol", "Francorchamps — eco"), "1 · As in the workbooks"] == "245.7"
+    assert table.loc[("Petrol", "Francorchamps — eco"), "1 · Workbook vehicles, 250 g/kWh grid"] == "245.7"
     assert table.loc[("Petrol", "Francorchamps — eco"), "2 · One convention"] == "203.0"
 
 
 @pytest.mark.parametrize(
-    "powertrain, cycle",
-    [("phev", "wltc"), ("hybrid", "franco_sport_generated"), ("bev", "nedc")],
+    "powertrain, cycle, tiles",
+    [("phev", "wltc", 3), ("hybrid", "franco_sport_generated", 3), ("bev", "nedc", 2),
+     ("petrol", "nedc", 2)],
 )
-def test_one_run_renders(app, powertrain, cycle):
+def test_one_run_renders(app, powertrain, cycle, tiles):
     app.selectbox(key="model_powertrain").set_value(powertrain)
     app.selectbox(key="model_cycle").set_value(cycle).run()
     assert not app.exception, [e.value for e in app.exception]
-    assert len(app.metric) == 3
+    assert len(app.metric) == tiles  # no tile for a figure the car does not have
+    assert all(m.value != "—" for m in app.metric)
 
 
 def test_the_page_opens_on_a_lap_with_its_map():

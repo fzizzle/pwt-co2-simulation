@@ -30,6 +30,8 @@ from dashboard.layout import (
     run_notice,
     varying_parameters,
 )
+from dashboard.labels import column as column_label
+from dashboard.labels import number
 from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import POWERTRAIN_ORDER, style_axes
 from dashboard.track_charts import is_lap, lap_section, mark_corners
@@ -133,21 +135,39 @@ if members[quantity].isna().all():
 
 st.subheader("Traces overlaid")
 
-traces = [trace_for(row["powertrain"], row["cycle"]) for _, row in members.iterrows()]
+all_traces = [trace_for(row["powertrain"], row["cycle"]) for _, row in members.iterrows()]
 
-shared_axes = set.intersection(*(set(axis_columns(t)) for t in traces))
-axis_options = [c for c in ("distance_m", "time_s", "step") if c in shared_axes]
+# A lap and NEDC share only time and step, and against time the three cycles read as noise.
+# So a category with two or more laps opens on the laps alone, against distance.
+lap_members = [name for name, c in zip(member_names, members["cycle"]) if is_lap(c)]
+overlaid = st.multiselect(
+    "Runs to overlay", member_names,
+    default=lap_members if len(lap_members) >= 2 else member_names,
+    key=f"category_overlay_{choice}",
+)
+keep = [i for i, name in enumerate(member_names) if name in overlaid]
+traces = [all_traces[i] for i in keep]
+overlay_names = [member_names[i] for i in keep]
+overlay_colours = [member_colours[i] for i in keep]
+overlay_cycles = {members["cycle"].iloc[i] for i in keep}
 
-shared_columns = sorted(set.intersection(*(set(numeric_trace_columns(t)) for t in traces)))
-plottable = [c for c in shared_columns if c not in ("step",)]
-
-if not plottable:
-    st.caption("These runs share no per-step column, so there is nothing to overlay.")
+if not traces:
+    st.caption("Pick at least one run to overlay.")
+    plottable = []
 else:
+    shared_axes = set.intersection(*(set(axis_columns(t)) for t in traces))
+    axis_options = [c for c in ("distance_m", "time_s", "step") if c in shared_axes]
+    shared_columns = sorted(set.intersection(*(set(numeric_trace_columns(t)) for t in traces)))
+    plottable = [c for c in shared_columns if c not in ("step",)]
+
+if traces and not plottable:
+    st.caption("These runs share no per-step column, so there is nothing to overlay.")
+elif plottable:
     picker, axis_picker = st.columns([3, 1])
     with picker:
         default = next((i for i, c in enumerate(plottable) if c == "speed_kph"), 0)
-        column = st.selectbox("Column", options=plottable, index=default)
+        column = st.selectbox("Column", options=plottable, index=default,
+                              format_func=column_label)
     with axis_picker:
         x_column = st.selectbox("Against", options=axis_options, format_func=lambda c: X_LABELS[c])
 
@@ -157,19 +177,20 @@ else:
     # In a powertrain category every member is the same technology and so the same colour;
     # dash separates them without breaking the rule that colour belongs to the powertrain.
     member_dashes = (
-        [charts.DASH_CYCLE[i % len(charts.DASH_CYCLE)] for i in range(len(traces))]
+        [charts.DASH_CYCLE[i % len(charts.DASH_CYCLE)] for i in keep]
         if field == "powertrain"
         else None
     )
 
     fig = charts.overlay_traces(
-        traces, member_names, member_colours, column, x_column, pal, dashes=member_dashes
+        traces, overlay_names, overlay_colours, column, x_column, pal, dashes=member_dashes
     )
-    style_axes(fig, pal, x_title=X_LABELS[x_column], y_title=column)
+    style_axes(fig, pal, x_title=X_LABELS[x_column], y_title=column_label(column))
     fig.update_layout(height=420)
-    cycles = set(members["cycle"])
     # Eco and sport reach a corner at different times, so only distance suits both.
-    if all(is_lap(c) for c in cycles) and (x_column == "distance_m" or len(cycles) == 1):
+    if all(is_lap(c) for c in overlay_cycles) and (
+        x_column == "distance_m" or len(overlay_cycles) == 1
+    ):
         mark_corners(fig, traces[0], x_column, pal)
     st.plotly_chart(fig, width="stretch", theme=None)
 
@@ -184,13 +205,13 @@ else:
             "Plotted against step number: these workbooks share no distance or time column "
             "that runs forward across all of them."
         )
-    if field == "powertrain" and x_column == "distance_m":
+    if x_column == "distance_m" and not all(is_lap(c) for c in overlay_cycles):
         st.caption(
             "These runs are on different cycles, so the x-axes cover different ground: the "
             "Francorchamps lap is 7 km, NEDC about 11 km."
         )
 
-laps = {name: trace for name, trace, cycle in zip(member_names, traces, members["cycle"])
+laps = {name: trace for name, trace, cycle in zip(member_names, all_traces, members["cycle"])
         if is_lap(cycle)}
 if laps:
     st.subheader("On the circuit")
@@ -212,7 +233,7 @@ else:
     varying = varying.rename(columns=rename)
     run_columns = [c for c in varying.columns if c not in ("Parameter", "Distinct values")]
     st.dataframe(
-        varying.style.format({c: "{:,.4g}" for c in run_columns}, na_rep="—"),
+        varying.style.format({c: number for c in run_columns}, na_rep="—"),
         width="stretch",
         hide_index=True,
         height=min(len(varying), 18) * 35 + 38,
