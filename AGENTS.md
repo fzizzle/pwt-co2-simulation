@@ -42,7 +42,7 @@ python3 -m venv .venv
 The `dashboard/` folder is a Streamlit app for exploring the data internally. It is **not a deliverable**.
 
 - Pages that show supplied workbooks show the figures exactly as reported: no unit conversion, recomputation, corrections or conclusions.
-- The **Model**, **Sizing**, **Track map** and **Study B** pages show what `pwt.model` computes. A study may have its own page, provided it says it shows model output, reads the study's saved results instead of rerunning sweeps, and keeps the study's draft and provisional labels. Don't add model results or conclusions to the workbook pages.
+- The **Model**, **Track map**, **Hybrid sizing** and **CO₂ sensitivity** pages show what `pwt.model` computes. A study may have its own page, provided it says it shows model output, reads the study's saved results instead of rerunning sweeps, and keeps the study's draft and provisional labels. Don't add model results or conclusions to the workbook pages.
 - `pwt/` must not import Streamlit.
 - After any change to `pwt/`, remind the user to reboot the Cloud app, because it doesn't re-import `pwt/` on push.
 

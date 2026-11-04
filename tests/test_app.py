@@ -313,6 +313,7 @@ def test_reports_have_their_own_group():
     """Study pages sit under *The reports*, apart from the model pages, with a descriptive name."""
     source = Path(ENTRY).read_text()
     model, reports = source.split('"The model"')[1].split('"The reports"')
-    assert "9_CO2_Sensitivity.py" in reports and "9_CO2_Sensitivity.py" not in model
-    assert 'title="CO₂ sensitivity"' in reports
+    for page, title in [("7_Sizing.py", "Hybrid sizing"), ("9_CO2_Sensitivity.py", "CO₂ sensitivity")]:
+        assert page in reports and page not in model
+        assert f'title="{title}"' in reports
     assert 'title="Study B"' not in source
