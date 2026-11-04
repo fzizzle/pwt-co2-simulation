@@ -11,6 +11,17 @@ These motivate exploratory screening scenarios, not vehicle-specific achievable 
 - **Gears:** ±5% is an unsourced exploration of the existing gearing model. There is no established universal physically feasible or economically attractive ratio range here. It is excluded from any claim about sourced technology potential.
 - **Near-ties:** the 2% span-gap rule is a reporting assumption, not measurement uncertainty. Finite-difference elasticities remain interval-dependent for nonlinear responses.
 
+## Study C assumptions
+
+Study C (`pwt/cornering.py`, `docs/study-c-cornering.md`) changes corner speeds only. No shared model constants change. These values are the owner's provisional choices.
+
+- **Reference grip μ₀ = 0.7:** `data/course-files/11 Good trajectory speed.pdf` uses γ = 0.7 g. The template corner speeds are treated as set at this limit, which is a simplification.
+- **Grip grid 0.9 to 1.3 (factor on μ):** an assumption, unsourced.
+- **Spoiler downforce SCz = 0.1 to 0.4 m²:** an assumption, unsourced.
+- **Spoiler lift-to-drag 4 (added SCx = SCz / 4):** an assumption, unsourced.
+- **Spoiler mass 40 kg per m² of SCz:** an assumption, unsourced.
+- **Air density 1.2 kg/m³:** the default of `downforce_speed`, a standard sea-level value.
+
 ## Existing shared model constants
 
 The harmonised model (`pwt/model/constants.py`) replaces the sheets' constants with these.

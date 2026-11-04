@@ -10,7 +10,7 @@
 
 **Deadline:** results by Fri 20 Nov, slide draft by Sun 22 Nov, numbers frozen at TD2, Mon 30 Nov.
 
-**Status:** Not started. Owner to be agreed.
+**Status:** In progress, owner confirmed. Tasks 1, 3, 4, 5 and 6 are done as a draft; the Task 2 choices, the Task 7 write-up and the slides are the owner's to confirm or rewrite. The dashboard page is built; results come from `python -m pwt.cornering`.
 
 ## Global Constraints
 
@@ -32,7 +32,7 @@
 
 ## Task 1: Set up
 
-- [ ] Clone the repo, then create the environment and run the tests:
+- [x] Clone the repo, then create the environment and run the tests:
 
 ```sh
 python3 -m venv .venv
@@ -42,7 +42,7 @@ python3 -m venv .venv
 
 Every test should pass.
 
-- [ ] Create your branch:
+- [x] Create your branch:
 
 ```sh
 git checkout -b study-c
@@ -63,7 +63,7 @@ Read `data/course-files/11 Good trajectory speed.pdf`. Then create `docs/study-c
 
 Corner speed follows v = √(μ g R), so a change in grip scales speed by its square root.
 
-- [ ] Start from this. It is tested.
+- [x] Start from this. It is tested.
 
 ```python
 """Study C: corner speeds from tyre grip and spoiler downforce."""
@@ -78,7 +78,7 @@ def grip_speed(factor: float):
 
 `generate` calls this with each corner's distance `s` (m) and template speed `v` (m/s), and uses the speed it returns.
 
-- [ ] **Files:** create `tests/test_cornering.py`. Test that a factor of 1 reproduces the lap exactly:
+- [x] **Files:** create `tests/test_cornering.py`. Test that a factor of 1 reproduces the lap exactly:
 
 ```python
 import numpy as np
@@ -96,7 +96,7 @@ def test_unchanged_grip_reproduces_the_lap():
 
 ## Task 4: Sweep grip
 
-- [ ] Run a range of grip values, recording lap time and CO2:
+- [x] Run a range of grip values, recording lap time and CO2:
 
 ```python
 from pwt.model import fleet
@@ -110,7 +110,7 @@ table = sweep({("petrol", "grip +10%"): car}, {"franco_sport_generated": lap})
 print(table["co2_eu"])
 ```
 
-- [ ] Plot lap time and CO2 against grip, as two charts rather than two scales on one.
+- [x] Plot lap time and CO2 against grip, as two charts rather than two scales on one.
 
 ## Task 5: The downforce rule
 
@@ -120,7 +120,7 @@ Balancing cornering force against grip, with air pressing the car down, gives:
 
 $$v^2 = \frac{\mu g R}{1 - \dfrac{\mu \rho \, SC_z \, R}{2m}}$$
 
-- [ ] Add this starter. It infers R from the template speed, so replace that line if you chose another way in Task 2.
+- [x] Add this starter. It infers R from the template speed, so replace that line if you chose another way in Task 2.
 
 ```python
 G = 9.81
@@ -136,13 +136,13 @@ def downforce_speed(mu0: float, scz: float, mass: float, rho: float = 1.2):
     return corner
 ```
 
-- [ ] Test that `scz=0` reproduces the lap exactly. This holds with the starter code.
-- [ ] Test that more downforce never makes a corner slower.
+- [x] Test that `scz=0` reproduces the lap exactly. This holds with the starter code.
+- [x] Test that more downforce never makes a corner slower.
 
 ## Task 6: Add the spoiler's cost
 
-- [ ] Change the car with `dataclasses.replace`: raise `cx` for the drag, and add any mass to `m_vehicle`.
-- [ ] Use the changed car in **both** `generate` and `sweep`. Using it in only one overstates the benefit.
+- [x] Change the car with `dataclasses.replace`: raise `cx` for the drag, and add any mass to `m_vehicle`.
+- [x] Use the changed car in **both** `generate` and `sweep`. Using it in only one overstates the benefit.
 
 ```python
 from dataclasses import replace
@@ -155,7 +155,7 @@ table = sweep({("petrol", "spoiler"): spoiler}, {"franco_sport_generated": lap})
 
 `DRAG_FACTOR`, `ADDED_KG`, `MU0` and `SCZ` are your choices from Task 2.
 
-- [ ] Sweep several spoiler sizes, and compare with the same grip gain from tyres.
+- [ ] Sweep several spoiler sizes, and compare with the same grip gain from tyres. (Swept; the like-for-like comparison is still open.)
 
 ## Task 7: Compare the cars and explain
 

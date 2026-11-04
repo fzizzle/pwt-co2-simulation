@@ -37,6 +37,7 @@ MENU = {
         st.Page(PAGES / "7_Sizing.py", title="Hybrid sizing", url_path="sizing"),
         st.Page(PAGES / "9_CO2_Sensitivity.py", title="CO₂ sensitivity",
                 url_path="co2-sensitivity"),
+        st.Page(PAGES / "10_Cornering_Speed.py", title="Cornering speed", url_path="cornering-speed"),
     ],
 }
 
