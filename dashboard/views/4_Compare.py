@@ -24,6 +24,8 @@ from dashboard.layout import (
     source_caption,
     varying_parameters,
 )
+from dashboard.labels import column as column_label
+from dashboard.labels import figure, number
 from dashboard.loaders import axis_columns, load_runs, numeric_trace_columns, trace_for
 from dashboard.theme import style_axes
 from dashboard.track_charts import is_lap, lap_section, mark_corners
@@ -80,7 +82,8 @@ for column, (display, unit) in CANONICAL_QUANTITIES.items():
     )
 figures = pd.DataFrame(records)
 st.dataframe(
-    figures.style.format({left_name: "{:,.3f}", right_name: "{:,.3f}", "Difference": "{:+,.3f}"},
+    figures.style.format({left_name: figure, right_name: figure,
+                          "Difference": lambda d: ("+" if d > 0 else "") + figure(d)},
                          na_rep="—"),
     width="stretch",
     hide_index=True,
@@ -102,7 +105,7 @@ if differences.empty:
     st.caption("Every parameter these two workbooks share holds the same value.")
 else:
     st.dataframe(
-        differences.style.format({left_name: "{:,.4g}", right_name: "{:,.4g}"}, na_rep="—"),
+        differences.style.format({left_name: number, right_name: number}, na_rep="—"),
         width="stretch",
         hide_index=True,
     )
@@ -130,9 +133,10 @@ with picker:
         "Column",
         options=[c for c in shared if c not in ("step",)],
         index=max(0, next((i for i, c in enumerate(shared) if c == "speed_kph"), 0)),
+        format_func=column_label,
     )
 with axis:
-    x_column = st.selectbox("Against", options=x_candidates)
+    x_column = st.selectbox("Against", options=x_candidates, format_func=column_label)
 
 if x_column == "step":
     left_trace = left_trace.assign(step=range(len(left_trace)))
@@ -142,7 +146,7 @@ fig = charts.compare_traces(
     left_trace, right_trace, column, x_column, (left_name, right_name),
     (left_colour, right_colour), pal,
 )
-style_axes(fig, pal, x_title=X_LABELS.get(x_column, x_column), y_title=column)
+style_axes(fig, pal, x_title=X_LABELS.get(x_column, x_column), y_title=column_label(column))
 fig.update_layout(height=420)
 both_laps = is_lap(left_row["cycle"]) and is_lap(right_row["cycle"])
 # Eco and sport reach a corner at different times, so only distance suits both.
@@ -160,7 +164,7 @@ elif (
     and left_trace[column].round(9).equals(right_trace[column].round(9))
 ):
     st.caption(
-        f"Both runs report the same {column} at every step, so the two lines coincide — "
+        f"Both runs report the same {column_label(column, with_unit=False).lower()} at every step, so the two lines coincide — "
         "these workbooks drive the identical cycle."
     )
 

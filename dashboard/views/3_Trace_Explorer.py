@@ -21,6 +21,8 @@ from dashboard.layout import (
     run_picker,
     source_caption,
 )
+from dashboard.labels import column as column_label
+from dashboard.labels import readable
 from dashboard.loaders import (
     axis_columns,
     axis_exclusion_reason,
@@ -118,11 +120,13 @@ with right:
 st.subheader("Any column")
 default = [c for c in ("engine_power_w",) if c in available] or available[:1]
 columns = st.multiselect(
-    "Columns to plot", options=available, default=default, label_visibility="collapsed"
+    "Columns to plot", options=available, default=default, label_visibility="collapsed",
+    format_func=column_label,
 )
 if columns:
     fig = charts.trace_lines(trace, columns, x_column, pal)
-    style_axes(fig, pal, x_title=x_label)
+    style_axes(fig, pal, x_title=x_label,
+               y_title=column_label(columns[0]) if len(columns) == 1 else "")
     fig.update_layout(height=380)
     if on_lap:
         mark_corners(fig, trace, x_column, pal)
@@ -138,5 +142,5 @@ else:
 # --- the table ------------------------------------------------------------------------------
 
 with st.expander(f"All {len(trace)} steps, as a table"):
-    st.dataframe(trace, width="stretch", hide_index=True)
+    st.dataframe(readable(trace), width="stretch", hide_index=True)
     download(trace, f"trace-{row['powertrain']}-{row['cycle']}.csv")

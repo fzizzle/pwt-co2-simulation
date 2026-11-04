@@ -18,6 +18,7 @@ import pandas as pd
 import streamlit as st
 
 from dashboard import charts
+from dashboard.labels import readable
 from dashboard.layout import X_LABELS, configure, download
 from dashboard.theme import style_axes
 from dashboard.track_charts import is_lap, lap_section, mark_corners
@@ -31,14 +32,16 @@ pal = configure("Model")
 
 #: Numbered because each scenario builds on the one before it.
 SCENARIO_LABELS = {
-    "exact": "1 · As in the workbooks",
+    "exact": "1 · Workbook vehicles, 250 g/kWh grid",
     "harmonised": "2 · One convention",
     "stage B": "3 · Better hybrid control",
     "assignment": "4 · Assignment vehicles",
     "storage losses": "5 · With storage losses",
 }
 SCENARIO_NOTES = {
-    "exact": "Each workbook reproduced exactly — the same figures the other pages show.",
+    "exact": "Each workbook's vehicle and formulas reproduced exactly, with electricity counted "
+             "at 250 g/kWh. Petrol and full hybrid match Overview; the electric cars do not "
+             "(see above).",
     "harmonised": "The same vehicles on one convention, with cited constants and a 90 % "
                   "charger.",
     "stage B": "Harmonised; hybrid engine efficiency read at the engine's share; the full "
@@ -81,6 +84,12 @@ st.markdown(
 
 st.subheader("How much CO₂ does each car emit?")
 st.caption("g CO₂/km. Each column builds on the one before it.")
+st.caption(
+    "Why column 1 differs from Overview for the electric cars: the workbooks count grid "
+    "electricity at 220 g/kWh (electric car, laps) or 440 g/kWh (electric car, NEDC), and not "
+    "at all for the plug-in hybrid. Here every kWh counts at 250 g/kWh, and the plug-in "
+    "hybrid's NEDC and WLTC rows weight its charge-depleting and charge-sustaining runs."
+)
 table = comparison().rename(columns=SCENARIO_LABELS)
 st.dataframe(table, width="stretch", hide_index=True, height=len(table) * 35 + 38)
 download(table, "pwt-model-scenarios.csv")
@@ -106,11 +115,17 @@ if powertrain == "phev" and cycle in ("nedc", "wltc"):
                "weights it with the charge-sustaining run.")
 
 trace, headline = steps(powertrain, cycle, scenario)
-figures = st.columns(3)
 fuel, battery, co2 = (headline[k] for k in ("fuel_l_100km", "battery_kwh_100km", "co2_g_km"))
-figures[0].metric("Fuel", "—" if fuel is None else f"{fuel:.2f} l/100 km")
-figures[1].metric("From the battery", "—" if battery is None else f"{battery:.1f} kWh/100 km")
-figures[2].metric("CO₂ (fuel, or grid for the electric car)", f"{co2:.1f} g/km")
+# Only the figures this car has: a petrol car draws nothing from a battery, an electric car
+# burns no fuel.
+tiles = [(label, text) for label, text in (
+    ("Fuel", None if fuel is None or fuel == 0 else f"{fuel:.2f} l/100 km"),
+    ("From the battery", None if battery is None or battery == 0
+     else f"{battery:.1f} kWh/100 km"),
+    ("CO₂ (fuel, or grid for the electric car)", f"{co2:.1f} g/km"),
+) if text is not None]
+for slot, (label, text) in zip(st.columns(len(tiles)), tiles):
+    slot.metric(label, text)
 
 on_lap = is_lap(cycle)
 if on_lap:
@@ -135,7 +150,9 @@ for column, slot in zip(plots, cols):
         st.markdown(f"**{SMALL_CHARTS[column]}**")
         fig = (charts.gear_steps(trace, x_column, pal) if column == "gear"
                else charts.trace_lines(trace, [column], x_column, pal))
-        style_axes(fig, pal, x_title=X_LABELS[x_column])
+        style_axes(fig, pal, x_title=X_LABELS[x_column],
+                   y_title="" if column == "gear" else
+                   {"batt_soc": "fraction", "engine_power_drivetrain_w": "W"}[column])
         fig.update_layout(height=300)
         if on_lap:
             mark_corners(fig, trace, x_column, pal, labels=False)
@@ -149,9 +166,9 @@ with st.expander("How the generated laps are built"):
         "drive both on every step, unlike the supplied laps."
     )
     lap_table = laps()
-    st.dataframe(lap_table, width="stretch", hide_index=True)
+    st.dataframe(readable(lap_table), width="stretch", hide_index=True)
     download(lap_table, "pwt-model-generated-laps.csv")
 
 with st.expander(f"All {len(trace)} steps, as a table"):
-    st.dataframe(trace, width="stretch", hide_index=True)
+    st.dataframe(readable(trace), width="stretch", hide_index=True)
     download(trace, f"model-{powertrain}-{cycle}-{scenario}.csv".replace(" ", "-"))

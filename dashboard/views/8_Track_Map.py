@@ -13,6 +13,7 @@ import pandas as pd
 import streamlit as st
 
 from dashboard.charts import speed_and_altitude
+from dashboard.labels import readable
 from dashboard.layout import configure, download
 from dashboard.track_charts import lap_section, mark_corners
 from pwt.catalog import POWERTRAIN_NAMES
@@ -20,7 +21,8 @@ from pwt.phase2 import result_for
 
 pal = configure("Track map")
 
-LAPS = {"franco_sport_generated": "Sport lap", "franco_eco_generated": "Eco lap"}
+LAPS = {"franco_sport_generated": "Francorchamps — sport",
+        "franco_eco_generated": "Francorchamps — eco"}
 SCENARIO = "storage losses"
 
 
@@ -58,5 +60,5 @@ st.plotly_chart(fig, width="stretch", theme=None)
 
 if st.toggle("Show this lap as a table"):
     table = steps[["distance_m", "time_s", "speed_kph", "altitude_m"]].assign(**{unit: painted})
-    st.dataframe(table, width="stretch", hide_index=True)
+    st.dataframe(readable(table), width="stretch", hide_index=True)
     download(table, f"pwt-lap-{powertrain}-{cycle}.csv")

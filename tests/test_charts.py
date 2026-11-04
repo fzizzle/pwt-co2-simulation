@@ -55,7 +55,7 @@ def test_style_axes_keeps_per_row_y_titles(lap, pal):
     """style_axes must not wipe the titles a subplot figure set for itself."""
     fig = charts.speed_and_altitude(lap, "distance_m", pal)
     style_axes(fig, pal)
-    assert fig.layout.yaxis.title.text == "Speed (kph)"
+    assert fig.layout.yaxis.title.text == "Speed (km/h)"
     assert fig.layout.yaxis2.title.text == "Altitude (m)"
 
 
@@ -166,8 +166,8 @@ def test_varying_parameters_lists_only_what_differs(runs):
 
     names = set(varying["Parameter"])
     # Mass differs between the NEDC car and the Spa car; the wheel is the same everywhere.
-    assert any(n.startswith("total mass") for n in names)
-    assert not any(n.startswith("wheel diameter") for n in names)
+    assert any(n.startswith("Total mass") for n in names)
+    assert not any(n.startswith("Wheel diameter") for n in names)
 
     # Most-varied first.
     counts = varying["Distinct values"].tolist()
@@ -181,7 +181,7 @@ def test_varying_parameters_flags_a_parameter_present_in_only_some_runs(runs):
     nedc = runs[runs["cycle"] == "nedc"]
     names = set(varying_parameters(nedc)["Parameter"])
     # Only the hybrids carry an electric machine; petrol and BEV do not.
-    assert any(n.startswith("electric machine mass") for n in names)
+    assert any(n.startswith("Electric machine mass") for n in names)
 
 
 def test_varying_parameters_is_empty_for_a_single_run(runs):
@@ -256,7 +256,7 @@ def test_distinct_values_counts_only_distinct_present_values(runs):
 
     nedc = runs[runs["cycle"] == "nedc"]
     varying = varying_parameters(nedc)
-    row = varying[varying["Parameter"].str.startswith("effective mass gear 1")].iloc[0]
+    row = varying[varying["Parameter"].str.startswith("Effective mass gear 1")].iloc[0]
 
     run_columns = [c for c in varying.columns if c not in ("Parameter", "Distinct values")]
     values = [row[c] for c in run_columns]

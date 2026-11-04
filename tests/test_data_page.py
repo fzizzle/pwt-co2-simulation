@@ -19,7 +19,7 @@ from pwt.build import runs_frame
 from pwt.catalog import CATALOG, course_file
 from pwt.workbook import read_block, read_run
 
-DATA = str(ROOT / "dashboard" / "pages" / "5_Data.py")
+DATA = str(ROOT / "dashboard" / "views" / "5_Data.py")
 DATASETS = ["Runs", "Totals", "Parameters", "Traces", "Workbook cells"]
 
 
@@ -63,8 +63,9 @@ def test_empty_selection_explains_itself():
 def test_display_names_not_internal_codes():
     app = run("Totals")
     table = app.dataframe[0].value
-    assert "Petrol" in set(table["powertrain"])
-    assert "petrol" not in set(table["powertrain"])
+    assert "Petrol" in set(table["Powertrain"])
+    assert "petrol" not in set(table["Powertrain"])
+    assert "Total consumption" in set(table["Figure"])
 
 
 # --- the raw block is genuinely raw ------------------------------------------------------------

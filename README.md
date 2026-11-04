@@ -47,10 +47,15 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Nine pages: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
+Nine pages, in two groups in the sidebar menu. `dashboard/Overview.py` is the entry point and
+holds only the menu; the pages are in `dashboard/views/`. Display names, units and number
+formats come from one lookup, `dashboard/labels.py`.
+
+*The workbooks* — figures as reported: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
 one category together — all the petrols, all the NEDC runs, all the sport runs), **Trace
 Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
-listed first), **Data** (the raw datasets as plain tables), **Model** (what `pwt.model` computes),
+listed first), **Data** (the raw datasets as plain tables). *The model* — what `pwt.model`
+computes: **Model** (what `pwt.model` computes),
 **Sizing** (the hybrid sizing findings), **Track map** (a generated lap, animated), and
 **Study B** (interactive sensitivity charts, EU/French grids, passing-comparison filtering,
 research checks, the full report and artifact downloads). Study B uses saved results without
