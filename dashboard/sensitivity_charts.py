@@ -22,8 +22,7 @@ def ranking_visual(group: pd.DataFrame, pal: Palette) -> go.Figure:
     fig = go.Figure(go.Scatter(
         x=own.swing.tolist(), y=own.factor.map(FACTOR_NAMES).tolist(),
         mode='markers+text', text=labels, textposition='middle right',
-        marker=dict(size=16, color=[pal.for_powertrain(c) if p else pal.text_muted
-                                     for c, p in zip(own.powertrain, own.engine_check_pass)],
+        marker=dict(size=16, color=[pal.for_powertrain(c) for c in own.powertrain],
                     symbol=['circle' if p else 'circle-open' for p in own.engine_check_pass], line_width=2),
         customdata=['Passes engine check' if p else '† Provisional: baseline or endpoint fails engine check'
                     for p in own.engine_check_pass],
@@ -185,7 +184,7 @@ def tornado(group: pd.DataFrame, powertrain: str, pal: Palette) -> go.Figure:
     fig.add_bar(
         x=own.swing.tolist(), y=labels, base=own[["delta_low", "delta_high"]].min(axis=1).tolist(),
         orientation="h", width=0.46, name="Endpoint span", showlegend=False,
-        marker=dict(color=colour, opacity=0.75,
+        marker=dict(color=colour, opacity=0.6,
                     pattern=dict(shape=["" if passed else "/" for passed in own.engine_check_pass])),
         customdata=own[["swing", "elasticity", "engine_check_pass"]].to_numpy(),
         hovertemplate="%{y}<br>Span: %{customdata[0]:.3f} g/km"
@@ -197,7 +196,7 @@ def tornado(group: pd.DataFrame, powertrain: str, pal: Palette) -> go.Figure:
             x=own[f"delta_{suffix}"].tolist(), y=labels, mode="markers+text", name=name,
             text=[f"{v:.2f}" for v in own[f"co2_{suffix}"]], textposition=position,
             textfont=dict(color=pal.text_primary, size=12), cliponaxis=False,
-            marker=dict(color=pal.text_muted if suffix == "low" else pal.text_primary, size=11, line=dict(color=pal.text_primary, width=1.5),
+            marker=dict(color=colour, size=12, line=dict(color=pal.text_primary, width=1.5),
                         symbol=[shape if steps == 0 else f"{shape}-open"
                                 for steps in own[f"short_steps_{suffix}"]]),
             customdata=own[[f"co2_{suffix}", f"short_steps_{suffix}", f"short_kw_{suffix}"]].to_numpy(),
