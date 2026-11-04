@@ -31,10 +31,10 @@ MENU = {
     ],
     "The model": [
         st.Page(PAGES / "6_Model.py", title="Model", url_path="model"),
-        st.Page(PAGES / "7_Sizing.py", title="Sizing", url_path="sizing"),
         st.Page(PAGES / "8_Track_Map.py", title="Track map", url_path="track-map"),
     ],
     "The reports": [
+        st.Page(PAGES / "7_Sizing.py", title="Hybrid sizing", url_path="sizing"),
         st.Page(PAGES / "9_CO2_Sensitivity.py", title="CO₂ sensitivity",
                 url_path="co2-sensitivity"),
     ],
