@@ -32,7 +32,7 @@ def test_new_views_cover_ranked_data_and_selected_examples():
         assert f'{mass.elasticity:.2f}' in variable_key(selected)
         for pal in (LIGHT, DARK):
             fig = tornado(selected, mass.powertrain, pal)
-            assert fig.data[1].marker.color != fig.data[2].marker.color
+            assert set(fig.data[1].marker.symbol) & set(fig.data[2].marker.symbol) == set()
     for across in ('cars', 'cycles'):
         charts = [elasticity_panels(swings(frame, grid), across, DARK) for grid in ('co2_eu', 'co2_fr')]
         for chart in charts:
@@ -165,8 +165,9 @@ def test_colour_follows_the_car():
         for (powertrain, _), group in ranked.groupby(['powertrain', 'cycle']):
             bar = tornado(group, powertrain, pal).data[0]
             assert bar.marker.color == pal.for_powertrain(powertrain)
-            assert {c for c in ranking_visual(group, pal).data[0].marker.color} <= {
-                pal.for_powertrain(powertrain), pal.text_muted}
+            assert set(ranking_visual(group, pal).data[0].marker.color) == {pal.for_powertrain(powertrain)}
+            for trace in tornado(group, powertrain, pal).data[1:]:
+                assert trace.marker.color == pal.for_powertrain(powertrain)
         for across in ('cars', 'cycles'):
             for trace in elasticity_panels(ranked, across, pal).data:
                 if trace.customdata is None:
