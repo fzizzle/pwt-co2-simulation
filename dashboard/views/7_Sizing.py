@@ -24,7 +24,7 @@ from pwt.sweep import (
     CYCLES, MAX_C_RATE, best, by_battery, petrol_reference, sizing, storage_sensitivity,
 )
 
-pal = configure("Sizing")
+pal = configure("Hybrid sizing")
 
 SHORT = {"NEDC": "NEDC", "WLTC Class 3": "WLTC",
          "Francorchamps eco, generated": "Francorchamps — eco",
