@@ -16,6 +16,8 @@ from pwt.trackmap import LANDMARKS, place
 
 #: Metres between steps of a generated lap, and between painted points and animation frames.
 STEP_M, PAINT_M, FRAME_M = 5, 20, 60
+#: Tall enough for the circuit, short enough to leave the charts below it on screen.
+MAP_HEIGHT = 560
 SEQUENTIAL = [[0.0, "#104281"], [0.35, "#2a78d6"], [0.7, "#86b6ef"], [1.0, "#e6f0fc"]]
 #: Blue coasting or recovering, grey near zero, red pulling hard.
 DIVERGING = [[0.0, "#2a78d6"], [0.5, "#383835"], [1.0, "#e0483d"]]
@@ -79,7 +81,7 @@ def lap_map(steps: pd.DataFrame, values: pd.Series, label: str, unit: str, diver
     near_lat, near_lon = place(np.array(list(LANDMARKS), dtype=float))
 
     fig = make_subplots(rows=2, cols=1, specs=[[{"type": "map"}], [{"type": "xy"}]],
-                        row_heights=[0.8, 0.2], vertical_spacing=0.04)
+                        row_heights=[0.76, 0.24], vertical_spacing=0.05)
     on_map = dict(row=1, col=1)
     fig.add_trace(go.Scattermap(
         lat=all_lat, lon=all_lon, mode="lines", hoverinfo="skip", showlegend=False,
@@ -139,21 +141,22 @@ def lap_map(steps: pd.DataFrame, values: pd.Series, label: str, unit: str, diver
             data=[go.Scattermap(lat=[here_lat], lon=[here_lon]), go.Scatter(x=[km, km], y=[0, top])],
             layout=dict(title_text=_car_label(frame_rows.iloc[i])),
         ))
-        whole_km = row.distance_m % 1000 < FRAME_M
-        ticks.append(dict(method="animate", label=f"{km:.0f}" if whole_km else "",
+        # No labels on the slider itself: Plotly shows only every n-th one, which left a lone
+        # "0". The strip under it carries the corner names instead.
+        ticks.append(dict(method="animate", label="",
                           args=[[name], dict(mode="immediate", frame=dict(duration=0, redraw=True),
                                              transition=dict(duration=0))]))
     fig.frames = frames
     centre_lat, centre_lon = float(all_lat.mean()), float(all_lon.mean())
     fig.update_layout(
         map=dict(style="carto-darkmatter", center=dict(lat=centre_lat, lon=centre_lon), zoom=13.2),
-        height=800, margin=dict(l=44, r=0, t=38, b=40), paper_bgcolor="rgba(0,0,0,0)",
+        height=MAP_HEIGHT, margin=dict(l=44, r=0, t=38, b=64), paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         font=dict(color=pal.text_secondary, size=13), hoverlabel=dict(font_size=12),
         title=dict(text=_car_label(start), x=0.01, y=0.98, yanchor="top",
                    font=dict(color=pal.text_primary, size=15)),
         updatemenus=[dict(
-            type="buttons", direction="left", x=0.01, y=0.27, xanchor="left", yanchor="bottom",
+            type="buttons", direction="left", x=0.01, y=0.25, xanchor="left", yanchor="bottom",
             bgcolor=pal.surface, font=dict(color=pal.text_primary), showactive=False,
             buttons=[
                 dict(label="▶ Play", method="animate",
@@ -164,14 +167,17 @@ def lap_map(steps: pd.DataFrame, values: pd.Series, label: str, unit: str, diver
             ],
         )],
         sliders=[dict(
-            active=0, steps=ticks, x=0.2, len=0.72, y=0.27, yanchor="bottom", ticklen=0,
+            active=0, steps=ticks, x=0.2, len=0.72, y=0.25, yanchor="bottom", ticklen=0,
             bgcolor=pal.surface, activebgcolor=pal.text_primary, tickcolor=pal.text_muted,
             font=dict(color=pal.text_muted, size=10), pad=dict(t=0, b=0),
             currentvalue=dict(visible=False),
         )],
     )
+    corners = {at: name for at, name in LANDMARKS.items() if at <= steps["distance_m"].iloc[-1]}
     fig.update_xaxes(range=[0, float(steps["distance_m"].iloc[-1]) / 1000], gridcolor=pal.grid,
-                     color=pal.text_muted, title=dict(text="Distance (km)", standoff=4))
+                     color=pal.text_muted, tickvals=[at / 1000 for at in corners],
+                     ticktext=list(corners.values()), tickangle=-30, tickfont=dict(size=10),
+                     automargin=True)
     fig.update_yaxes(range=[0, top], gridcolor=pal.grid, color=pal.text_muted,
                      title=dict(text="km/h", standoff=4))
     return fig
@@ -179,14 +185,20 @@ def lap_map(steps: pd.DataFrame, values: pd.Series, label: str, unit: str, diver
 
 def mark_corners(fig: go.Figure, trace: pd.DataFrame, x_column: str, pal: Palette,
                  labels: bool = True) -> None:
-    """Draw the circuit's corners on a chart of one lap, whichever axis it is plotted against."""
-    for at, name in LANDMARKS.items():
+    """Draw the circuit's corners on a chart of one lap, whichever axis it is plotted against.
+
+    Names sit above the plot area, on two staggered rows so neighbours do not collide, rather
+    than across the line they annotate.
+    """
+    for i, (at, name) in enumerate(LANDMARKS.items()):
         x = float(np.interp(at, trace["distance_m"], trace[x_column]))
         fig.add_vline(x=x, line=dict(color=pal.axis, width=1, dash="dot"), layer="below")
         if labels:
-            fig.add_annotation(x=x, y=1, xref="x", yref="paper", text=name, textangle=-90,
-                               showarrow=False, xanchor="right", yanchor="top",
+            fig.add_annotation(x=x, y=1, xref="x", yref="paper", text=name, showarrow=False,
+                               xanchor="center", yanchor="bottom", yshift=2 + 14 * (i % 2),
                                font=dict(color=pal.text_muted, size=10))
+    if labels:
+        fig.update_layout(margin=dict(t=max(fig.layout.margin.t or 0, 40)))
 
 
 def lap_section(laps: dict[str, pd.DataFrame], key: str, pal: Palette,

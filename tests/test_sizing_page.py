@@ -16,7 +16,7 @@ from streamlit.testing.v1 import AppTest
 
 from dashboard.sizing_charts import crossover
 
-SIZING = str(ROOT / "dashboard" / "pages" / "7_Sizing.py")
+SIZING = str(ROOT / "dashboard" / "views" / "7_Sizing.py")
 
 
 @pytest.fixture(scope="module")

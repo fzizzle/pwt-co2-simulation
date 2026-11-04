@@ -183,8 +183,16 @@ def extension_sections(extra, ranked):
             old_leader = fixed.loc[fixed.swing.idxmax(),"factor"]
             new_leader = passing_group.loc[passing_group.swing.idxmax(),"factor"]
             if old_leader != new_leader:
-                changed_leaders.append(f"{POWERTRAIN_NAMES[p]} on {CYCLES[c]}: "
-                                       f"{FACTOR_NAMES[old_leader]} → {FACTOR_NAMES[new_leader]}")
+                # A regenerated lap's speed follows the car, so state each leader's lap-time change.
+                laps = extra["regenerated"].query("powertrain == @p and cycle == @c")
+                base_lap = laps[laps.factor == "baseline"].lap_time_s.iloc[0]
+                def lap_shift(factor):
+                    own = laps[laps.factor == factor].set_index("scale").lap_time_s - base_lap
+                    return f"{own.loc[0.9]:+.1f} s / {own.loc[1.1]:+.1f} s"
+                changed_leaders.append(
+                    f"{POWERTRAIN_NAMES[p]} on {CYCLES[c]}: {FACTOR_NAMES[old_leader]} → "
+                    f"{FACTOR_NAMES[new_leader]} (lap time at −10%/+10%: {FACTOR_NAMES[old_leader]} "
+                    f"{lap_shift(old_leader)}, {FACTOR_NAMES[new_leader]} {lap_shift(new_leader)})")
     interactions = []
     for (p,c,factor), group in extra["interactions"].groupby(["powertrain","cycle","second_factor"],sort=False):
         passing = group[group.engine_check_pass]
@@ -239,7 +247,9 @@ def extension_sections(extra, ranked):
         "vehicle feasibility. BEV regeneration is omitted because the shared generator lacks its motor/battery "
         "capability model. CSV rows retain lap time and residual shortfalls.\n\n"
         + ("Changes in the strictly highest-span factor: " + "; ".join(changed_leaders) + ". "
-           "This shows sensitivity to the driving-task assumption; it is not an independent technology benefit.\n\n"
+           "A factor that slows the car also lowers its demand per km, so part of that span change "
+           "comes from driving slower, not from the factor alone. This shows sensitivity to the "
+           "driving-task assumption; it is not an independent technology benefit.\n\n"
            if changed_leaders else "The strictly highest-span factor is unchanged in the passing regenerated comparisons.\n\n")
         + pd.DataFrame(regen_rows).to_markdown(index=False),
         "### Two-factor interactions\n\nA 3×3 grid (0.9, 1.0, 1.1) tests mass × drag and mass × gears for all "
@@ -256,6 +266,8 @@ def tables_and_findings(frame, ranked, extra):
                 .reindex(index=BASE,columns=CYCLES).rename(index=POWERTRAIN_NAMES,columns=CYCLES))
     sport = frame[(frame.powertrain == "petrol") & (frame.cycle == "franco_sport_generated") & (frame.short_steps > 0)]
     flagged_baselines = frame[(frame.factor == "baseline") & (frame.short_steps > 0)]
+    names = [FACTOR_NAMES[f].lower() for f in sport.factor.unique()]
+    failing_sport = " and ".join([", ".join(names[:-1]), names[-1]] if len(names) > 1 else names)
     french = swings(frame,"co2_fr")
     french.to_csv(HERE / "study-b-swings-fr.csv",index=False)
     france = rank_table(french)
@@ -284,9 +296,11 @@ def tables_and_findings(frame, ranked, extra):
         "this threshold. `†` marks a failing baseline or endpoint. "
         "The passing ranking excludes that entire comparison, never just one endpoint. BEV flags "
         "do not certify motor, battery or thermal limits.\n\n" + rank_table(ranked).to_markdown(index=False),
-        "## Feasibility: petrol sport rankings are provisional\n\nThe petrol sport mass ranking uses "
-        "a car that cannot follow the requested trace. All daggered comparisons are provisional. "
-        "Currently flagged petrol sport endpoints:\n\n"
+        ("## Feasibility: petrol sport rankings are provisional\n\n"
+         + (f"The petrol sport ranking of {failing_sport} uses cars that cannot follow the "
+            "requested trace. " if not sport.empty else
+            "Every petrol sport endpoint follows the requested trace. ")
+         + "All daggered comparisons are provisional. Currently flagged petrol sport endpoints:\n\n")
         + sport[["factor","scale","short_steps","short_kw"]].to_markdown(index=False,floatfmt=".3f")
         + "\n\n![Marked petrol endpoints](study-b-provisional.png)\n\n"
         f"Across the original study {facts['flagged']} of {facts['runs']} rows flag engine-power shortfalls "
@@ -314,7 +328,8 @@ def tables_and_findings(frame, ranked, extra):
         "remain an owner-review draft. No final approval or merge is implied.** The owner should confirm "
         "the conclusions and adapt the presentation before submission.\n\n"
         "The approved study keeps body-only mass, fixed laps, peak-only efficiency and unchanged strategies. "
-        "Separate extensions test those choices; they do not change shared model code or course files. "
+        "Separate extensions test those choices. They leave the model physics and course files unchanged; "
+        "the one shared-code change is the BEV correction to `pwt.sweep.france_co2` described above. "
         "Technology-inspired ranges answer a different question from equal ±10%. Costs and trade-offs "
         "are outside the model. Next: validate ranges and hybrid/BEV capability, then refine sampled "
         "minima and interactions on comparable feasible tasks.",

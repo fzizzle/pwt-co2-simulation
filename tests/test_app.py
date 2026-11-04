@@ -21,9 +21,10 @@ from streamlit.testing.v1 import AppTest
 
 from pwt.catalog import CATALOG
 
-OVERVIEW = str(ROOT / "dashboard" / "Overview.py")
-TRACE = str(ROOT / "dashboard" / "pages" / "3_Trace_Explorer.py")
-COMPARE = str(ROOT / "dashboard" / "pages" / "4_Compare.py")
+OVERVIEW = str(ROOT / "dashboard" / "views" / "1_Overview.py")
+ENTRY = str(ROOT / "dashboard" / "Overview.py")
+TRACE = str(ROOT / "dashboard" / "views" / "3_Trace_Explorer.py")
+COMPARE = str(ROOT / "dashboard" / "views" / "4_Compare.py")
 
 TIMEOUT = 120
 
@@ -54,14 +55,14 @@ def test_page_runs_without_exception(page):
 
 
 def test_overview_matrix_matches_the_workbook():
-    """Petrol Francorchamps eco must read 245.730 g CO2/km, as workbook 07 reports.
+    """Petrol Francorchamps eco must read 245.7 g CO2/km, as workbook 07 reports.
 
     Cells are formatted strings so a known gap can be labelled in place, so compare text.
     """
     app = run(OVERVIEW)
     matrix = app.dataframe[0].value
-    assert matrix.loc["Petrol", "Francorchamps — eco"] == "245.730"
-    assert matrix.loc["Battery electric", "Francorchamps — eco"] == "47.137"
+    assert matrix.loc["Petrol", "Francorchamps — eco"] == "245.7"
+    assert matrix.loc["Battery electric", "Francorchamps — eco"] == "47.1"
 
 
 def test_overview_fuel_consumption_matches_and_bev_is_blank():
@@ -69,8 +70,8 @@ def test_overview_fuel_consumption_matches_and_bev_is_blank():
     app.radio[0].set_value("consumption_l_per_100km").run()
     assert not app.exception, [e.value for e in app.exception]
     matrix = app.dataframe[0].value
-    assert matrix.loc["Petrol", "Francorchamps — eco"] == "10.273"
-    assert matrix.loc["Full hybrid", "Francorchamps — eco"] == "7.575"
+    assert matrix.loc["Petrol", "Francorchamps — eco"] == "10.3"
+    assert matrix.loc["Full hybrid", "Francorchamps — eco"] == "7.58"
     # A BEV reports no fuel consumption; the cell must be blank, not zero.
     assert matrix.loc["Battery electric", "Francorchamps — eco"] == "—"
 
@@ -80,12 +81,15 @@ def test_overview_flags_the_missing_nedc_phev_data():
     as a bare zero that reads like a result."""
     app = run(OVERVIEW)
     warnings = " ".join(w.value for w in app.warning)
-    assert "Charge-depleting run — electricity not counted" in warnings
+    assert "electricity not counted" in warnings
     assert "Plug-in hybrid" in warnings
+    # one sentence in the banner; the explanation sits behind a toggle
+    assert len(warnings) < 200
+    assert any(e.label == "Why" for e in app.expander)
 
     # and the cell itself carries the label, not just the banner
     matrix = app.dataframe[0].value
-    assert matrix.loc["Plug-in hybrid", "NEDC"] == "0.000 — electricity not counted"
+    assert matrix.loc["Plug-in hybrid", "NEDC"] == "0 — electricity not counted"
 
 
 def test_overview_still_reports_the_negative_energy_rows():
@@ -111,7 +115,7 @@ def test_trace_explorer_renders_a_petrol_run():
     assert not app.exception, [e.value for e in app.exception]
     trace = app.dataframe[0].value
     assert len(trace) == 32
-    assert trace["speed_kph"].iloc[0] == pytest.approx(90.0)
+    assert trace["Speed (km/h)"].iloc[0] == pytest.approx(90.0)
 
 
 def test_trace_explorer_handles_a_bev_with_no_gear_column():
@@ -278,3 +282,38 @@ def test_compare_and_category_view_agree_on_what_differs():
     shown = set(app.dataframe[1].value["Parameter"])
 
     assert shown == expected
+
+
+# --- the menu -------------------------------------------------------------------------------
+
+
+def test_entry_point_opens_on_the_overview():
+    """The hosted app starts from `dashboard/Overview.py`; it must land on the Overview page."""
+    app = run(ENTRY)
+    assert app.title[0].value == run(OVERVIEW).title[0].value
+
+
+def test_menu_has_the_three_groups():
+    import ast
+
+    source = Path(ENTRY).read_text()
+    menu = next(
+        node.value for node in ast.walk(ast.parse(source))
+        if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "MENU"
+        or isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "MENU"
+    )
+    assert [k.value for k in menu.keys] == ["The workbooks", "The model", "The reports"]
+    pages = sorted(p.name for p in (ROOT / "dashboard" / "views").glob("*.py"))
+    assert source.count("st.Page(") == len(pages)
+    for name in pages:
+        assert name in source, f"{name} is missing from the menu"
+
+
+def test_reports_have_their_own_group():
+    """Study pages sit under *The reports*, apart from the model pages, with a descriptive name."""
+    source = Path(ENTRY).read_text()
+    model, reports = source.split('"The model"')[1].split('"The reports"')
+    for page, title in [("7_Sizing.py", "Hybrid sizing"), ("9_CO2_Sensitivity.py", "CO₂ sensitivity")]:
+        assert page in reports and page not in model
+        assert f'title="{title}"' in reports
+    assert 'title="Study B"' not in source

@@ -23,6 +23,8 @@ from dashboard.layout import (
     run_label,
     sidebar_filters,
 )
+from dashboard.labels import column as column_label
+from dashboard.labels import number, parameter, readable, sheet_label, unit
 from dashboard.loaders import (
     load_block,
     load_runs,
@@ -72,8 +74,14 @@ def apply_filters(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def with_display_names(frame: pd.DataFrame) -> pd.DataFrame:
-    """Show the names used everywhere else, not the internal codes."""
+    """Show the names used everywhere else, not the internal codes. Values are untouched."""
     out = frame.copy()
+    if "quantity" in out.columns:
+        out["quantity"] = out["quantity"].map(sheet_label)
+    if "parameter" in out.columns:
+        out["parameter"] = out["parameter"].map(parameter)
+    if "unit" in out.columns:
+        out["unit"] = out["unit"].map(unit)
     if "powertrain" in out.columns:
         out["powertrain"] = out["powertrain"].map(POWERTRAIN_NAMES).fillna(out["powertrain"])
     if "cycle" in out.columns:
@@ -91,6 +99,7 @@ def column_picker(frame: pd.DataFrame, *, keep: list[str], key: str) -> pd.DataF
         options=optional,
         default=optional[: min(8, len(optional))],
         key=key,
+        format_func=column_label,
         help="Identity columns are always shown.",
     )
     return frame[keep + chosen]
@@ -136,11 +145,14 @@ st.caption(f"{len(table):,} rows × {len(table.columns)} columns. Click a header
 # Size the table to its contents up to a cap, so a short dataset is fully visible rather than
 # scrolling inside a widget that is mostly empty space.
 ROW_PX, HEADER_PX, MAX_ROWS = 35, 38, 22
+# The workbook block is the rawest view, so its numbers keep every digit.
+exact = choice == "Workbook cells"
 st.dataframe(
-    table,
+    readable(table, (lambda v: f"{v:.12g}") if exact else number),
     width="stretch",
     hide_index=True,
     height=min(len(table), MAX_ROWS) * ROW_PX + HEADER_PX,
 )
-download(table, f"pwt-{choice.lower().replace(' ', '-')}.csv", "Download these rows as CSV")
+download(table.rename(columns=column_label), f"pwt-{choice.lower().replace(' ', '-')}.csv",
+         "Download these rows as CSV")
 st.caption("The download contains exactly the rows and columns shown above.")

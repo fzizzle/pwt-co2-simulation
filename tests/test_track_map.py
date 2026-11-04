@@ -22,8 +22,8 @@ from dashboard.theme import DARK
 from dashboard.track_charts import is_lap, mark_corners, metrics, resample
 from pwt.trackmap import ANCHORS, LANDMARKS, outline, place
 
-PAGE = str(ROOT / "dashboard" / "pages" / "8_Track_Map.py")
-PAGES = ROOT / "dashboard" / "pages"
+PAGE = str(ROOT / "dashboard" / "views" / "8_Track_Map.py")
+PAGES = ROOT / "dashboard" / "views"
 
 
 def sparse_lap(**columns) -> pd.DataFrame:
@@ -119,6 +119,6 @@ def test_trace_explorer_maps_laps_only():
 
 @pytest.mark.parametrize("page", ["Overview", "2_Category_View", "4_Compare"])
 def test_other_lap_pages_run(page):
-    path = ROOT / "dashboard" / "Overview.py" if page == "Overview" else PAGES / f"{page}.py"
+    path = PAGES / ("1_Overview.py" if page == "Overview" else f"{page}.py")
     app = AppTest.from_file(str(path), default_timeout=120).run()
     assert not app.exception, [e.value for e in app.exception]

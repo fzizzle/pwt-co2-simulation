@@ -11,7 +11,7 @@ from dashboard.theme import DARK
 from pwt.sensitivity import swings
 
 ROOT = Path(__file__).resolve().parents[1]
-PAGE = str(ROOT / "dashboard/pages/9_Study_B.py")
+PAGE = str(ROOT / "dashboard/views/9_CO2_Sensitivity.py")
 
 
 def test_new_views_cover_ranked_data_and_selected_examples():
