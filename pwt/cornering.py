@@ -56,14 +56,14 @@ def results():
 
     from pwt.model import fleet
     from pwt.model.profile import generate, lap_time_s
-    from pwt.sweep import sweep
+    from pwt.sweep import START_SOC, sweep
 
     petrol = fleet.petrol()
     cars = {
         "petrol": petrol,
         "bev": fleet.electric(),
-        "hybrid": fleet.hybrid(0.6),
-        "phev": fleet.plugin(0.98),
+        "hybrid": fleet.hybrid(START_SOC["hybrid"]),
+        "phev": fleet.plugin(START_SOC["phev"]),
     }
     frames = []
 

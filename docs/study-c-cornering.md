@@ -29,7 +29,7 @@ Baseline check passes: 235.1 s and 385.2 g CO2/km for petrol. `short_steps` is 0
 | Spoiler SCz 0.2 | 235.8 s | 387.5 |
 | Spoiler SCz 0.4 | 236.5 s | 390.2 |
 
-- **Tyres:** each +10 % grip saves about 3.5 to 3.8 s and about 3.5 g/km (petrol, hybrid), through less braking and re-accelerating. Corner speed rises with √grip.
+- **Tyres:** each 0.1 step in grip factor saves 3.2 to 4.1 s and 2.7 to 3.6 g/km (petrol, hybrid), through less braking and re-accelerating. Corner speed rises with √grip.
 - **Spoiler:** it makes both lap time and CO2 worse. At these speeds downforce is tiny: at SCz 0.4 m² the fastest corner (100 km/h) gains 0.7 km/h and the slow ones nothing, while the drag and mass cost on every straight. Aero only pays at high speed, and the template corners are all at 100 km/h or below.
 - **Cars:** the electric car (about 132 g/km) is nearly flat with grip, since regeneration recovers much of the braking; the hybrid and plug-in follow the petrol trend. Rankings between cars do not change.
 
@@ -43,7 +43,7 @@ Baseline check passes: 235.1 s and 385.2 g CO2/km for petrol. `short_steps` is 0
 - One line through each corner.
 - Braking is fixed at 0.6 g; more grip would probably allow harder braking, favouring the tyre case.
 - Only the 12 listed corners change; corners 16 and 17 stay straights.
-- The spoiler numbers are unsourced assumptions and the conclusion depends on them. A much larger SCz (or a higher-speed track) would change it. Not yet in `docs/sources.md` because no source was found.
+- The spoiler numbers are unsourced assumptions and the conclusion depends on them. A much larger SCz (or a higher-speed track) would change it. They are listed in `docs/sources.md` as unsourced assumptions; no source was found.
 
 ## Not done (owner's)
 

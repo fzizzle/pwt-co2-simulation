@@ -58,7 +58,7 @@ listed first), **Data** (the raw datasets as plain tables). *The model* — what
 computes: **Model** (what `pwt.model` computes) and
 **Track map** (a generated lap, animated). *The reports* — the studies' results: **Hybrid sizing**
 (the hybrid sizing findings) and **CO₂ sensitivity** (Study B: interactive sensitivity charts, EU/French grids, passing-comparison filtering,
-research checks, the full report and artifact downloads) and **Cornering speed** (Study C: lap time and CO₂ against tyre grip or spoiler size, the full report and downloads). Both use saved results without
+research checks, the full report and artifact downloads) and **Cornering speed** (Study C: lap time and CO₂ against tyre grip or spoiler size, the full report and downloads). CO₂ sensitivity and Cornering speed use saved results without
 rerunning the sweeps. Workbook/model pages showing one Francorchamps lap carry the same
 interactive map, and their charts mark the corners. Every table has a CSV download.
 

@@ -7,13 +7,15 @@ import plotly.graph_objects as go
 
 from dashboard.theme import Palette, style_axes
 from pwt.catalog import POWERTRAIN_NAMES
+from pwt.model.constants import GRID_G_PER_KWH
 
 #: variant -> (column holding the setting, axis title, short label)
 VARIANTS = {
     "grip": ("grip_factor", "Grip factor (1 = baseline tyres)", "Tyres (grip)"),
     "spoiler": ("scz_m2", "Spoiler downforce area SCz (m²)", "Spoiler (downforce)"),
 }
-CO2 = {"co2_eu": "EU grid · 250 g CO₂/kWh", "co2_fr": "France grid · 73 g CO₂/kWh"}
+CO2 = {"co2_eu": f"EU grid · {GRID_G_PER_KWH['EU']:.0f} g CO₂/kWh",
+       "co2_fr": f"France grid · {GRID_G_PER_KWH['FR']:.0f} g CO₂/kWh"}
 
 
 def rows_for(results: pd.DataFrame, powertrain: str, variant: str) -> pd.DataFrame:
