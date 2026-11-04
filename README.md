@@ -35,9 +35,9 @@ invite-only — teammates need their email added under *Settings → Sharing* be
 works for them. It sleeps after extended inactivity; the next visitor waits ~30 s for it to
 wake, so open it once before any session where you need it immediately.
 
-An **internal viewer, not a project deliverable**. Five of its nine pages show the supplied figures
+An **internal viewer, not a project deliverable**. Five of its ten pages show the supplied figures
 exactly as the workbooks report them — no unit conversion, no recomputation, no corrections, no
-conclusions. **Model**, **Track map**, **Hybrid sizing** and **CO₂ sensitivity** show Python-model results.
+conclusions. **Model**, **Track map**, **Hybrid sizing**, **CO₂ sensitivity** and **Cornering speed** show Python-model results.
 
 Run it locally with:
 
@@ -47,7 +47,7 @@ python3 -m venv .venv
 .venv/bin/streamlit run dashboard/Overview.py
 ```
 
-Nine pages, in three groups in the sidebar menu. `dashboard/Overview.py` is the entry point and
+Ten pages, in three groups in the sidebar menu. `dashboard/Overview.py` is the entry point and
 holds only the menu; the pages are in `dashboard/views/`. Display names, units and number
 formats come from one lookup, `dashboard/labels.py`.
 
@@ -58,7 +58,7 @@ listed first), **Data** (the raw datasets as plain tables). *The model* — what
 computes: **Model** (what `pwt.model` computes) and
 **Track map** (a generated lap, animated). *The reports* — the studies' results: **Hybrid sizing**
 (the hybrid sizing findings) and **CO₂ sensitivity** (Study B: interactive sensitivity charts, EU/French grids, passing-comparison filtering,
-research checks, the full report and artifact downloads). It uses saved results without
+research checks, the full report and artifact downloads) and **Cornering speed** (Study C: lap time and CO₂ against tyre grip or spoiler size, the full report and downloads). Both use saved results without
 rerunning the sweeps. Workbook/model pages showing one Francorchamps lap carry the same
 interactive map, and their charts mark the corners. Every table has a CSV download.
 

@@ -1,9 +1,8 @@
 # Study C: cornering speed
 
 **Status: DRAFT by Claude, for the owner to review.** The choices below are provisional
-assumptions, not decisions. Regenerate everything with `python -m pwt.study_c`
-(needs `matplotlib` and `tabulate`; neither is in `requirements.txt`).
-Full table: [study-c-results.md](study-c-results.md). Figures: `study-c-lap-time.png`, `study-c-co2.png`.
+assumptions, not decisions. Regenerate with `python -m pwt.cornering`, which writes
+`study-c-results.csv` and the figures below (the figures need `requirements-study-c.txt`).
 
 ## Choices (written before running)
 
@@ -33,6 +32,10 @@ Baseline check passes: 235.1 s and 385.2 g CO2/km for petrol. `short_steps` is 0
 - **Tyres:** each +10 % grip saves about 3.5 to 3.8 s and about 3.5 g/km (petrol, hybrid), through less braking and re-accelerating. Corner speed rises with √grip.
 - **Spoiler:** it makes both lap time and CO2 worse. At these speeds downforce is tiny: at SCz 0.4 m² the fastest corner (100 km/h) gains 0.7 km/h and the slow ones nothing, while the drag and mass cost on every straight. Aero only pays at high speed, and the template corners are all at 100 km/h or below.
 - **Cars:** the electric car (about 132 g/km) is nearly flat with grip, since regeneration recovers much of the braking; the hybrid and plug-in follow the petrol trend. Rankings between cars do not change.
+
+![Lap time against grip and spoiler size, every car](study-c-lap-time.png)
+
+![EU CO2 against grip and spoiler size, every car](study-c-co2.png)
 
 ## Limits
 
