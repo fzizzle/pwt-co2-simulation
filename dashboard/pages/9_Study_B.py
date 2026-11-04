@@ -20,13 +20,13 @@ from dashboard import sensitivity_charts as _sensitivity_charts
 # A running Streamlit process may retain an imported helper after the page updates.
 # Recover the same way dashboard.loaders handles newly added workbook helpers.
 if any(not hasattr(_sensitivity_charts, name)
-       for name in ("comparison_table", "leaders", "research_table", "tornado")):
+       for name in ("comparison_table", "leaders", "research_table", "tornado", "ranking_visual", "variable_key", "elasticity_panels")):
     _sensitivity_charts = importlib.reload(_sensitivity_charts)
 
-from dashboard.sensitivity_charts import comparison_table, leaders, research_table, tornado
+from dashboard.sensitivity_charts import (comparison_table, leaders, research_table, tornado,
+                                          ranking_visual, variable_key, elasticity_panels)
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.sensitivity import swings
-from pwt.sensitivity_reporting import ranking_text
 from pwt.sweep import CYCLES
 
 DOCS = ROOT / "docs"
@@ -85,7 +85,7 @@ except ValueError as error:
 selected = ranked[(ranked.powertrain == powertrain) & (ranked.cycle == cycle)]
 baseline = results[(results.powertrain == powertrain) & (results.cycle == cycle) & (results.factor == "baseline")].iloc[0]
 
-explore, research, report_tab = st.tabs(["Explore sensitivities", "Research checks", "Full report & downloads"])
+explore, compare, research, report_tab = st.tabs(["Explore sensitivities", "Compare elasticities", "Research checks", "Full report & downloads"])
 with explore:
     st.subheader(f"{POWERTRAIN_NAMES[powertrain]} · {CYCLES[cycle]}")
     passing_only = st.toggle("Only comparisons passing the engine-power check", key="study_b_passing")
@@ -107,11 +107,16 @@ with explore:
     if visible.empty:
         st.info("No complete comparison passes: the baseline and both endpoints must pass. "
                 "Turn off the filter to inspect the provisional results.")
+        st.markdown(variable_key(selected))
     else:
-        st.plotly_chart(tornado(visible, powertrain, pal), width="stretch", theme=None)
-        st.caption("Labels show absolute g CO₂/km. Circles: parameter −10%; diamonds: +10%. "
+        chart_column, key_column = st.columns([3, 2])
+        with chart_column:
+            st.plotly_chart(tornado(visible, powertrain, pal), width="stretch", theme=None)
+        with key_column:
+            st.markdown(variable_key(selected))
+        st.caption("Labels show absolute g CO₂/km. Blue circles: parameter −10%; orange diamonds: +10%. "
                    "Hollow markers fail the engine check. Hatched bars have a failing baseline or endpoint.")
-        st.markdown(f"**Ranking:** {ranking_text(visible)}")
+        st.plotly_chart(ranking_visual(visible, pal), width="stretch", theme=None)
         st.caption("≈ means the gap is less than 2% of the largest span in that tie group. "
                    "† means provisional. This is a reporting convention, not statistical confidence.")
         numbers = comparison_table(visible)
@@ -130,6 +135,16 @@ with explore:
                     "inertia and engine capability, and also the BEV motor's rpm-dependent efficiency.")
         st.markdown("Equal ±10% changes are not equally achievable or equally costly. A ranking of "
                     "model responses does not establish the best engineering investment.")
+
+with compare:
+    st.caption("Model output · Saved study results · Hollow dots mean provisional (†): "
+               "the baseline or an endpoint fails the engine check. The BEV engine row is empty.")
+    st.subheader("Elasticity by car, per driving cycle")
+    st.plotly_chart(elasticity_panels(ranked, "cars", pal), width="stretch", theme=None)
+    download(research_table(ranked), f"pwt-study-b-across-cars-{grid}.csv", "Download across-car data")
+    st.subheader("Elasticity by driving cycle, per car")
+    st.plotly_chart(elasticity_panels(ranked, "cycles", pal), width="stretch", theme=None)
+    download(research_table(ranked), f"pwt-study-b-across-cycles-{grid}.csv", "Download across-cycle data")
 
 with research:
     st.subheader("Test the assumptions behind the ranking")

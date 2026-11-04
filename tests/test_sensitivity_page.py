@@ -14,6 +14,58 @@ ROOT = Path(__file__).resolve().parents[1]
 PAGE = str(ROOT / "dashboard/pages/9_Study_B.py")
 
 
+def test_new_views_cover_ranked_data_and_selected_examples():
+    from dashboard.sensitivity_charts import ranking_visual, variable_key, elasticity_panels
+    from dashboard.theme import LIGHT
+    from pwt.sensitivity_reporting import FACTOR_NAMES, ranking_text
+    frame = pd.read_csv(ROOT / 'docs/study-b-results.csv')
+    ranked = swings(frame)
+    for _, selected in ranked.groupby(['powertrain', 'cycle']):
+        ordered = selected.sort_values(['swing', 'factor'], ascending=[False, True])
+        chart = ranking_visual(selected, DARK)
+        assert list(chart.data[0].y) == ordered.factor.map(FACTOR_NAMES).tolist()
+        assert list(chart.data[0].marker.symbol) == ['circle' if p else 'circle-open' for p in ordered.engine_check_pass]
+        report = ranking_text(selected)
+        positions = [report.index(FACTOR_NAMES[f]) for f in ordered.factor]
+        assert positions == sorted(positions)
+        mass = selected[selected.factor == 'mass'].iloc[0]
+        assert f'{mass.elasticity:.2f}' in variable_key(selected)
+        for pal in (LIGHT, DARK):
+            fig = tornado(selected, mass.powertrain, pal)
+            assert fig.data[1].marker.color != fig.data[2].marker.color
+    for across in ('cars', 'cycles'):
+        charts = [elasticity_panels(swings(frame, grid), across, DARK) for grid in ('co2_eu', 'co2_fr')]
+        for chart in charts:
+            assert len(chart.layout.annotations) == 4
+            dots = [r for t in chart.data for r in t.customdata]
+            assert len(dots) == 76
+            assert {tuple(r[:3]) for r in dots} == set(ranked[['powertrain', 'cycle', 'factor']].itertuples(index=False, name=None))
+            assert len({tuple(chart.layout[k].range) for k in ('xaxis', 'xaxis2', 'xaxis3', 'xaxis4')}) == 1
+        assert [list(t.x) for t in charts[0].data] != [list(t.x) for t in charts[1].data]
+
+
+def test_tie_badges_and_provisional_dots():
+    from dashboard.sensitivity_charts import ranking_visual, elasticity_panels
+    ranked = swings(pd.read_csv(ROOT / 'docs/study-b-results.csv'))
+    bev = ranked[(ranked.powertrain == 'bev') & (ranked.cycle == 'wltc')]
+    assert any('≈' in label for label in ranking_visual(bev, DARK).data[0].text)
+    lookup = ranked.set_index(['powertrain', 'cycle', 'factor'])
+    for across in ('cars', 'cycles'):
+        for trace in elasticity_panels(ranked, across, DARK).data:
+            for data, symbol in zip(trace.customdata, trace.marker.symbol):
+                row = lookup.loc[tuple(data[:3])]
+                assert data[3] == pytest.approx(row.elasticity)
+                assert symbol == ('circle' if row.engine_check_pass else 'circle-open')
+
+
+def test_comparison_views_ignore_car_cycle_selectors(app):
+    before = [chart.proto.spec for chart in app.get('plotly_chart')][-2:]
+    app.selectbox(key='study_b_powertrain').set_value('bev')
+    app.selectbox(key='study_b_cycle').set_value('nedc').run()
+    assert not app.exception
+    assert [chart.proto.spec for chart in app.get('plotly_chart')][-2:] == before
+
+
 @pytest.fixture
 def app():
     page = AppTest.from_file(PAGE, default_timeout=30).run()
