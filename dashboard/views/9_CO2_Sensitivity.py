@@ -114,7 +114,7 @@ with explore:
             st.plotly_chart(tornado(visible, powertrain, pal), width="stretch", theme=None)
         with key_column:
             st.markdown(variable_key(selected))
-        st.caption("Labels show absolute g CO₂/km. Blue circles: parameter −10%; orange diamonds: +10%. "
+        st.caption("Labels show absolute g CO₂/km. Circles: parameter −10%; diamonds: +10%. "
                    "Hollow markers fail the engine check. Hatched bars have a failing baseline or endpoint.")
         st.plotly_chart(ranking_visual(visible, pal), width="stretch", theme=None)
         st.caption("≈ means the gap is less than 2% of the largest span in that tie group. "
@@ -137,14 +137,14 @@ with explore:
                     "model responses does not establish the best engineering investment.")
 
 with compare:
-    st.caption("Model output · Saved study results · Hollow dots mean provisional (†): "
+    st.caption("Model output · Saved study results · Hatched bars and hollow markers mean provisional (†): "
                "the baseline or an endpoint fails the engine check. The BEV engine row is empty.")
     st.subheader("Elasticity by car, per driving cycle")
     st.plotly_chart(elasticity_panels(ranked, "cars", pal), width="stretch", theme=None)
-    download(research_table(ranked), f"pwt-study-b-across-cars-{grid}.csv", "Download across-car data")
     st.subheader("Elasticity by driving cycle, per car")
     st.plotly_chart(elasticity_panels(ranked, "cycles", pal), width="stretch", theme=None)
-    download(research_table(ranked), f"pwt-study-b-across-cycles-{grid}.csv", "Download across-cycle data")
+    st.caption("Colour is the car. Marker shape is the driving cycle.")
+    download(research_table(ranked), f"pwt-study-b-elasticities-{grid}.csv", "Download the data for both charts")
 
 with research:
     st.subheader("Test the assumptions behind the ranking")

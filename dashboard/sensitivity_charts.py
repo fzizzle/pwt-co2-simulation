@@ -22,7 +22,8 @@ def ranking_visual(group: pd.DataFrame, pal: Palette) -> go.Figure:
     fig = go.Figure(go.Scatter(
         x=own.swing.tolist(), y=own.factor.map(FACTOR_NAMES).tolist(),
         mode='markers+text', text=labels, textposition='middle right',
-        marker=dict(size=16, color=[pal.series[1] if p else pal.text_muted for p in own.engine_check_pass],
+        marker=dict(size=16, color=[pal.for_powertrain(c) if p else pal.text_muted
+                                     for c, p in zip(own.powertrain, own.engine_check_pass)],
                     symbol=['circle' if p else 'circle-open' for p in own.engine_check_pass], line_width=2),
         customdata=['Passes engine check' if p else '† Provisional: baseline or endpoint fails engine check'
                     for p in own.engine_check_pass],
@@ -81,31 +82,45 @@ def elasticity_panels(ranked: pd.DataFrame, across: str, pal: Palette) -> go.Fig
     panel_key, series_key = ('cycle', 'powertrain') if across == 'cars' else ('powertrain', 'cycle')
     fig = make_subplots(rows=2, cols=2, subplot_titles=list(panels.values()),
                         horizontal_spacing=0.20, vertical_spacing=0.18)
-    colours = pal.series if across == 'cars' else ('#aa78cc', '#cb88ad', '#8b91a8', '#bca884')
+    shapes = dict(zip(CYCLES, ('circle', 'square', 'diamond', 'triangle-up')))
     bound = max(float(ranked.elasticity.abs().max())*1.12, 0.1)
     for panel_index, panel in enumerate(panels):
         row, col = divmod(panel_index, 2)
-        for index, key in enumerate(series):
+        for key in series:
             own = ranked[(ranked[panel_key] == panel) & (ranked[series_key] == key)]
             custom = [[r.powertrain, r.cycle, r.factor, r.elasticity,
                        POWERTRAIN_NAMES[r.powertrain], CYCLES[r.cycle],
                        '' if r.engine_check_pass else ' (provisional)'] for r in own.itertuples()]
-            fig.add_trace(go.Scatter(
-                x=own.elasticity.tolist(), y=own.factor.map(FACTOR_NAMES).tolist(), mode='markers',
-                name=series[key], legendgroup=key, showlegend=panel_index == 0,
-                marker=dict(color=colours[index], size=11,
-                            symbol=['circle' if p else 'circle-open' for p in own.engine_check_pass], line_width=2),
-                customdata=custom,
-                hovertemplate='%{customdata[4]}<br>%{customdata[5]}<br>%{y}<br>Elasticity: %{customdata[3]:.2f}%{customdata[6]}<extra></extra>'),
-                row=row+1, col=col+1)
+            hover = '%{customdata[4]}<br>%{customdata[5]}<br>%{y}<br>Elasticity: %{customdata[3]:.2f}%{customdata[6]}<extra></extra>'
+            if across == 'cars':
+                # Grouped bars in a fixed series order: the form the palette is validated for.
+                trace = go.Bar(
+                    x=own.elasticity.tolist(), y=own.factor.map(FACTOR_NAMES).tolist(), orientation='h',
+                    name=series[key], legendgroup=key, showlegend=panel_index == 0, offsetgroup=key,
+                    marker=dict(color=pal.for_powertrain(key),
+                                pattern=dict(shape=['' if p else '/' for p in own.engine_check_pass])),
+                    customdata=custom, hovertemplate=hover)
+            else:
+                # One car per panel, so one colour; the cycle is told apart by marker shape.
+                trace = go.Scatter(
+                    x=own.elasticity.tolist(), y=own.factor.map(FACTOR_NAMES).tolist(), mode='markers',
+                    name=series[key], legendgroup=key, showlegend=False,
+                    marker=dict(color=pal.for_powertrain(panel), size=11, line_width=2,
+                                symbol=[shapes[key] if p else f'{shapes[key]}-open' for p in own.engine_check_pass]),
+                    customdata=custom, hovertemplate=hover)
+            fig.add_trace(trace, row=row+1, col=col+1)
         fig.add_vline(x=0, line_dash='dash', line_color=pal.text_muted, row=row+1, col=col+1)
+    if across == 'cycles':
+        for key in series:  # legend entries in a neutral tone: shape is the key, colour is the car
+            fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', name=series[key], legendgroup=key,
+                                     marker=dict(color=pal.text_muted, size=11, symbol=shapes[key])), row=1, col=1)
     style_axes(fig, pal)
     fig.update_xaxes(range=[-bound, bound], title_text='Elasticity (no unit)')
     factors = list(FACTOR_NAMES.values())
     fig.update_yaxes(categoryorder='array', categoryarray=factors,
                      range=[len(factors)-0.5, -0.5], autorange=False,
                      tickmode='array', tickvals=factors, showgrid=False)
-    fig.update_layout(height=850, margin=dict(t=110), legend=dict(y=1.13))
+    fig.update_layout(height=850, margin=dict(t=110), legend=dict(y=1.13), barmode='group')
     return fig
 
 
@@ -164,7 +179,7 @@ def tornado(group: pd.DataFrame, powertrain: str, pal: Palette) -> go.Figure:
     fig = go.Figure()
     own = group.sort_values("rank")
     labels = own.factor.map(FACTOR_NAMES).tolist()
-    colour = pal.series[0]
+    colour = pal.for_powertrain(powertrain)
     if own.empty:
         return style_axes(fig, pal, x_title="Change from baseline in CO₂ emissions (g/km)")
     fig.add_bar(
@@ -182,7 +197,7 @@ def tornado(group: pd.DataFrame, powertrain: str, pal: Palette) -> go.Figure:
             x=own[f"delta_{suffix}"].tolist(), y=labels, mode="markers+text", name=name,
             text=[f"{v:.2f}" for v in own[f"co2_{suffix}"]], textposition=position,
             textfont=dict(color=pal.text_primary, size=12), cliponaxis=False,
-            marker=dict(color=pal.series[0 if suffix == "low" else 1], size=11, line=dict(color=pal.text_primary, width=1.5),
+            marker=dict(color=pal.text_muted if suffix == "low" else pal.text_primary, size=11, line=dict(color=pal.text_primary, width=1.5),
                         symbol=[shape if steps == 0 else f"{shape}-open"
                                 for steps in own[f"short_steps_{suffix}"]]),
             customdata=own[[f"co2_{suffix}", f"short_steps_{suffix}", f"short_kw_{suffix}"]].to_numpy(),
