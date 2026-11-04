@@ -30,7 +30,7 @@ from pwt.sensitivity_reporting import ranking_text
 from pwt.sweep import CYCLES
 
 DOCS = ROOT / "docs"
-pal = configure("Study B")
+pal = configure("CO₂ sensitivity")
 
 
 @st.cache_data(show_spinner=False)
