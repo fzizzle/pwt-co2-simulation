@@ -41,6 +41,8 @@ def test_new_views_cover_ranked_data_and_selected_examples():
             assert len(dots) == 76
             assert {tuple(r[:3]) for r in dots} == set(ranked[['powertrain', 'cycle', 'factor']].itertuples(index=False, name=None))
             assert len({tuple(chart.layout[k].range) for k in ('xaxis', 'xaxis2', 'xaxis3', 'xaxis4')}) == 1
+            for key in ('yaxis', 'yaxis2', 'yaxis3', 'yaxis4'):
+                assert tuple(chart.layout[key].range) == (4.5, -0.5)
         assert [list(t.x) for t in charts[0].data] != [list(t.x) for t in charts[1].data]
 
 

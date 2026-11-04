@@ -101,7 +101,10 @@ def elasticity_panels(ranked: pd.DataFrame, across: str, pal: Palette) -> go.Fig
         fig.add_vline(x=0, line_dash='dash', line_color=pal.text_muted, row=row+1, col=col+1)
     style_axes(fig, pal)
     fig.update_xaxes(range=[-bound, bound], title_text='Elasticity (no unit)')
-    fig.update_yaxes(categoryorder='array', categoryarray=list(FACTOR_NAMES.values()), autorange='reversed', showgrid=False)
+    factors = list(FACTOR_NAMES.values())
+    fig.update_yaxes(categoryorder='array', categoryarray=factors,
+                     range=[len(factors)-0.5, -0.5], autorange=False,
+                     tickmode='array', tickvals=factors, showgrid=False)
     fig.update_layout(height=850, margin=dict(t=110), legend=dict(y=1.13))
     return fig
 
