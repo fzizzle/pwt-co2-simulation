@@ -19,8 +19,8 @@ import streamlit as st
 from dashboard.layout import (
     configure,
     download,
-    render_run_notices,
     run_label,
+    run_notice,
     sidebar_filters,
 )
 from dashboard.labels import column as column_label
@@ -39,9 +39,38 @@ runs = load_runs()
 
 st.title("Data")
 st.markdown(
-    "Every dataset behind the other pages. Values are as the workbooks report them — the only "
-    "changes are structural: columns renamed to stable names, and rows keyed by label and unit."
+    "Every dataset from the supplied workbooks. Values are as the workbooks report them — the "
+    "only changes are structural: columns renamed to stable names, and rows keyed by label and "
+    "unit."
 )
+
+#: Workbook-only explanations for runs flagged in `RUN_NOTICES` — no model-derived figures.
+_WORKBOOK_ONLY_WHY: dict[tuple[str, str], str] = {
+    ("phev", "nedc"): (
+        "**Charge-depleting run — electricity not counted.** `34 NEDC PHYBRID engine.xlsx` "
+        "reports 0 l/100 km and 0 g CO₂/km, and that is what its formulas compute: the 40 kW "
+        "motor covers every NEDC demand, and the battery falls only from 98 % to 78 %, never "
+        "reaching the 23 % that brings the engine in. The sheet does not count the electricity "
+        "drawn from the battery, so the zeros leave out its electrical energy use."
+    ),
+}
+
+
+def _render_workbook_notices(*rows: pd.Series) -> None:
+    """Warn about any displayed workbook whose reported figures leave something out."""
+    seen: set[tuple[str, str]] = set()
+    for row in rows:
+        key = (row.get("powertrain") or "", row.get("cycle") or "")
+        if key in seen:
+            continue
+        seen.add(key)
+        notice = run_notice(*key)
+        if notice:
+            short, why = notice
+            st.warning(f"**{run_label(*key)}** — {short}", icon="⚠️")
+            with st.expander("Why"):
+                st.markdown(_WORKBOOK_ONLY_WHY.get(key, why))
+
 
 DATASETS = {
     "Runs": "One row per run, with every total and parameter widened into columns.",
@@ -59,11 +88,14 @@ choice = st.radio(
 )
 st.caption(DATASETS[choice])
 
-powertrains, cycles = sidebar_filters(runs)
-render_run_notices(
-    *(row for _, row in runs[runs["powertrain"].isin(powertrains)
-      & runs["cycle"].isin(cycles)].iterrows())
-)
+powertrains: list[str] = []
+cycles: list[str] = []
+if choice != "Workbook cells":
+    powertrains, cycles = sidebar_filters(runs)
+    _render_workbook_notices(
+        *(row for _, row in runs[runs["powertrain"].isin(powertrains)
+          & runs["cycle"].isin(cycles)].iterrows())
+    )
 
 
 def apply_filters(frame: pd.DataFrame) -> pd.DataFrame:
@@ -117,6 +149,8 @@ if choice == "Workbook cells":
             if e.filename == f
         ),
     )
+    selected_run = runs[runs["source_file"] == entry]
+    _render_workbook_notices(*(row for _, row in selected_run.iterrows()))
     table = load_block(entry)
     st.caption(f"Source: `{entry}`")
 else:
