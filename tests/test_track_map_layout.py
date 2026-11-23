@@ -124,10 +124,10 @@ def test_metric_strip_plots_selected_measure_not_always_speed():
 
 def test_petrol_never_offers_battery_charge():
     wb_petrol = trace_for.__wrapped__("petrol", "franco_eco")
-    assert "Battery charge" not in metrics(wb_petrol, source="workbook")
+    assert "Battery state of charge" not in metrics(wb_petrol, source="workbook")
 
     mod_petrol = result_for("petrol", "franco_sport_generated", "storage losses").steps
-    assert "Battery charge" not in metrics(mod_petrol, source="model")
+    assert "Battery state of charge" not in metrics(mod_petrol, source="model")
 
 
 # --- Task 4: workbook maps vs model maps fidelity --------------------------------------------
@@ -136,25 +136,25 @@ def test_petrol_never_offers_battery_charge():
 def test_workbook_metrics_use_exact_reported_columns_and_units():
     wb_petrol = trace_for.__wrapped__("petrol", "franco_eco")
     m_petrol = metrics(wb_petrol, source="workbook")
-    assert "CO₂ emitted here" not in m_petrol
+    assert "CO₂ per segment distance" not in m_petrol
     assert m_petrol["Speed"][1] == "km/h"
     assert m_petrol["Power demand"][1] == "W"
     assert np.allclose(m_petrol["Power demand"][0].to_numpy(), wb_petrol["engine_power_drivetrain_w"].to_numpy())
     assert m_petrol["CO₂ emitted"][1] == "g"
     assert np.allclose(m_petrol["CO₂ emitted"][0].to_numpy(), wb_petrol["emission_g_co2"].to_numpy())
     assert m_petrol["Altitude"][1] == "m"
-    assert "Battery charge" not in m_petrol
+    assert "Battery state of charge" not in m_petrol
 
     wb_hybrid = trace_for.__wrapped__("hybrid", "franco_eco")
     m_hybrid = metrics(wb_hybrid, source="workbook")
-    assert "CO₂ emitted here" not in m_hybrid
-    assert m_hybrid["Battery charge"][1] == "fraction"
-    assert np.allclose(m_hybrid["Battery charge"][0].to_numpy(), wb_hybrid["batt_soc"].to_numpy())
+    assert "CO₂ per segment distance" not in m_hybrid
+    assert m_hybrid["Battery state of charge"][1] == "fraction"
+    assert np.allclose(m_hybrid["Battery state of charge"][0].to_numpy(), wb_hybrid["batt_soc"].to_numpy())
 
     wb_bev = trace_for.__wrapped__("bev", "franco_eco")
     m_bev = metrics(wb_bev, source="workbook")
-    assert "CO₂ emitted here" not in m_bev
-    assert "Battery charge" not in m_bev
+    assert "CO₂ per segment distance" not in m_bev
+    assert "Battery state of charge" not in m_bev
     assert m_bev["CO₂ from the grid"][1] == "g"
     assert np.allclose(m_bev["CO₂ from the grid"][0].to_numpy(), wb_bev["co2_g"].to_numpy())
 
@@ -163,8 +163,8 @@ def test_model_metrics_keep_derived_measures():
     mod_hybrid = result_for("hybrid", "franco_sport_generated", "storage losses").steps
     m = metrics(mod_hybrid, source="model")
     assert m["Power demand"][1] == "kW"
-    assert m["CO₂ emitted here"][1] == "g/km"
-    assert m["Battery charge"][1] == "%"
+    assert m["CO₂ per segment distance"][1] == "g CO₂/km"
+    assert m["Battery state of charge"][1] == "%"
 
 
 def test_workbook_map_hover_is_only_on_reported_segment_ends():
@@ -215,9 +215,9 @@ def test_map_has_dark_halo_behind_car_and_labels():
 def test_workbook_pages_never_offer_derived_co2_or_missing_soc():
     app = AppTest.from_file(str(PAGES / "3_Trace_Explorer.py"), default_timeout=120).run()
     assert not app.exception, [e.value for e in app.exception]
-    paint = next(b for b in app.button_group if b.label == "Paint the track with")
-    assert "CO₂ emitted here" not in paint.options
-    assert "Battery charge" not in paint.options
+    paint = next(b for b in app.button_group if b.label == "Map colour")
+    assert "CO₂ per segment distance" not in paint.options
+    assert "Battery state of charge" not in paint.options
     # Native keyboard-accessible slider and playback buttons exist.
     assert len(app.slider) >= 1
     assert any("Play" in b.label for b in app.button)
@@ -241,9 +241,9 @@ def test_track_map_page_offers_model_measures_and_calls_style_axes(monkeypatch):
 
     app = AppTest.from_file(str(PAGES / "8_Track_Map.py"), default_timeout=120).run()
     assert not app.exception, [e.value for e in app.exception]
-    paint = next(b for b in app.button_group if b.label == "Paint the track with")
-    assert "CO₂ emitted here" in paint.options
-    assert "Battery charge" not in paint.options  # default is petrol
+    paint = next(b for b in app.button_group if b.label == "Map colour")
+    assert "CO₂ per segment distance" in paint.options
+    assert "Battery state of charge" not in paint.options  # default is petrol
     assert "Distance (m)" in styled
     # Model output is clearly labelled.
     all_text = " ".join([*(c.value for c in app.caption), *(m.value for m in app.markdown)])
@@ -253,25 +253,25 @@ def test_track_map_page_offers_model_measures_and_calls_style_axes(monkeypatch):
 def test_switching_from_hybrid_soc_to_petrol_resets_cleanly():
     app = AppTest.from_file(str(PAGES / "8_Track_Map.py"), default_timeout=120).run()
     assert not app.exception, [e.value for e in app.exception]
-    # Switch to Full hybrid and pick Battery charge.
+    # Switch to Full hybrid and pick Battery state of charge.
     app.button_group[1].set_value("hybrid").run()
     assert not app.exception, [e.value for e in app.exception]
-    paint = next(b for b in app.button_group if b.label == "Paint the track with")
-    assert "Battery charge" in paint.options
-    paint.set_value("Battery charge").run()
+    paint = next(b for b in app.button_group if b.label == "Map colour")
+    assert "Battery state of charge" in paint.options
+    paint.set_value("Battery state of charge").run()
     assert not app.exception, [e.value for e in app.exception]
-    # Switch back to Petrol: Battery charge must disappear without crashing.
+    # Switch back to Petrol: Battery state of charge must disappear without crashing.
     app.button_group[1].set_value("petrol").run()
     assert not app.exception, [e.value for e in app.exception]
-    paint_after = next(b for b in app.button_group if b.label == "Paint the track with")
-    assert "Battery charge" not in paint_after.options
+    paint_after = next(b for b in app.button_group if b.label == "Map colour")
+    assert "Battery state of charge" not in paint_after.options
 
 
 @pytest.mark.parametrize("page_name", ["1_Overview.py", "2_Category_View.py", "4_Compare.py"])
 def test_all_other_workbook_pages_omit_derived_co2_on_map(page_name: str):
     app = AppTest.from_file(str(PAGES / page_name), default_timeout=120).run()
     assert not app.exception, [e.value for e in app.exception]
-    paints = [b for b in app.button_group if b.label == "Paint the track with"]
+    paints = [b for b in app.button_group if b.label == "Map colour"]
     assert paints
-    assert "CO₂ emitted here" not in paints[0].options
+    assert "CO₂ per segment distance" not in paints[0].options
 

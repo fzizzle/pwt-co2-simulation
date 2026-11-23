@@ -274,12 +274,10 @@ def test_entry_point_defaults_to_home():
 
 def test_overview_nav_caption_and_matrix_above_elevation():
     source = Path(OVERVIEW).read_text(encoding="utf-8")
-    assert "The reports" in source
     # Matrix dataframe must be rendered before the elevation_strip call
     assert source.index("st.dataframe(display") < source.index("elevation_strip(")
 
     app = AppTest.from_file(OVERVIEW, default_timeout=120).run()
     assert not app.exception, [e.value for e in app.exception]
     captions = " ".join(c.value for c in app.caption)
-    assert "The reports" in captions
     assert "Sizing, Track map and Study B" not in captions

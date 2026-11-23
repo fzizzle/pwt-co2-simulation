@@ -13,46 +13,33 @@ import streamlit as st
 
 from dashboard.charts import GAP_LABEL
 from dashboard.labels import column as column_label
-from dashboard.labels import figure, parameter
+from dashboard.labels import figure, parameter, sheet_label
 from dashboard.theme import FONT_STACK, POWERTRAIN_ORDER, Palette, palette
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
 #: The four canonical figures, with the display name and unit the reader sees.
 CANONICAL_QUANTITIES: dict[str, tuple[str, str]] = {
-    "co2_g_per_km": ("CO₂ per km", "g CO₂/km"),
+    "co2_g_per_km": ("CO₂ emissions", "g CO₂/km"),
     "consumption_l_per_100km": ("Fuel consumption", "l/100 km"),
     "energy_wh_per_100km": ("Electrical energy", "Wh/100 km"),
-    "co2_g_total": ("CO₂ over the run", "g CO₂"),
+    "co2_g_total": ("Total CO₂", "g CO₂"),
 }
 
 #: Display names for the columns a chart can be plotted against.
 X_LABELS: dict[str, str] = {c: column_label(c) for c in ("distance_m", "time_s", "step")}
 
 
-#: What each cycle is. Kept in the dashboard package, not `pwt/`, because it is UI copy —
-#: and because Community Cloud hot-reloads this folder but keeps `pwt/` cached from boot.
-#: The prose describes the cycle; the figures beside it are measured from the supplied files
-#: at run time rather than quoted, so they cannot drift from the data.
+#: Plain definitions of the three supplied workbook cycles.
 CYCLE_DEFINITIONS: dict[str, str] = {
     "nedc": (
-        "**New European Driving Cycle** — the European laboratory test that produced official "
-        "fuel and CO₂ figures until WLTP replaced it (phased in from 2017). It is synthetic "
-        "rather than recorded: four repeated urban segments, then one extra-urban run up to "
-        "120 km/h, driven on a rolling road. It is flat by definition — altitude is 0 "
-        "throughout, so no energy goes into climbing — and a large share of it is spent "
-        "stationary at idle. Its gentle accelerations and low average speed are why "
-        "real-world consumption routinely exceeded NEDC figures, and why it was retired."
+        "NEDC stands for New European Driving Cycle. The laboratory cycle has four urban "
+        "segments and one extra-urban segment up to 120 km/h, at 0 m altitude."
     ),
     "franco_eco": (
-        "**A lap of Spa-Francorchamps, driven economically.** Not a regulatory cycle — a real "
-        "7 km circuit, described corner by corner rather than second by second, which is why "
-        "it has so few steps. It climbs and descends about 100 m per lap, so unlike NEDC the "
-        "road gradient does real work here."
+        "The workbook records the Spa-Francorchamps eco lap in segments of different lengths."
     ),
     "franco_sport": (
-        "**The same Spa-Francorchamps lap, driven hard.** Identical route and gradient to the "
-        "eco lap; only the speeds differ, which makes the pair a clean before-and-after on "
-        "driving style alone."
+        "The sport lap uses the same route as the eco lap, with a different speed trace."
     ),
 }
 
@@ -231,7 +218,7 @@ def inject_css(pal: Palette) -> None:
 def configure(title: str) -> Palette:
     """Page config plus the active palette. Call first in every page."""
     st.set_page_config(
-        page_title=f"{title} · PWT CO₂ Simulation",
+        page_title=f"{title} · PWT CO₂ simulation",
         page_icon="🛞",
         layout="wide",
         initial_sidebar_state="auto",
@@ -483,7 +470,8 @@ def run_picker(
 def source_caption(*rows: pd.Series) -> None:
     """Name the workbook every figure on screen came from."""
     files = [f"`{row['source_file']}`" for row in rows]
-    st.caption("Source: " + " · ".join(files))
+    prefix = "Workbook: " if len(files) == 1 else "Workbooks: "
+    st.caption(prefix + " · ".join(files))
 
 
 def download(frame: pd.DataFrame, filename: str, label: str = "Download CSV") -> None:
@@ -507,17 +495,17 @@ def data_notes(runs: pd.DataFrame) -> list[str]:
             continue  # already stated in full by its own notice
         name = run_label(row["powertrain"], row["cycle"])
         zeros = [
-            display
-            for column, (display, _) in CANONICAL_QUANTITIES.items()
+            f"{display} (0 {unit})"
+            for column, (display, unit) in CANONICAL_QUANTITIES.items()
             if pd.notna(row.get(column)) and row[column] == 0
         ]
         negatives = [
-            column.removeprefix("total:")
+            sheet_label(column.removeprefix("total:"))
             for column in runs.columns
             if column.startswith("total:") and pd.notna(row.get(column)) and row[column] < 0
         ]
         if zeros:
-            notes.append(f"**{name}** reports 0 for {', '.join(zeros)}.")
+            notes.append(f"**{name}** reports {', '.join(zeros)}.")
         if negatives:
             notes.append(f"**{name}** reports a negative value for {', '.join(negatives)}.")
     return notes

@@ -24,7 +24,7 @@ STRIP_HEIGHT = 250
 SEQUENTIAL = [[0.0, "#2874d2"], [0.35, "#4c96ec"], [0.7, "#94c4f7"], [1.0, "#eef5fe"]]
 #: Blue coasting or recovering, mid-grey near zero, coral-red pulling hard (all >= 3.9:1).
 DIVERGING = [[0.0, "#3a8ce8"], [0.5, "#787872"], [1.0, "#f05a4f"]]
-PAINTS = ("Speed", "Power demand", "CO₂ emitted here", "Altitude", "Battery charge")
+PAINTS = ("Speed", "Power demand", "CO₂ per segment distance", "Altitude", "Battery state of charge")
 
 #: Outward/open-space label anchors around Spa (north up) so text avoids the bright track.
 LANDMARK_POSITIONS: dict[str, str] = {
@@ -149,7 +149,7 @@ def metrics(
         if has("altitude_m"):
             out["Altitude"] = (steps["altitude_m"], "m", False)
         if has("batt_soc"):
-            out["Battery charge"] = (steps["batt_soc"], "fraction", False)
+            out["Battery state of charge"] = (steps["batt_soc"], "fraction", False)
         return out
 
     if has("engine_power_drivetrain_w"):
@@ -160,11 +160,11 @@ def metrics(
             / steps["delta_distance_m"].where(lambda d: d > 0)
             * 1000.0
         ).fillna(0.0).clip(lower=0)
-        out["CO₂ emitted here"] = (per_km, "g/km", False)
+        out["CO₂ per segment distance"] = (per_km, "g CO₂/km", False)
     if has("altitude_m"):
         out["Altitude"] = (steps["altitude_m"], "m", False)
     if has("batt_soc"):
-        out["Battery charge"] = (steps["batt_soc"] * 100.0, "%", False)
+        out["Battery state of charge"] = (steps["batt_soc"] * 100.0, "%", False)
     return out
 
 
@@ -369,10 +369,15 @@ def lap_map(
             ribbon["speed_kph"].to_numpy(),
             [_fmt_value(v, unit) for v in rib_vals],
         ])
-        ribbon_kwargs["hovertemplate"] = (
-            "%{customdata[0]:.2f} km · %{customdata[1]:.0f} km/h"
-            f"<br>{label}: %{{customdata[2]}} {unit}<extra></extra>"
-        )
+        if label == "Speed":
+            ribbon_kwargs["hovertemplate"] = (
+                "%{customdata[0]:.2f} km · Speed %{customdata[1]:.0f} km/h<extra></extra>"
+            )
+        else:
+            ribbon_kwargs["hovertemplate"] = (
+                "%{customdata[0]:.2f} km · Speed %{customdata[1]:.0f} km/h"
+                f"<br>{label}: %{{customdata[2]}} {unit}<extra></extra>"
+            )
     else:
         ribbon_kwargs["hoverinfo"] = "skip"
 
@@ -398,6 +403,14 @@ def lap_map(
             [_fmt_value(v, unit) for v in values],
             step_nums,
         ])
+        step_hover = (
+            "Step %{customdata[3]:.0f} · %{customdata[0]:.0f} m · Speed %{customdata[1]:.0f} km/h<extra></extra>"
+            if label == "Speed"
+            else (
+                "Step %{customdata[3]:.0f} · %{customdata[0]:.0f} m · Speed %{customdata[1]:.0f} km/h"
+                f"<br>{label}: %{{customdata[2]}} {unit}<extra></extra>"
+            )
+        )
         fig.add_trace(go.Scattermap(
             lat=step_lat, lon=step_lon, mode="markers", showlegend=False,
             marker=dict(
@@ -405,10 +418,7 @@ def lap_map(
                 showscale=False,
             ),
             customdata=custom,
-            hovertemplate=(
-                "Step %{customdata[3]:.0f} · %{customdata[0]:.0f} m · %{customdata[1]:.0f} km/h"
-                f"<br>{label}: %{{customdata[2]}} {unit}<extra></extra>"
-            ),
+            hovertemplate=step_hover,
         ))
 
     # 4. Corner landmarks with dark halo behind white labels.
@@ -562,21 +572,18 @@ def lap_section(
     name = run_names[0]
     if len(run_names) > 1:
         run_key = f"{key}_run"
-        if run_key in st.session_state and st.session_state[run_key] not in laps:
+        if run_key not in st.session_state or st.session_state[run_key] not in laps:
             st.session_state[run_key] = name
-        name = st.segmented_control("Run on the map", run_names, default=name, key=run_key) or name
+        name = st.segmented_control("Run", run_names, key=run_key) or name
 
     steps = laps[name]
     choices = metrics(steps, source=source)
     options = list(choices)
     default_paint = paint if paint in choices else options[0]
     paint_key = f"{key}_paint"
-    if paint_key in st.session_state and st.session_state[paint_key] not in choices:
+    if paint_key not in st.session_state or st.session_state[paint_key] not in choices:
         st.session_state[paint_key] = default_paint
-    metric = (
-        st.segmented_control("Paint the track with", options, default=default_paint, key=paint_key)
-        or default_paint
-    )
+    metric = st.segmented_control("Map colour", options, key=paint_key) or default_paint
     values, unit, diverging = choices[metric]
 
     frame_ids = _frame_indices(steps)
@@ -667,20 +674,17 @@ def lap_section(
 
     if source == "workbook":
         st.caption(
-            f"This workbook has {len(steps)} reported steps; the ribbon interpolates visually "
-            "between them to draw the circuit, while hover and the chart show only reported "
-            "values at segment ends."
+            f"This workbook has {len(steps)} reported steps. The map interpolates visually "
+            "between recorded points; hover and the chart show reported values at segment ends."
         )
-    if source == "model" and metric == "CO₂ emitted here":
+    if source == "model" and metric == "CO₂ per segment distance":
         st.caption(
-            "Model output — CO₂ at each point only. It leaves out the electricity a plug-in "
-            "hybrid recharges and the fuel a full hybrid burns to buy back its battery, which "
-            "the lap totals elsewhere include."
+            "Model output — CO₂ per segment distance (g CO₂/km). "
+            "End-of-lap battery accounting is excluded."
         )
     st.caption(
-        "Circuit outline: [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits), "
-        "MIT licence. Map tiles © OpenStreetMap contributors, © CARTO. The outline is coarse "
-        "and the laps use a single line, so positions are good to about 100 m. Corner names "
-        "are placed by hand."
+        "Map positions and landmark markers are approximate. Circuit outline: "
+        "[bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (MIT licence). "
+        "Map tiles © OpenStreetMap contributors, © CARTO."
     )
     return values, unit

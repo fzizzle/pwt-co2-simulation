@@ -284,10 +284,7 @@ def trace_lines(
                 color=colour,
                 line=dict(color=pal.surface, width=2),
             ),
-            hovertemplate=(
-                f"<b>{name}</b><br>{column_label(x_column)} %{{x:,.4~r}}"
-                "<br>%{y:,.4~r}<extra></extra>"
-            ),
+            hovertemplate=f"<b>{name}</b><br>%{{y:,.4~r}}<extra></extra>",
         )
     fig.update_layout(showlegend=len(columns) > 1, hovermode="x unified")
     return fig
@@ -388,7 +385,7 @@ def force_breakdown(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.Figu
             y=trace[column],
             mode="lines",
             line=dict(color=colour, width=LINE_WIDTH, dash=dash),
-            hovertemplate=f"{label} %{{y:,.0f}}<extra></extra>",
+            hovertemplate=f"{label.removesuffix(' (N)')} %{{y:,.0f}} N<extra></extra>",
         )
     fig.add_hline(y=0, line=dict(color=pal.axis, width=1, dash="dot"))
     fig.update_layout(showlegend=True, hovermode="x unified")
@@ -434,7 +431,7 @@ def overlay_traces(
                 color=colour,
                 line=dict(color=pal.surface, width=2),
             ),
-            hovertemplate=f"<b>{label}</b><br>%{{y:,.4~r}}<extra></extra>",
+            hovertemplate=f"<b>{label}</b><br>{column_label(column)}: %{{y:,.4~r}}<extra></extra>",
         )
     fig.update_layout(showlegend=len(fig.data) > 1, hovermode="x unified")
     return fig

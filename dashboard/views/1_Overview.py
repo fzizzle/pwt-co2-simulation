@@ -21,13 +21,13 @@ from dashboard.layout import (
     CANONICAL_QUANTITIES,
     CYCLE_DEFINITIONS,
     configure,
-    cycle_facts,
     data_notes,
     download,
     elevation_strip,
     mark_gap_value,
     measure_picker,
     render_run_notices,
+    run_label,
     run_notice,
     sidebar_filters,
 )
@@ -42,17 +42,8 @@ runs = load_runs()
 
 # --- header ---------------------------------------------------------------------------------
 
-st.title("PWT workbook explorer")
-st.markdown(
-    "The twelve supplied workbooks — four powertrains over three cycles — read straight from "
-    "the spreadsheets. Figures are shown exactly as the workbooks report them: nothing here "
-    "converts units, recomputes a result, or fills in a missing value."
-)
-st.caption(
-    "Model and Track map sit under “The model” in the menu; Hybrid sizing, CO₂ sensitivity "
-    "and Cornering speed sit under “The reports”. Those pages show what the Python model "
-    "computes, not the workbooks' figures."
-)
+st.title("Workbook overview")
+st.markdown("Reported results for four powertrains on three cycles.")
 
 # --- controls -------------------------------------------------------------------------------
 
@@ -62,16 +53,13 @@ display_name, unit = CANONICAL_QUANTITIES[quantity]
 
 selected = runs[runs["powertrain"].isin(powertrains) & runs["cycle"].isin(cycles)]
 if selected.empty:
-    st.info("Pick at least one powertrain and one cycle in the sidebar.")
+    st.info("Select at least one powertrain and one driving cycle.")
     st.stop()
 
 # --- the matrix -----------------------------------------------------------------------------
 
-st.subheader(f"{display_name} — every run")
-st.caption(
-    f"Unit: {unit}. A blank cell means that workbook does not report this figure; a cell "
-    "marked “electricity not counted” leaves out the energy a plug-in run drew from its battery."
-)
+st.subheader(f"{display_name} ({unit})")
+st.caption("A dash marks a figure the workbook does not report.")
 
 render_run_notices(*(row for _, row in selected.iterrows()))
 
@@ -102,7 +90,7 @@ gaps = {
     if run_notice(row["powertrain"], row["cycle"])
 }
 fig = charts.grouped_totals(selected, quantity, pal, unit=unit, gaps=gaps, show_footnote=False)
-style_axes(fig, pal, y_title=unit)
+style_axes(fig, pal, y_title=f"{display_name} ({unit})")
 fig.update_layout(height=420, margin=dict(t=28, b=12))
 st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, theme=None)
 if gaps:
@@ -112,33 +100,28 @@ if gaps:
 
 notes = data_notes(selected)
 if notes:
-    with st.expander(f"Values to be aware of ({len(notes)})", expanded=True):
+    with st.expander(f"Zero and negative figures ({len(notes)})", expanded=True):
         for note in notes:
             st.markdown(f"- {note}")
 
 # --- elevation and cycle context ------------------------------------------------------------
 
 lap = trace_for("petrol", "franco_eco")
+eco_label = run_label("petrol", "franco_eco")
 strip = elevation_strip(lap, pal)
 if strip is not None:
     st.plotly_chart(strip, width="stretch", config={"displayModeBar": False}, theme=None)
-    st.caption(
-        "Spa-Francorchamps elevation over the 7 km lap — the grade term behind every "
-        "Francorchamps figure above."
-    )
-    with st.expander("See this lap on the circuit"):
-        lap_section({"Petrol, Francorchamps eco": lap}, "overview", pal, paint="Altitude")
+    st.caption(f"Altitude from the {eco_label} workbook.")
+    with st.expander("Circuit map"):
+        lap_section({eco_label: lap}, "overview", pal, paint="Altitude")
 
-with st.expander("What the cycles are"):
+with st.expander("Driving cycles"):
     for code, definition in CYCLE_DEFINITIONS.items():
         st.markdown(f"### {CYCLE_NAMES[code]}\n{definition}")
-        facts = cycle_facts(trace_for("petrol", code))
-        if facts:
-            st.caption(f"In these files: {facts}.")
 
 # --- the table ------------------------------------------------------------------------------
 
-with st.expander("All reported figures, as a table"):
+with st.expander("Reported figures"):
     columns = ["powertrain", "cycle", "source_file", "steps", *CANONICAL_QUANTITIES]
     table = selected[columns].copy()
     table["powertrain"] = table["powertrain"].map(POWERTRAIN_NAMES)
@@ -146,11 +129,11 @@ with st.expander("All reported figures, as a table"):
     table = table.rename(
         columns={
             "powertrain": "Powertrain",
-            "cycle": "Cycle",
+            "cycle": "Driving cycle",
             "source_file": "Workbook",
             "steps": "Steps",
             **{k: f"{v[0]} ({v[1]})" for k, v in CANONICAL_QUANTITIES.items()},
         }
     )
     st.dataframe(readable(table, figure), width="stretch", hide_index=True)
-    download(table, "pwt-runs.csv")
+    download(table, "pwt-runs.csv", "Download reported figures (CSV)")

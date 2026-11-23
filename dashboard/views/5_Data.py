@@ -38,21 +38,14 @@ pal = configure("Data")
 runs = load_runs()
 
 st.title("Data")
-st.markdown(
-    "Every dataset from the supplied workbooks. Values are as the workbooks report them — the "
-    "only changes are structural: columns renamed to stable names, and rows keyed by label and "
-    "unit."
-)
+st.markdown("Tables from the supplied workbooks.")
 
 DATASETS = {
-    "Runs": "One row per run, with every total and parameter widened into columns.",
-    "Totals": "Every reported total, one row each.",
-    "Parameters": "Every input, one row each.",
-    "Traces": "Every step of every run, stacked.",
-    "Workbook cells": (
-        "One workbook's labelled block exactly as the sheet holds it — original label and "
-        "unit text, the row number, and how the reader classified it."
-    ),
+    "Runs": "One row per run.",
+    "Totals": "One row per reported total.",
+    "Parameters": "One row per reported parameter.",
+    "Traces": "One row per trace step.",
+    "Workbook cells": "Workbook row numbers, labels and units, with reader matches.",
 }
 
 choice = st.radio(
@@ -94,17 +87,18 @@ def with_display_names(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def column_picker(frame: pd.DataFrame, *, keep: list[str], key: str) -> pd.DataFrame:
-    """Let the reader narrow a wide table; identity columns are always kept."""
+    """Let the reader narrow a wide table; fixed identity columns are always kept."""
     optional = [c for c in frame.columns if c not in keep]
     if len(optional) <= 8:
         return frame
+    fixed_names = ", ".join(column_label(c, with_unit=False) for c in keep)
     chosen = st.multiselect(
-        f"Columns ({len(optional)} available)",
+        "Columns",
         options=optional,
         default=optional[: min(8, len(optional))],
         key=key,
         format_func=column_label,
-        help="Identity columns are always shown.",
+        help=f"Always shown: {fixed_names}.",
     )
     return frame[keep + chosen]
 
@@ -124,7 +118,6 @@ if choice == "Workbook cells":
     selected_run = runs[runs["source_file"] == entry]
     render_run_notices(*(row for _, row in selected_run.iterrows()))
     table = load_block(entry)
-    st.caption(f"Source: `{entry}`")
 else:
     if choice == "Runs":
         table = column_picker(
@@ -144,10 +137,10 @@ else:
         )
 
 if table.empty:
-    st.info("Nothing matches the current filters. Widen the selection in the sidebar.")
+    st.info("No rows match the selected filters.")
     st.stop()
 
-st.caption(f"{len(table):,} rows × {len(table.columns)} columns. Click a header to sort.")
+st.caption(f"{len(table):,} rows × {len(table.columns)} columns.")
 # Size the table to its contents up to a cap, so a short dataset is fully visible rather than
 # scrolling inside a widget that is mostly empty space.
 ROW_PX, HEADER_PX, MAX_ROWS = 35, 38, 22
@@ -160,5 +153,4 @@ st.dataframe(
     height=min(len(table), MAX_ROWS) * ROW_PX + HEADER_PX,
 )
 download(table.rename(columns=column_label), f"pwt-{choice.lower().replace(' ', '-')}.csv",
-         "Download these rows as CSV")
-st.caption("The download contains exactly the rows and columns shown above.")
+         "Download table (CSV)")

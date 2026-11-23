@@ -43,10 +43,6 @@ pal = configure("Category view")
 runs = load_runs()
 
 st.title("Category view")
-st.markdown(
-    "Every run in one category, side by side. Choose powertrain to see one technology across "
-    "the cycles, or by cycle to see the four technologies on the same drive."
-)
 
 # --- pick the category -----------------------------------------------------------------------
 
@@ -78,20 +74,16 @@ member_names = [
 #: common — that keeps a technology the same colour on every page.
 member_colours = [pal.for_powertrain(row["powertrain"]) for _, row in members.iterrows()]
 
-st.caption(
-    f"{names[choice]} — {len(members)} runs: "
-    + " · ".join(f"`{row['source_file']}`" for _, row in members.iterrows())
-)
-
 render_run_notices(*(row for _, row in members.iterrows()))
 
 # --- the figures, as a table -------------------------------------------------------------------
 
 st.subheader("Reported figures")
 
+member_col = "Cycle" if sort_field == "cycle" else "Powertrain"
 records = []
 for name, (_, row) in zip(member_names, members.iterrows()):
-    record = {"Run": name}
+    record = {member_col: name}
     for column, (display, unit) in CANONICAL_QUANTITIES.items():
         record[f"{display} ({unit})"] = mark_gap_value(
             row.get(column), row["powertrain"], row["cycle"]
@@ -103,16 +95,12 @@ figures = pd.DataFrame(records)
 st.dataframe(
     figures, width="stretch", hide_index=True, height=len(figures) * 35 + 38
 )
-st.caption(
-    "A dash means that workbook does not report the figure; “electricity not counted” marks "
-    "a run whose figure leaves out its battery energy. Values are as reported — nothing here "
-    "is converted or recomputed."
-)
-download(figures, f"pwt-category-{choice}.csv", "Download these figures as CSV")
+st.caption("A dash marks a figure the workbook does not report.")
+download(figures, f"pwt-category-{choice}.csv", "Download figures (CSV)")
 
 # --- one measure, charted ----------------------------------------------------------------------
 
-st.subheader("Compare one measure")
+st.subheader("Selected measure")
 quantity = measure_picker(st, key="wb_measure_category", widget="selectbox")
 display_name, unit = CANONICAL_QUANTITIES[quantity]
 sidebar_reset_button()
@@ -123,16 +111,16 @@ gaps = {
     if run_notice(row["powertrain"], row["cycle"])
 }
 fig = charts.grouped_totals(members, quantity, pal, unit=unit, gaps=gaps)
-style_axes(fig, pal, y_title=unit)
+style_axes(fig, pal, y_title=f"{display_name} ({unit})")
 fig.update_layout(height=400)
 st.plotly_chart(fig, width="stretch", theme=None)
 
 if members[quantity].isna().all():
-    st.caption(f"No run in this category reports {display_name.lower()}.")
+    st.caption(f"No run in this category reports {display_name}.")
 
 # --- traces overlaid ---------------------------------------------------------------------------
 
-st.subheader("Traces overlaid")
+st.subheader("Trace comparison")
 
 all_traces = [trace_for(row["powertrain"], row["cycle"]) for _, row in members.iterrows()]
 
@@ -140,7 +128,7 @@ all_traces = [trace_for(row["powertrain"], row["cycle"]) for _, row in members.i
 # So a category with two or more laps opens on the laps alone, against distance.
 lap_members = [name for name, c in zip(member_names, members["cycle"]) if is_lap(c)]
 overlaid = st.multiselect(
-    "Runs to overlay", member_names,
+    "Runs", member_names,
     default=lap_members if len(lap_members) >= 2 else member_names,
     key=f"category_overlay_{choice}",
 )
@@ -151,7 +139,7 @@ overlay_colours = [member_colours[i] for i in keep]
 overlay_cycles = {members["cycle"].iloc[i] for i in keep}
 
 if not traces:
-    st.caption("Pick at least one run to overlay.")
+    st.caption("Select at least one run.")
     plottable = []
 else:
     shared_axes = set.intersection(*(set(axis_columns(t)) for t in traces))
@@ -160,15 +148,15 @@ else:
     plottable = [c for c in shared_columns if c not in ("step",)]
 
 if traces and not plottable:
-    st.caption("These runs share no per-step column, so there is nothing to overlay.")
+    st.caption("These runs share no numeric trace column.")
 elif plottable:
     picker, axis_picker = st.columns([3, 1])
     with picker:
         default = next((i for i, c in enumerate(plottable) if c == "speed_kph"), 0)
-        column = st.selectbox("Column", options=plottable, index=default,
+        column = st.selectbox("Trace column", options=plottable, index=default,
                               format_func=column_label)
     with axis_picker:
-        x_column = st.selectbox("Against", options=axis_options, format_func=lambda c: X_LABELS[c])
+        x_column = st.selectbox("X-axis", options=axis_options, format_func=lambda c: X_LABELS[c])
 
     if x_column == "step":
         traces = [t.assign(step=range(len(t))) for t in traces]
@@ -194,35 +182,26 @@ elif plottable:
     st.plotly_chart(fig, width="stretch", theme=None)
 
     if member_dashes:
-        st.caption(
-            "All runs here are the same powertrain and so share its colour; the line pattern "
-            "tells the cycles apart."
-        )
+        st.caption("Line patterns identify cycles.")
 
     if axis_options == ["step"]:
-        st.caption(
-            "Plotted against step number: these workbooks share no distance or time column "
-            "that runs forward across all of them."
-        )
-    if x_column == "distance_m" and not all(is_lap(c) for c in overlay_cycles):
-        st.caption(
-            "These runs are on different cycles, so the x-axes cover different ground: the "
-            "Francorchamps lap is 7 km, NEDC about 11 km."
-        )
+        st.caption("These runs share no usable distance or time axis.")
+    if x_column == "step" and len(overlay_cycles) > 1:
+        st.caption("Step numbers refer to each workbook's own trace.")
 
 laps = {name: trace for name, trace, cycle in zip(member_names, all_traces, members["cycle"])
         if is_lap(cycle)}
 if laps:
-    st.subheader("On the circuit")
+    st.subheader("Circuit map")
     lap_section(laps, "category", pal, source="workbook")
 
 # --- what differs ------------------------------------------------------------------------------
 
-st.subheader("Inputs that differ across the category")
+st.subheader("Parameter differences")
 
 varying = varying_parameters(members)
 if varying.empty:
-    st.caption("Every parameter these workbooks share holds the same value.")
+    st.caption("The workbooks report the same parameters and values.")
 else:
     # Rename the run columns to the short names used above.
     rename = {
@@ -238,7 +217,7 @@ else:
         height=min(len(varying), 18) * 35 + 38,
     )
     st.caption(
-        f"{len(varying)} parameters differ across the category, or are absent from some of its "
-        "workbooks — a dash means that workbook has no row for it at all. Most-varied first."
+        "A dash marks a parameter the workbook does not report. "
+        "Sorted by number of distinct values."
     )
-    download(varying, f"pwt-category-{choice}-parameters.csv", "Download these parameters as CSV")
+    download(varying, f"pwt-category-{choice}-parameters.csv", "Download parameters (CSV)")

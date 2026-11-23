@@ -96,13 +96,15 @@ def axis_exclusion_reason(trace: pd.DataFrame, column: str) -> str | None:
     name = column_label(column, with_unit=False)
     values = trace[column].dropna()
     if values.empty:
-        return f"{name} is empty in this workbook, so there is nothing to plot against."
+        return f"The {name} column is empty."
     if not values.is_monotonic_increasing:
-        return (
-            f"{name} is recorded per step in this workbook rather than cumulatively, so it "
-            "does not run forward and would scramble the chart."
-        )
-    return f"{name} does not increase across the run, so it cannot be an axis."
+        if column == "distance_m":
+            return (
+                f"{name} is recorded per step rather than cumulatively, so it "
+                "does not increase from step to step."
+            )
+        return f"{name} does not increase from step to step."
+    return f"{name} does not increase from step to step."
 
 
 def pretty(kind: str, value: str) -> str:

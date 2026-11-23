@@ -50,10 +50,10 @@ COLUMNS: dict[str, tuple[str, str]] = {
     "co2_g": ("CO₂ from the grid", "g"),
     "energy_wh": ("Energy", "Wh"),
     "energy_to_move_car_wh": ("Energy to move the car", "Wh"),
-    "batt_soc": ("Battery charge", "fraction"),
+    "batt_soc": ("Battery state of charge", "fraction"),
     "battv": ("Energy demand this step", "Wh"),
-    "fact": ("Engine's share of demand", ""),
-    "shortfall_w": ("Short of the engine's full-load curve", "W"),
+    "fact": ("Motor share of power demand", "fraction"),
+    "shortfall_w": ("Engine power shortfall", "W"),
     # identity columns on the Data page
     "powertrain": ("Powertrain", ""),
     "cycle": ("Cycle", ""),

@@ -99,7 +99,7 @@ def _render_wltc_preview(wltc: pd.DataFrame, pal: Palette) -> None:
             </h2>
           </div>
           <span class="pwt-badge pwt-badge-model">
-            Model output · storage losses · EU grid 250 g/kWh
+            Model output · storage losses · EU grid 250 g CO₂/kWh
           </span>
         </div>"""
     )
@@ -157,7 +157,7 @@ def _render_wltc_preview(wltc: pd.DataFrame, pal: Palette) -> None:
     fig = charts.model_co2_bars(wltc, pal, height=230, show_footnote=False)
     st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, theme=None)
     st.caption(
-        "Model output (assignment vehicles, storage losses, EU grid 250 g/kWh, PHEV R101-weighted). "
+        "Model output (assignment vehicles, storage losses, EU grid 250 g CO₂/kWh, Plug-in hybrid R101-weighted). "
         "Outlined bars and * mark runs where the engine falls short of the trace (conditional result)."
     )
 
@@ -196,28 +196,28 @@ _render_hero(pal)
 
 # --- Entry links for the three menu groups --------------------------------------------------
 
-_group_header("01", "The workbooks", "Workbook · verbatim", "pwt-badge-wb", pal)
+_group_header("01", "Workbooks", "Reported figures", "pwt-badge-wb", pal)
 _link_cards(
     [
         ("1_Overview.py", "Overview", "12 supplied runs in one matrix and grouped bar chart."),
         ("2_Category_View.py", "Category view", "Slice the 4×3 grid by powertrain or cycle."),
         ("3_Trace_Explorer.py", "Trace explorer", "Per-step speed, gear, force, and energy for one run."),
-        ("4_Compare.py", "Compare", "Two workbooks side by side, differing inputs first."),
+        ("4_Compare.py", "Compare", "Two workbooks side by side: reported figures, parameter differences and traces."),
         ("5_Data.py", "Data", "Raw runs, totals, parameters, traces, and workbook cells."),
     ],
     cols_per_row=5,
 )
 
-_group_header("02", "The model", "Model output · EU 250 g/kWh", "pwt-badge-model", pal)
+_group_header("02", "Model", "Model output · EU grid 250 g CO₂/kWh", "pwt-badge-model", pal)
 _link_cards(
     [
-        ("6_Model.py", "Model", "Five scenarios from workbook-exact to storage losses."),
+        ("6_Model.py", "Model", "Five scenarios from workbook vehicles to storage losses."),
         ("8_Track_Map.py", "Track map", "Generated Spa-Francorchamps laps on the circuit."),
     ],
     cols_per_row=2,
 )
 
-_group_header("03", "The reports", "Personal studies · saved results", "pwt-badge-draft", pal)
+_group_header("03", "Studies", "Model output · personal studies", "pwt-badge-draft", pal)
 _link_cards(
     [
         ("7_Sizing.py", "Hybrid sizing", "Study A · battery and motor sizing sweep."),

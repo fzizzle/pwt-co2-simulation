@@ -24,18 +24,18 @@ MENU = {
     "": [
         st.Page(PAGES / "0_Home.py", title="Home", url_path="home", default=True),
     ],
-    "The workbooks": [
+    "Workbooks": [
         st.Page(PAGES / "1_Overview.py", title="Overview", url_path="overview"),
         st.Page(PAGES / "2_Category_View.py", title="Category view", url_path="category-view"),
         st.Page(PAGES / "3_Trace_Explorer.py", title="Trace explorer", url_path="trace-explorer"),
         st.Page(PAGES / "4_Compare.py", title="Compare", url_path="compare"),
         st.Page(PAGES / "5_Data.py", title="Data", url_path="data"),
     ],
-    "The model": [
+    "Model": [
         st.Page(PAGES / "6_Model.py", title="Model", url_path="model"),
         st.Page(PAGES / "8_Track_Map.py", title="Track map", url_path="track-map"),
     ],
-    "The reports": [
+    "Studies": [
         st.Page(PAGES / "7_Sizing.py", title="Hybrid sizing", url_path="sizing"),
         st.Page(PAGES / "9_CO2_Sensitivity.py", title="CO₂ sensitivity",
                 url_path="co2-sensitivity"),
