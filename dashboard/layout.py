@@ -14,7 +14,7 @@ import streamlit as st
 from dashboard.charts import GAP_LABEL
 from dashboard.labels import column as column_label
 from dashboard.labels import figure, parameter
-from dashboard.theme import POWERTRAIN_ORDER, Palette, palette
+from dashboard.theme import FONT_STACK, POWERTRAIN_ORDER, Palette, palette
 from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 
 #: The four canonical figures, with the display name and unit the reader sees.
@@ -146,15 +146,102 @@ def render_run_notices(*runs: pd.Series) -> None:
                 st.markdown(why)
 
 
+def inject_css(pal: Palette) -> None:
+    """Apply deck typography, tabular numerals, WCAG-AA active controls, and card tokens."""
+    is_dark = pal.name == "dark"
+    active_bg = "#2c2c2e" if is_dark else "#1d1d1f"
+    active_fg = "#f5f5f7" if is_dark else "#ffffff"
+    link_fg = "#6eb4fa" if is_dark else "#1f63a8"
+    badge_wb_fg = "#e2b36a" if is_dark else "#7a5210"
+    badge_model_fg = "#7bb4ec" if is_dark else "#1b5594"
+    badge_draft_fg = "#cfa2e5" if is_dark else "#6c3688"
+    st.html(
+        f"""<style>
+        .stApp, .stApp button, .stApp input, .stApp select {{
+            font-family: {FONT_STACK};
+            -webkit-font-smoothing: antialiased;
+        }}
+        .stMetricValue, [data-testid="stMetricValue"], .pwt-tabular {{
+            font-variant-numeric: tabular-nums;
+        }}
+        /* High-contrast active segmented controls and pills (WCAG AA >= 4.5:1). */
+        [data-testid="stBaseButton-segmented_controlActive"],
+        [data-testid="stBaseButton-pillsActive"],
+        button[kind="segmented_controlActive"],
+        button[kind="pillsActive"] {{
+            background-color: {active_bg} !important;
+            color: {active_fg} !important;
+            border-color: {pal.primary} !important;
+            font-weight: 600 !important;
+        }}
+        /* Multiselect tags: white text on accessible primaryColor (>= 4.5:1). */
+        span[data-baseweb="tag"] {{
+            background-color: {pal.primary} !important;
+            color: #ffffff !important;
+        }}
+        span[data-baseweb="tag"] span,
+        span[data-baseweb="tag"] svg {{
+            color: #ffffff !important;
+            fill: #ffffff !important;
+        }}
+        /* Keep caption hyperlinks at full contrast instead of inheriting 0.6 opacity. */
+        [data-testid="stCaptionContainer"] {{
+            color: {pal.text_muted} !important;
+            opacity: 1 !important;
+        }}
+        [data-testid="stCaptionContainer"] a {{
+            color: {link_fg} !important;
+            opacity: 1 !important;
+            text-decoration: underline;
+        }}
+        /* Provenance pills & Keynote Darkroom cards (used by Home and shared headers). */
+        .pwt-badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 600;
+            border: 1px solid {pal.border};
+            background: {pal.surface_raised};
+            color: {pal.text_secondary};
+            white-space: nowrap;
+        }}
+        .pwt-badge-wb {{
+            border-color: rgba(208, 149, 57, 0.5);
+            color: {badge_wb_fg};
+            background: rgba(208, 149, 57, 0.12);
+        }}
+        .pwt-badge-model {{
+            border-color: rgba(57, 132, 208, 0.5);
+            color: {badge_model_fg};
+            background: rgba(57, 132, 208, 0.12);
+        }}
+        .pwt-badge-draft {{
+            border-color: rgba(182, 119, 213, 0.5);
+            color: {badge_draft_fg};
+            background: rgba(182, 119, 213, 0.12);
+        }}
+        [data-testid="stVerticalBlockBorderWrapper"] {{
+            border-color: {pal.border} !important;
+            border-radius: 14px !important;
+        }}
+        </style>"""
+    )
+
+
 def configure(title: str) -> Palette:
     """Page config plus the active palette. Call first in every page."""
     st.set_page_config(
-        page_title=f"{title} · PWT workbooks",
+        page_title=f"{title} · PWT CO₂ Simulation",
         page_icon="🛞",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="auto",
     )
-    return palette()
+    pal = palette()
+    inject_css(pal)
+    return pal
 
 
 def _rgba(hex_colour: str, alpha: float) -> str:
@@ -174,14 +261,15 @@ def elevation_strip(trace: pd.DataFrame, pal: Palette) -> go.Figure | None:
     if "altitude_m" not in trace.columns or trace["altitude_m"].isna().all():
         return None
     x = "distance_m" if "distance_m" in trace.columns else "step"
+    accent = pal.for_powertrain("bev")
     fig = go.Figure()
     fig.add_scatter(
         x=trace[x],
         y=trace["altitude_m"],
         mode="lines",
-        line=dict(color=pal.series[0], width=1.5),  # linear: smoothing would misstate the profile
+        line=dict(color=accent, width=1.5),  # linear: smoothing would misstate the profile
         fill="tozeroy",
-        fillcolor=_rgba(pal.series[0], 0.14),
+        fillcolor=_rgba(accent, 0.14),
         hoverinfo="skip",
     )
     low, high = trace["altitude_m"].min(), trace["altitude_m"].max()

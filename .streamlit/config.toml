@@ -1,12 +1,58 @@
-# Surface and ink match the validated dark palette in dashboard/theme.py, so figures never
-# disagree with the page they sit on. primaryColor is the dark step of categorical slot 1.
+# Keynote Darkroom default + deck light twin, matching pwt/deck/art.py and dashboard/theme.py.
+# primaryColor (#2f78c1 dark, #1f63a8 light) clears WCAG AA (>= 4.5:1) both for white label
+# text on active tags/buttons and against the main page canvas.
 [theme]
 base = "dark"
-primaryColor = "#3987e5"
-backgroundColor = "#1a1a19"
-secondaryBackgroundColor = "#242422"
-textColor = "#ffffff"
-font = "sans-serif"
+primaryColor = "#2f78c1"
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#1c1c1e"
+textColor = "#f5f5f7"
+borderColor = "#2c2c2e"
+linkColor = "#6eb4fa"
+baseRadius = "0.75rem"
+buttonRadius = "0.5rem"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+chartCategoricalColors = ["#d09539", "#4fb267", "#b677d5", "#3984d0"]
+
+[theme.dark]
+primaryColor = "#2f78c1"
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#1c1c1e"
+textColor = "#f5f5f7"
+borderColor = "#2c2c2e"
+linkColor = "#6eb4fa"
+baseRadius = "0.75rem"
+buttonRadius = "0.5rem"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+dataframeBorderColor = "#2c2c2e"
+dataframeHeaderBackgroundColor = "#1c1c1e"
+dataframeHeaderTextColor = "#f5f5f7"
+chartCategoricalColors = ["#d09539", "#4fb267", "#b677d5", "#3984d0"]
+
+[theme.dark.sidebar]
+backgroundColor = "#0a0a0c"
+secondaryBackgroundColor = "#1c1c1e"
+borderColor = "#2c2c2e"
+
+[theme.light]
+primaryColor = "#1f63a8"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f5f5f7"
+textColor = "#1d1d1f"
+borderColor = "#e5e5ea"
+linkColor = "#1f63a8"
+baseRadius = "0.75rem"
+buttonRadius = "0.5rem"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap, sans-serif"
+dataframeBorderColor = "#e5e5ea"
+dataframeHeaderBackgroundColor = "#f5f5f7"
+dataframeHeaderTextColor = "#1d1d1f"
+chartCategoricalColors = ["#d09539", "#4fb267", "#b677d5", "#3984d0"]
+
+[theme.light.sidebar]
+backgroundColor = "#f5f5f7"
+secondaryBackgroundColor = "#ffffff"
+borderColor = "#e5e5ea"
 
 [server]
 headless = true

@@ -1,6 +1,6 @@
 """Overview — every supplied run in one table and one chart.
 
-Opened by the app entry point, `dashboard/Overview.py`.
+Opened from `dashboard/Overview.py` under "The workbooks".
 """
 
 from __future__ import annotations
@@ -47,27 +47,11 @@ st.markdown(
     "the spreadsheets. Figures are shown exactly as the workbooks report them: nothing here "
     "converts units, recomputes a result, or fills in a missing value."
 )
-st.caption("The Model, Sizing, Track map and Study B pages are different: they show what the "
-           "Python model computes, not the workbooks' figures. They are under “The model” in "
-           "the menu.")
-
-with st.expander("What the cycles are"):
-    for code, definition in CYCLE_DEFINITIONS.items():
-        st.markdown(f"### {CYCLE_NAMES[code]}\n{definition}")
-        facts = cycle_facts(trace_for("petrol", code))
-        if facts:
-            st.caption(f"In these files: {facts}.")
-
-lap = trace_for("petrol", "franco_eco")
-strip = elevation_strip(lap, pal)
-if strip is not None:
-    st.plotly_chart(strip, width="stretch", config={"displayModeBar": False}, theme=None)
-    st.caption(
-        "Spa-Francorchamps elevation over the 7 km lap — the grade term behind every "
-        "Francorchamps figure below."
-    )
-    with st.expander("See this lap on the circuit"):
-        lap_section({"Petrol, Francorchamps eco": lap}, "overview", pal, paint="Altitude")
+st.caption(
+    "Model and Track map sit under “The model” in the menu; Hybrid sizing, CO₂ sensitivity "
+    "and Cornering speed sit under “The reports”. Those pages show what the Python model "
+    "computes, not the workbooks' figures."
+)
 
 # --- controls -------------------------------------------------------------------------------
 
@@ -122,10 +106,12 @@ gaps = {
     for _, row in selected.iterrows()
     if run_notice(row["powertrain"], row["cycle"])
 }
-fig = charts.grouped_totals(selected, quantity, pal, unit=unit, gaps=gaps)
+fig = charts.grouped_totals(selected, quantity, pal, unit=unit, gaps=gaps, show_footnote=False)
 style_axes(fig, pal, y_title=unit)
-fig.update_layout(height=420)
-st.plotly_chart(fig, width="stretch", theme=None)
+fig.update_layout(height=420, margin=dict(t=28, b=12))
+st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, theme=None)
+if gaps:
+    st.caption(f"{charts.GAP_MARKER} {charts.GAP_LABEL}.")
 
 # --- what the cells contain -----------------------------------------------------------------
 
@@ -134,6 +120,26 @@ if notes:
     with st.expander(f"Values to be aware of ({len(notes)})", expanded=True):
         for note in notes:
             st.markdown(f"- {note}")
+
+# --- elevation and cycle context ------------------------------------------------------------
+
+lap = trace_for("petrol", "franco_eco")
+strip = elevation_strip(lap, pal)
+if strip is not None:
+    st.plotly_chart(strip, width="stretch", config={"displayModeBar": False}, theme=None)
+    st.caption(
+        "Spa-Francorchamps elevation over the 7 km lap — the grade term behind every "
+        "Francorchamps figure above."
+    )
+    with st.expander("See this lap on the circuit"):
+        lap_section({"Petrol, Francorchamps eco": lap}, "overview", pal, paint="Altitude")
+
+with st.expander("What the cycles are"):
+    for code, definition in CYCLE_DEFINITIONS.items():
+        st.markdown(f"### {CYCLE_NAMES[code]}\n{definition}")
+        facts = cycle_facts(trace_for("petrol", code))
+        if facts:
+            st.caption(f"In these files: {facts}.")
 
 # --- the table ------------------------------------------------------------------------------
 
