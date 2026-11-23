@@ -288,9 +288,10 @@ def test_compare_and_category_view_agree_on_what_differs():
 
 
 def test_entry_point_opens_on_the_overview():
-    """The hosted app starts from `dashboard/Overview.py`; it must land on the Overview page."""
+    """The hosted app starts from `dashboard/Overview.py`; it lands on the Home page."""
     app = run(ENTRY)
-    assert app.title[0].value == run(OVERVIEW).title[0].value
+    html_text = " ".join(getattr(h, "value", "") or getattr(h, "body", "") for h in app.html)
+    assert "Four cars. Four cycles." in html_text
 
 
 def test_menu_has_the_three_groups():
@@ -302,7 +303,7 @@ def test_menu_has_the_three_groups():
         if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "MENU"
         or isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "MENU"
     )
-    assert [k.value for k in menu.keys] == ["The workbooks", "The model", "The reports"]
+    assert [k.value for k in menu.keys if k.value] == ["The workbooks", "The model", "The reports"]
     pages = sorted(p.name for p in (ROOT / "dashboard" / "views").glob("*.py"))
     assert source.count("st.Page(") == len(pages)
     for name in pages:
