@@ -17,7 +17,7 @@ Text, charts, the flow diagram and the little lap are native PowerPoint shapes, 
 
 **Spec:** `docs/superpowers/specs/2026-11-23-group-deck-design.md`. The reference for the look is `docs/superpowers/specs/deck-mockups/` (`mock16.py` and the scripts it execs). Its geometry code (smoothing, placement search, label search, contour masking) is the starting point to port.
 
-**Status:** Not started.
+**Status:** In progress. Tasks 1–4 done (b23d88d, a5e593c, f95e191, c49f4dc); Tasks 5–6 next.
 
 ## Global Constraints
 
@@ -76,7 +76,7 @@ Text, charts, the flow diagram and the little lap are native PowerPoint shapes, 
   - `fill(text: str) -> str`, which raises `KeyError` naming the tag
 - Tag grammar: `{co2.<pt>.<cycle>}` gives `"145.1 g CO2/km"`, `{fuel.<pt>.<cycle>}` gives `"x.x l/100 km"`, and `{elec.<pt>.<cycle>}` gives `"x.x kWh/100 km"`. `<pt>` and `<cycle>` take the keys above, and the short cycle aliases `eco` and `sport` are also accepted.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 EXPECTED = {  # g CO2/km, EU grid; spec baseline, to one decimal
@@ -92,10 +92,10 @@ def test_unknown_tag_fails():          # fill("{co2.diesel.wltc}") raises KeyErr
 def test_text_without_tags_unchanged():# fill("plain {not a tag") == "plain {not a tag"
 ```
 
-- [ ] **Step 2: Run** `.venv/bin/python -m pytest tests/test_deck_data.py -q`. Expected: it FAILS on the import.
-- [ ] **Step 3: Implement `data.py`.** `fill` matches `\{(co2|fuel|elec)\.[a-z_]+\.[a-z_]+\}` only, so other braces pass through.
-- [ ] **Step 4: Run the tests.** Expected: they PASS.
-- [ ] **Step 5: Commit:** `git add pwt/deck tests/test_deck_data.py && git commit -m "Deck: baseline numbers and text tags"`
+- [x] **Step 2: Run** `.venv/bin/python -m pytest tests/test_deck_data.py -q`. Expected: it FAILS on the import.
+- [x] **Step 3: Implement `data.py`.** `fill` matches `\{(co2|fuel|elec)\.[a-z_]+\.[a-z_]+\}` only, so other braces pass through.
+- [x] **Step 4: Run the tests.** Expected: they PASS.
+- [x] **Step 5: Commit:** `git add pwt/deck tests/test_deck_data.py && git commit -m "Deck: baseline numbers and text tags"`
 
 ### Task 2: Lap geometry
 
@@ -121,7 +121,7 @@ def test_text_without_tags_unchanged():# fill("plain {not a tag") == "plain {not
   - `opener_frame` searches fx 950–1300 and fy 300–700 in steps of 25. Its score is `5·(points in KEEP_OUT[0], padded 30) + 3·(points in KEEP_OUT[1]) + |fx−1100|/50 + |fy−450|/50`.
   - `label_spot` tries angles 0–345° in steps of 15 and radii (16, 20, 26, 32). The box is 10.5·len(text) wide by 14 tall, padded 3. It prefers a clear box (more than 2 units from every point), then the smallest radius, then the furthest from the centroid.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_north_up_and_clockwise():   # La Source (index_at(220)) has smaller y than start; signed area of xy (y up) is negative
@@ -136,10 +136,10 @@ def test_minimap_fits_box():         # all minimap_points inside the box x 1452.
 
 `test_label_clear_for_every_slide` imports `structure` from Task 3. Write it in this task, mark it `xfail` until Task 3 lands, and remove the mark in Task 3.
 
-- [ ] **Step 2: Run** `.venv/bin/python -m pytest tests/test_deck_track.py -q`. Expected: FAIL.
-- [ ] **Step 3: Implement `track.py`.**
-- [ ] **Step 4: Run the tests.** Expected: they PASS, with the one xfail.
-- [ ] **Step 5: Commit:** `git commit -m "Deck: lap geometry, relief, opener framing, label placement"`
+- [x] **Step 2: Run** `.venv/bin/python -m pytest tests/test_deck_track.py -q`. Expected: FAIL.
+- [x] **Step 3: Implement `track.py`.**
+- [x] **Step 4: Run the tests.** Expected: they PASS, with the one xfail.
+- [x] **Step 5: Commit:** `git commit -m "Deck: lap geometry, relief, opener framing, label placement"`
 
 ### Task 3: Running order and content file
 
@@ -179,7 +179,7 @@ def test_minimap_fits_box():         # all minimap_points inside the box x 1452.
 
 - File format: `## <id>` starts a slide. `key: value` lines set fields. Any later lines that don't start with `key:` continue the previous field, joined with a newline, which is how multi-line notes work. Lines before the first `##` and lines starting with `>` are comments.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_order_and_count():          # [s.id for s in SLIDES] equals the table's id column; len == 23
@@ -190,12 +190,12 @@ def test_lap_positions():            # lap_position(0) is None; strictly increas
 def test_starter_file_parses():      # load(Path("docs/deck/slides.md")) parses, every SLIDES id present, all values ""
 ```
 
-- [ ] **Step 2: Run** the tests. Expected: FAIL.
-- [ ] **Step 3: Implement `structure.py` and `content.py`.** Then write the starter `docs/deck/slides.md`:
+- [x] **Step 2: Run** the tests. Expected: FAIL.
+- [x] **Step 3: Implement `structure.py` and `content.py`.** Then write the starter `docs/deck/slides.md`:
   - a `> how to write this file` comment of 5 lines: the format, the tags with one example, "empty fields show as placeholders", and the rebuild command
   - every slide id from the table, with each of its fields present and empty. **No words in any field.**
-- [ ] **Step 4: Remove the xfail** from `test_label_clear_for_every_slide`, then run `tests/test_deck_content.py` and `tests/test_deck_track.py`. Expected: they PASS.
-- [ ] **Step 5: Commit:** `git commit -m "Deck: running order, content file format, empty starter file"`
+- [x] **Step 4: Remove the xfail** from `test_label_clear_for_every_slide`, then run `tests/test_deck_content.py` and `tests/test_deck_track.py`. Expected: they PASS.
+- [x] **Step 5: Commit:** `git commit -m "Deck: running order, content file format, empty starter file"`
 
 ### Task 4: Track pictures
 
@@ -217,7 +217,7 @@ def test_starter_file_parses():      # load(Path("docs/deck/slides.md")) parses,
   - **Openers:** a left-to-right fade over x 0–0.72 of the width, from opaque bg to 0.8 at 0.6 to transparent.
   - **Title:** the lap is centred at (800, 375) and 610 units tall. A bottom-up fade runs from opaque at y = 900, to 0.82 at 22 %, to transparent at 42 %.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 def test_speed_colour_ends():        # speed_colour(40) == "#0a84ff"; speed_colour(150) == "#ff453a"; clamps below 40 and above 150
@@ -226,10 +226,10 @@ def test_opener_png(tmp_path):       # opener_art("dark","stavelot",3.0,tmp_path
 def test_title_png_light(tmp_path):  # title_art("light", ...): size (3200,1800); corner pixel == (255,255,255)
 ```
 
-- [ ] **Step 2: Run** the tests. Expected: FAIL.
-- [ ] **Step 3: Implement `art.py`.** Use `figure(figsize=(16, 9), dpi=200)`, axes covering the whole figure with limits 0–1600 × 900–0, and the axis turned off. Write `requirements-deck.txt`.
-- [ ] **Step 4: Run the tests.** Expected: they PASS.
-- [ ] **Step 5: Commit:** `git commit -m "Deck: title and opener track pictures"`
+- [x] **Step 2: Run** the tests. Expected: FAIL.
+- [x] **Step 3: Implement `art.py`.** Use `figure(figsize=(16, 9), dpi=200)`, axes covering the whole figure with limits 0–1600 × 900–0, and the axis turned off. Write `requirements-deck.txt`.
+- [x] **Step 4: Run the tests.** Expected: they PASS.
+- [x] **Step 5: Commit:** `git commit -m "Deck: title and opener track pictures"`
 
 ### Task 5: Slide assembly and entry point
 
@@ -250,6 +250,20 @@ def test_title_png_light(tmp_path):  # title_art("light", ...): size (3200,1800)
 - **Layout,** in design units ×(1/120 in):
   - label at (110, 70), 24 pt muted; headline at (110, 105), 44 pt bold fg
   - placeholder text: muted, italic, at 0.75 transparency where supported, otherwise plain muted
+  - **placeholder wording** matches the mockup, so Task 6 can compare like with like. It's defined once, as `PLACEHOLDERS` in `render.py`:
+
+| Field | Placeholder text |
+|---|---|
+| headline | `Your headline` on group slides, `Owner's headline` on study slots |
+| spec.* | `key specs` |
+| tileN | `number` (big) and `one line` (small) |
+| rowN | `limit`, `why it matters`, `next step` |
+| figure | `chart or figure from the study`, with a second line `Study A owner's slides` (or B, C) |
+| questions.subtitle | `then, if time allows: the live demo` |
+| any other field | the field name |
+
+  - **The title slide** puts `subtitle` and `byline` on one line, joined with ` · `, as in the mockup.
+  - **Flow step details** (`Name | detail`) wrap as in `mock16.chain`. The detail is split at `, `. With fewer than three parts, each part gets its own line; with three or more, the first two parts share line 1 and the rest share line 2.
   - footer "model output · first draft" at (110, 845), 17 pt muted
   - the chart geometry follows `mock16.grouped`, `single`, `chain`, `carscycles`, `tiles`, `rows` and `study_slot`
   - the little lap is a freeform from `minimap_points()`, muted, 2.5 units at 70 % opacity. The dot has an 8-unit radius in fg, and the label sits at `label_spot`, 18 pt bold. It appears on every slide but `title`.
@@ -279,6 +293,59 @@ def test_both_themes(tmp_path):              # CLI default theme writes group-de
 
   Fix any visible drift from the mockups before committing.
 - [ ] **Step 6: Commit,** and update this plan's **Status:** `git commit -m "Deck: assemble the 23-slide first draft; python -m pwt.deck"`
+
+### Task 6: Fidelity to the mockups, at least 99 %
+
+Phred's requirement: the built slides must match the approved mockups to at least 99 %. This task makes that a measured, repeatable check, then fixes `render.py` and `art.py` until every slide passes.
+
+**Files:**
+- Create:
+  - `tests/fixtures/deck-mockup.md`, a content file that reproduces the mockup's filled-in text
+  - `docs/superpowers/specs/deck-mockups/reference.py`, which writes one reference PNG per slide and theme
+  - `pwt/deck/fidelity.py`
+  - `tests/test_deck_fidelity.py`
+- Modify: `pwt/deck/render.py` and `pwt/deck/art.py`, to fix any drift.
+
+**The fixture** `tests/fixtures/deck-mockup.md` fills exactly the fields that the mockup (`mock16.py`) shows as normal text, and leaves the rest empty so they render as placeholders. It's a test fixture, not deck content: it never goes in `docs/deck/slides.md`.
+- **title:** title `Four cars. Four cycles.`, subtitle `Simulating the CO2 of four powertrains`, byline `Group of three · PWT Powertrains · ESILV 2026`
+- **opener titles:**
+  - sim `The simulation`
+  - cmp `Four cars compared`
+  - A `Hybrid sizing`
+  - B `Sensitivity`
+  - C `Cornering speed`
+  - lim `Limits and next step`
+- **labels:**
+  - sim-model, sim-cars and sim-changed: `The simulation`
+  - cmp-all: `Four cars on four cycles · g CO2/km`
+  - cmp-wltc: `WLTC Class 3 · g CO2/km`
+  - A-1 to A-3: `Hybrid sizing`
+  - B-1 to B-3: `Sensitivity`
+  - C-1 to C-3: `Cornering speed`
+  - lim-rows: `Limits and next step`
+- **sim-model steps:**
+  - `Speed trace | v(t) or v(s)`
+  - `Forces | rolling, aero, grade, inertia`
+  - `Wheel power | F · v`
+  - `Engine / motor | ÷ transmission η, capability`
+  - `Energy | engine η(P), heating value`
+  - `CO2 | fuel + grid, g/km`
+- **questions:** title `Questions?`
+- everything else is empty
+
+**Reference images:** `reference.py --out DIR --theme dark|light` reuses the mockup chain (`mock16.py` and its execs, with the data JSONs in that folder). It writes each of the 23 slides as its own 1600 × 900 PNG, `DIR/<theme>/NN.png`, by rendering that slide's SVG in headless Chromium (`chromium --headless=new --window-size=1600,900 --screenshot`). The mockup is the specification; change it only to remove a difference that exists only in the mockup (a page frame, shadow or rounded slide corners). Record any such change in a comment.
+
+**Interfaces:**
+- `render_deck(pptx: Path, out_dir: Path) -> list[Path]` uses `soffice --headless --convert-to pdf`, then `pdftoppm -png -scale-to-x 1600 -scale-to-y 900`, and returns 23 PNGs.
+- `similarity(a: Path, b: Path) -> float` compares the two images at 1600 × 900, RGB, each blurred with a Gaussian of radius 1.5 (PIL). It returns the fraction of pixels whose largest per-channel absolute difference is at most 16.
+- `report(theme: str, out_dir: Path) -> list[tuple[int, float]]` builds the deck from the fixture, renders both sides, and returns `(slide number, similarity)` for all 23 slides.
+- CLI: `python -m pwt.deck.fidelity [--theme dark|light|both]` prints a table and exits non-zero if any slide scores below 0.99. It also writes side-by-side diff images (reference | deck | difference) to `docs/deck/build/fidelity/`.
+
+- [ ] **Step 1: Write the failing test.** `test_every_slide_matches_mockup` is parametrised over both themes. It asserts that every one of the 23 slides scores at least 0.99, and lists the failing slides with their scores in the message. It's skipped if `soffice`, `pdftoppm` or `chromium` is missing.
+- [ ] **Step 2: Run it.** Expected: FAIL, with per-slide scores.
+- [ ] **Step 3: Close the gaps.** Read the diff images worst-first and fix `render.py` and `art.py` until every slide scores at least 0.99 in both themes. Expect to calibrate text box offsets: an SVG `y` is the baseline, while a PowerPoint text box is placed from its top. Also expect to calibrate font sizes, chart geometry and the opener fade. Don't lower the threshold or change the metric. If one slide can't reach 0.99 for a reason outside the renderer (for example font hinting), stop and report it with its score and the diff image.
+- [ ] **Step 4: Run** `.venv/bin/python -m pytest -q`. Expected: everything passes.
+- [ ] **Step 5: Commit:** `git commit -m "Deck: measured fidelity to the mockups, every slide >= 99 %"`
 
 ---
 
