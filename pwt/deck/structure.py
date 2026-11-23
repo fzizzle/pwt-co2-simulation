@@ -2,11 +2,7 @@
 
 from dataclasses import dataclass
 
-# keep in sync with track.CORNERS
-CORNERS = {
-    "start": 0, "la_source": 220, "eau_rouge": 1010, "les_combes": 2200,
-    "pouhon": 3600, "stavelot": 4740, "bus_stop": 6540, "finish": 6990,
-}
+from pwt.deck.track import CORNERS
 
 SECTIONS: dict[str, tuple[str, str, float]] = {
     "sim": ("la_source", "01", 3.2),
