@@ -71,7 +71,9 @@ Each study has an opener and three slots (`A-1` to `A-3`, `B-1`, …). A slot's 
 | B, sensitivity | `docs/study-b-combustion.png`, `docs/study-b-electric.png`, `docs/study-b-plugin.png`, `docs/study-b-provisional.png` |
 | C, cornering speed | `docs/study-c-lap-time.png`, `docs/study-c-co2.png` |
 
-These figures were made for the study reports. They have white backgrounds and their own titles, so they will look out of place on the dark theme. Restyling them to match the deck is the owners' call.
+These figures were made for the study reports. They have white backgrounds and their own titles, so they look out of place on the dark theme.
+
+The Study B and C figures are also redrawn in the deck's theme. To use one, write `figure: chart:` followed by the figure's name without `.png`, for example `figure: chart:study-b-combustion` or `figure: chart:study-c-co2`. The build draws the chart for each theme from the study's saved results (`docs/study-b-swings.csv`, `docs/study-c-results.csv`), and the speaker notes name that source. The data and the engine-check flags are the same as in the study figures; only the styling changes. Rebuild a study's results with its own entry point before you rebuild the deck. Which figure goes on which slide is still the owners' call.
 
 ## Fonts
 

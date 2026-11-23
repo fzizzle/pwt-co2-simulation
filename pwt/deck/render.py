@@ -13,7 +13,7 @@ from pptx.util import Pt
 from pptx.oxml.xmlchemy import OxmlElement
 
 from pwt.catalog import POWERTRAIN_NAMES
-from pwt.deck import art, data, fonts, track
+from pwt.deck import art, data, figures, fonts, track
 from pwt.deck.structure import SLIDES, SECTIONS, lap_position
 from pwt.sweep import cycles
 
@@ -81,8 +81,10 @@ def rgb(color):
 
 
 class Canvas:
-    def __init__(self, slide, theme, fields, slide_id=""):
+    def __init__(self, slide, theme, fields, slide_id="", out_dir=None):
         self.slide = slide
+        self.theme = theme
+        self.out_dir = out_dir
         self.slide_id = slide_id
         self.shapes = slide.shapes
         self.palette = art.THEMES[theme]
@@ -396,23 +398,30 @@ def body(c, spec):
             )
     elif spec.layout == "slot":
         path = c.fields.get("figure")
-        if path:
+        name = None
+        if path and path.startswith("chart:"):
+            name = path.removeprefix("chart:").strip()
+            path = figures.render(name, c.theme, c.out_dir)
+        elif path:
             path = Path(__file__).resolve().parents[2] / path
             if not path.is_file():
                 raise FileNotFoundError(
                     f"{spec.id}.figure: no image at {fields_path(path)}. Give a path from the "
                     "repository root, e.g. docs/phase-3-sizing.png."
                 )
+        if path:
             with Image.open(path) as image:
                 w, h = image.size
             scale = min(1100 / w, 520 / h)
-            c.shapes.add_picture(
+            picture = c.shapes.add_picture(
                 str(path),
                 u(800 - w * scale / 2),
                 u(500 - h * scale / 2),
                 u(w * scale),
                 u(h * scale),
             )
+            if name:
+                picture.name = f"chart:{name}"
         else:
             s = c.shape(250, 240, 1100, 520, None, 26)
             s.line.color.rgb = c.color("line")
@@ -474,7 +483,7 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
     for i, spec in enumerate(SLIDES):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         fields = {k: data.fill(v) for k, v in content.get(spec.id, {}).items()}
-        c = Canvas(slide, theme, fields, spec.id)
+        c = Canvas(slide, theme, fields, spec.id, out_dir)
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = c.color("bg")
         source = "pwt.deck.structure"
@@ -532,6 +541,12 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
             c.text(110, 862, "model output · first draft", 17, "muted")
             if spec.layout in ("cars", "grouped", "single"):
                 source = "pwt.sweep and pwt.deck.data"
+            elif fields.get("figure", "").startswith("chart:"):
+                name = fields["figure"].removeprefix("chart:").strip()
+                source = (
+                    f"pwt.deck.figures, redrawn from "
+                    f"{fields_path(figures.FIGURES[name])} (study figure docs/{name}.png)"
+                )
             elif fields.get("figure"):
                 source = fields["figure"]
         if i:
