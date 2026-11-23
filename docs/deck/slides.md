@@ -91,30 +91,30 @@ figure:
 notes:
 
 ## B
-title: CO? sensitivity
-notes: Study B draft for owner review. We varied one factor at a time by ?10% across four powertrains and four fixed driving traces. We changed body mass, drag coefficient, rolling resistance, gear ratios and peak engine efficiency where applicable.
-We used the assignment vehicles, the storage-loss scenario and EU electricity at 250 g CO?/kWh. Each tornado bar spans the two endpoint emissions. The baseline is shown separately.
+title: CO₂ sensitivity
+notes: Study B draft for owner review. We varied one factor at a time by ±10% across four powertrains and four fixed driving traces. We changed body mass, drag coefficient, rolling resistance, gear ratios and peak engine efficiency where applicable.
+We used the assignment vehicles, the storage-loss scenario and EU electricity at 250 g CO₂/kWh. Each tornado bar spans the two endpoint emissions. The baseline is shown separately.
 
 ## B-1
-label: WLTC CLASS 3 ? PETROL AND FULL HYBRID
+label: WLTC CLASS 3 · PETROL AND FULL HYBRID
 headline: Engine efficiency has the largest WLTC effect
 figure: docs/study-b-combustion.png
 notes: For a given engine work demand, higher conversion efficiency reduces fuel energy. This sweep scales peak efficiency and holds the curve shape fixed.
 The full-hybrid comparison passes the model's engine-power check. The petrol WLTC baseline fails that check, so its ranking is conditional on the requested trace. Hollow markers flag individual endpoints and hatching flags provisional comparisons.
 
 ## B-2
-label: NEDC AND WLTC CLASS 3 ? BATTERY ELECTRIC
+label: NEDC AND WLTC CLASS 3 · BATTERY ELECTRIC
 headline: The BEV's leading factor changes by cycle
 figure: docs/study-b-electric.png
-notes: Rolling resistance leads on NEDC, closely followed by body mass. Drag leads on WLTC, where higher speeds increase aerodynamic force. A longer bar represents a larger CO? response to the same percentage change in the input.
+notes: Rolling resistance leads on NEDC, closely followed by body mass. Drag leads on WLTC, where higher speeds increase aerodynamic force. A longer bar represents a larger CO₂ response to the same percentage change in the input.
 The model's flags cover combustion-engine power. BEV motor, battery and thermal limits require a separate feasibility check.
 
 ## B-3
-label: SPA-FRANCORCHAMPS ? PLUG-IN HYBRID
+label: SPA-FRANCORCHAMPS · PLUG-IN HYBRID
 headline: Body mass dominates both PHEV laps
 figure: docs/study-b-plugin.png
 notes: Body mass has the largest span on both fixed Spa traces. The sport trace shows a larger mass response, consistent with greater acceleration work and partial energy recovery.
-Petrol sport rankings are provisional where the engine cannot meet the requested power. The equal ?10% changes compare modeled sensitivity. Real design decisions also depend on achievable ranges, interactions and costs.
+Petrol sport rankings are provisional where the engine cannot meet the requested power. The equal ±10% changes compare modeled sensitivity. Real design decisions also depend on achievable ranges, interactions and costs.
 
 ## C
 > Study C opener at Stavelot.
