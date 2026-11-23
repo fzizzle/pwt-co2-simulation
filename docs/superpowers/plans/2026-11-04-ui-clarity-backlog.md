@@ -1,6 +1,6 @@
 # UI and clarity improvements — backlog
 
-Status: items 1, 2, 5 and 6 built on branch `ui-clarity` (2026-11-04, uncommitted). Items 3 and 4
+Status: items 1, 2, 5 and 6 done and merged into `main` (PR #3, 4 Nov 2026). Items 3 and 4
 still need decisions. Original note: suggestions from a review of all eight pages; items 3 and 4
 need decisions on wording and on which pages go. Suggested order: 1, 2, 5, 3, 4, then 6.
 
