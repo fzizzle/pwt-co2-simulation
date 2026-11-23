@@ -296,7 +296,7 @@ def test_entry_point_opens_on_the_overview():
 def test_menu_has_the_three_groups():
     import ast
 
-    source = Path(ENTRY).read_text()
+    source = Path(ENTRY).read_text(encoding="utf-8")
     menu = next(
         node.value for node in ast.walk(ast.parse(source))
         if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "MENU"
@@ -311,7 +311,7 @@ def test_menu_has_the_three_groups():
 
 def test_reports_have_their_own_group():
     """Study pages sit under *The reports*, apart from the model pages, with a descriptive name."""
-    source = Path(ENTRY).read_text()
+    source = Path(ENTRY).read_text(encoding="utf-8")
     model, reports = source.split('"The model"')[1].split('"The reports"')
     for page, title in [("7_Sizing.py", "Hybrid sizing"), ("9_CO2_Sensitivity.py", "CO₂ sensitivity"),
                         ("10_Cornering_Speed.py", "Cornering speed")]:
