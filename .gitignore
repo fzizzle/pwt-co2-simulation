@@ -9,3 +9,4 @@ out/
 
 # Derived data — rebuilt from data/course-files/ by `python -m pwt.build`.
 data/processed/
+.superpowers/
