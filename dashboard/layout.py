@@ -92,19 +92,16 @@ def cycle_facts(trace: pd.DataFrame) -> str:
 
 
 #: Runs whose reported figures leave something out, keyed by (powertrain, cycle): the one
-#: sentence shown in the warning, and the explanation behind a "Why" toggle. Kept here in the
-#: dashboard package so Community Cloud picks it up without a reboot.
+#: sentence shown in the warning, and the explanation behind an "Electricity accounting" toggle.
+#: Kept here in the dashboard package so Community Cloud picks it up without a reboot.
+#: Workbook pages must state only what the workbook reports and omit model-derived figures.
 RUN_NOTICES: dict[tuple[str, str], tuple[str, str]] = {
     ("phev", "nedc"): (
-        "electricity not counted: its 0 l/100 km and 0 g CO₂/km leave out the energy it draws "
-        "from the battery.",
-        "**Charge-depleting run — electricity not counted.** `34 NEDC PHYBRID engine.xlsx` "
-        "reports 0 l/100 km and 0 g CO₂/km, and that is what its formulas compute: the 40 kW "
-        "motor covers every NEDC demand, and the battery falls only from 98 % to 78 %, never "
-        "reaching the 23 % that brings the engine in. The sheet does not count the electricity "
-        "the run draws (14.3 kWh/100 km, about 36 g CO₂/km at the EU grid's 250 g/kWh), so the "
-        "zeros are not the car's footprint. `data/derived/` adds a charge-sustaining run "
-        "(5.96 l/100 km); weighted the UN R101 way the two give 2.22 l/100 km.",
+        "electricity not counted. The workbook reports 0 l/100 km and 0 g CO₂/km.",
+        "**Electricity not counted.** `34 NEDC PHYBRID engine.xlsx` reports 0 l/100 km and "
+        "0 g CO₂/km. Its 40 kW motor covers every step and battery state of charge falls from "
+        "98% to 78%, above its 23% engine threshold. The workbook omits the electricity drawn "
+        "from the battery. See the **Model** page for computed electricity and CO₂ figures.",
     ),
 }
 
@@ -142,7 +139,7 @@ def render_run_notices(*runs: pd.Series) -> None:
         if notice:
             short, why = notice
             st.warning(f"**{run_label(*key)}** — {short}", icon="⚠️")
-            with st.expander("Why"):
+            with st.expander("Electricity accounting"):
                 st.markdown(why)
 
 

@@ -85,7 +85,7 @@ def test_overview_flags_the_missing_nedc_phev_data():
     assert "Plug-in hybrid" in warnings
     # one sentence in the banner; the explanation sits behind a toggle
     assert len(warnings) < 200
-    assert any(e.label == "Why" for e in app.expander)
+    assert any(e.label == "Electricity accounting" for e in app.expander)
 
     # and the cell itself carries the label, not just the banner
     matrix = app.dataframe[0].value
