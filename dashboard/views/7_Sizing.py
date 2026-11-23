@@ -124,7 +124,7 @@ st.markdown(f"Each cell is one full hybrid. Both maps share a scale, capped at "
             f"{HEAT_MAX_PCT:.0f} % above the best, so the pale map really is flatter.")
 left, right = st.columns(2)
 left.markdown("**WLTC: every buildable size is within 11 % of the best**")
-left.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=False),
+left.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=True),
                   width="stretch", theme=None)
 right.markdown("**Francorchamps — sport: the spread reaches 27 %**")
 right.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "franco_sport_generated"], pal),

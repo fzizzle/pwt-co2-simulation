@@ -79,12 +79,12 @@ def elasticity_panels(ranked: pd.DataFrame, across: str, pal: Palette) -> go.Fig
         raise ValueError('Choose cars or cycles')
     panels, series = (CYCLES, POWERTRAIN_NAMES) if across == 'cars' else (POWERTRAIN_NAMES, CYCLES)
     panel_key, series_key = ('cycle', 'powertrain') if across == 'cars' else ('powertrain', 'cycle')
-    fig = make_subplots(rows=2, cols=2, subplot_titles=list(panels.values()),
-                        horizontal_spacing=0.20, vertical_spacing=0.18)
+    fig = make_subplots(rows=4, cols=1, subplot_titles=list(panels.values()),
+                        vertical_spacing=0.09)
     shapes = dict(zip(CYCLES, ('circle', 'square', 'diamond', 'triangle-up')))
     bound = max(float(ranked.elasticity.abs().max())*1.12, 0.1)
     for panel_index, panel in enumerate(panels):
-        row, col = divmod(panel_index, 2)
+        row = panel_index + 1
         for key in series:
             own = ranked[(ranked[panel_key] == panel) & (ranked[series_key] == key)]
             custom = [[r.powertrain, r.cycle, r.factor, r.elasticity,
@@ -107,8 +107,8 @@ def elasticity_panels(ranked: pd.DataFrame, across: str, pal: Palette) -> go.Fig
                     marker=dict(color=pal.for_powertrain(panel), size=11, line_width=2,
                                 symbol=[shapes[key] if p else f'{shapes[key]}-open' for p in own.engine_check_pass]),
                     customdata=custom, hovertemplate=hover)
-            fig.add_trace(trace, row=row+1, col=col+1)
-        fig.add_vline(x=0, line_dash='dash', line_color=pal.text_muted, row=row+1, col=col+1)
+            fig.add_trace(trace, row=row, col=1)
+        fig.add_vline(x=0, line_dash='dash', line_color=pal.text_muted, row=row, col=1)
     if across == 'cycles':
         for key in series:  # legend entries in a neutral tone: shape is the key, colour is the car
             fig.add_trace(go.Scatter(x=[None], y=[None], mode='markers', name=series[key], legendgroup=key,
@@ -119,7 +119,7 @@ def elasticity_panels(ranked: pd.DataFrame, across: str, pal: Palette) -> go.Fig
     fig.update_yaxes(categoryorder='array', categoryarray=factors,
                      range=[len(factors)-0.5, -0.5], autorange=False,
                      tickmode='array', tickvals=factors, showgrid=False)
-    fig.update_layout(height=850, margin=dict(t=110), legend=dict(y=1.13), barmode='group')
+    fig.update_layout(height=1080, margin=dict(l=8, r=16, t=96, b=40), legend=dict(y=1.05), barmode='group')
     return fig
 
 
@@ -184,7 +184,7 @@ def tornado(group: pd.DataFrame, powertrain: str, pal: Palette) -> go.Figure:
     fig.add_bar(
         x=own.swing.tolist(), y=labels, base=own[["delta_low", "delta_high"]].min(axis=1).tolist(),
         orientation="h", width=0.46, name="Endpoint span", showlegend=False,
-        marker=dict(color=colour, opacity=0.6,
+        marker=dict(color=colour, opacity=0.85,
                     pattern=dict(shape=["" if passed else "/" for passed in own.engine_check_pass])),
         customdata=own[["swing", "elasticity", "engine_check_pass"]].to_numpy(),
         hovertemplate="%{y}<br>Span: %{customdata[0]:.3f} g/km"

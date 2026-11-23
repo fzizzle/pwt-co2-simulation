@@ -12,9 +12,9 @@ import plotly.graph_objects as go
 
 from dashboard.theme import Palette, style_axes
 
-#: Sequential blue, reversed for the dark surface: the brightest cell is the best size.
-_RAMP = [[0.0, "#cde2fb"], [0.15, "#86b6ef"], [0.35, "#3987e5"], [0.6, "#1c5cab"],
-         [1.0, "#0d366b"]]
+#: Sequential blue, reversed for the dark surface: brightest cell is lowest CO2; every stop >= 3:1 vs #000000.
+_RAMP = [[0.0, "#eef5fe"], [0.2, "#94c4f7"], [0.45, "#4c96ec"], [0.75, "#2874d2"],
+         [1.0, "#1c5cab"]]
 #: Both heatmaps share this scale, so a flat map and a steep one can be compared.
 HEAT_MAX_PCT = 30.0
 #: Label shown wherever an engine-shortfall point is plotted or summarised.
@@ -116,13 +116,13 @@ def efficiency_lines(band: pd.Series, rule: pd.Series, petrol: float, pal: Palet
     if cross:
         fig.add_annotation(
             x=cross[0] * 100, y=cross[1], text=f"They cross near {cross[0] * 100:.0f} %",
-            showarrow=True, arrowcolor=pal.text_muted, arrowhead=0, ax=-70, ay=-46,
+            showarrow=True, arrowcolor=pal.text_muted, arrowhead=0, ax=56, ay=-42,
             font=dict(color=pal.text_primary, size=12),
         )
     style_axes(fig, pal, x_title="Energy kept each way through motor, inverter and battery (%)",
                y_title="g CO₂/km")
     fig.update_xaxes(autorange=False, range=[101.5, 73], tickvals=x, showgrid=False)
-    fig.update_layout(height=380, hovermode="x unified", margin=dict(r=30))
+    fig.update_layout(height=380, hovermode="x unified", margin=dict(l=8, r=128, t=28, b=12))
     return fig
 
 
@@ -133,32 +133,33 @@ def petrol_gap(free: dict[str, float], lossy: dict[str, float], pal: Palette) ->
     for name in names:
         fig.add_trace(go.Scatter(
             x=[free[name], lossy[name]], y=[name, name], mode="lines", showlegend=False,
-            line=dict(color=pal.axis, width=2), hoverinfo="skip",
+            line=dict(color=pal.text_muted, width=2), hoverinfo="skip",
         ))
     fig.add_trace(go.Scatter(
         x=[free[n] for n in names], y=names, mode="markers+text", name="Free storage",
         marker=dict(size=13, color=pal.surface, line=dict(color=_hybrid(pal), width=2)),
         text=[f"{free[n]:+.0f} %" for n in names], textposition="middle left",
-        textfont=dict(color=pal.text_secondary, size=12),
+        textfont=dict(color=pal.text_secondary, size=12), cliponaxis=False,
         hovertemplate="%{y}, free storage: %{x:+.1f} %<extra></extra>",
     ))
     fig.add_trace(go.Scatter(
         x=[lossy[n] for n in names], y=names, mode="markers+text", name="85 % each way",
         marker=dict(size=13, color=_hybrid(pal)),
         text=[f"{lossy[n]:+.0f} %" for n in names], textposition="middle right",
-        textfont=dict(color=pal.text_primary, size=12),
+        textfont=dict(color=pal.text_primary, size=12), cliponaxis=False,
         hovertemplate="%{y}, 85 %% each way: %{x:+.1f} %<extra></extra>".replace("%%", "%"),
     ))
     fig.add_vline(x=0, line=dict(color=pal.text_muted, width=1.5))
     fig.add_annotation(x=0, y=1, yref="paper", text="Level with petrol", showarrow=False,
-                       xanchor="left", xshift=6, yanchor="bottom",
+                       xanchor="right", xshift=-6, yanchor="bottom",
                        font=dict(color=pal.text_muted, size=12))
     style_axes(fig, pal, x_title="Full hybrid CO₂ compared with petrol (%)")
     low = min([*free.values(), *lossy.values()])
     high = max([*free.values(), *lossy.values()])
-    fig.update_xaxes(range=[low - 7, high + 7], ticksuffix=" %", zeroline=False)
+    pad = max((high - low) * 0.35, 11.0)
+    fig.update_xaxes(range=[low - pad, max(high, 0.0) + pad], ticksuffix=" %", zeroline=False)
     fig.update_yaxes(showgrid=False, tickfont=dict(color=pal.text_primary, size=13))
-    fig.update_layout(height=300, margin=dict(t=30))
+    fig.update_layout(height=300, margin=dict(l=8, r=24, t=40, b=12))
     return fig
 
 
@@ -205,7 +206,7 @@ def size_heatmap(frame: pd.DataFrame, pal: Palette, show_scale: bool = True) -> 
         colorscale=_RAMP, xgap=2, ygap=2, hoverongaps=False, showscale=show_scale,
         colorbar=dict(title=dict(text="% above best", font=dict(size=12, color=pal.text_muted)),
                       ticksuffix=" %", thickness=10, len=0.8, outlinewidth=0,
-                      tickfont=dict(color=pal.text_muted, size=11)),
+                      tickfont=dict(color=pal.text_muted, size=12)),
         text=[[f"{b:g} kWh, {m:g} kW" for m in motors] for b in batteries],
         hovertemplate="%{text}<br>%{customdata[0]:.1f} g CO₂/km"
                       "<br>%{z:.1f} % above best<br>%{customdata[1]}<extra></extra>",
@@ -270,7 +271,7 @@ def size_heatmap(frame: pd.DataFrame, pal: Palette, show_scale: bool = True) -> 
 
     if len(x) >= 2 and not allowed.astype(bool).all().all():
         fig.add_annotation(x=x[-2], y=0.5, text="Battery can't<br>supply this power",
-                           showarrow=False, font=dict(color=pal.text_muted, size=11))
+                           showarrow=False, font=dict(color=pal.text_muted, size=12))
     style_axes(fig, pal, x_title="Motor (kW)", y_title="Battery (kWh)")
     fig.update_xaxes(tickvals=x, ticktext=[f"{m:g}" for m in motors], showgrid=False,
                      showline=False, range=[-0.5, len(x) - 0.5], constrain="domain")
