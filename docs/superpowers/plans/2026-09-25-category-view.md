@@ -1,6 +1,6 @@
 # Category View Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add a Category view page that shows every run in one category together — all the petrols, all the NEDC runs, all the sport runs — with their totals, their traces overlaid, and the parameters that differ across them.
 
@@ -9,6 +9,8 @@
 **Tech Stack:** Python 3.14.7, Streamlit 1.64, Plotly 7.1, pandas 3.0, pytest 9.1. Run everything through `.venv/bin/`.
 
 **Spec:** No separate spec document. The request was "one way to view each category together, with graphs tables and stuff — for example all the petrols, all the NEDC, all the sport." Requirements are captured in Global Constraints below and in each task.
+
+**Status:** Done and merged into `main` (2038686). Boxes ticked from the git history on 23 Nov 2026.
 
 ## Global Constraints
 
@@ -42,7 +44,7 @@ Every task's requirements implicitly include these.
 - Consumes: `loaders.axis_columns(trace) -> list[str]` (exists)
 - Produces: `loaders.axis_exclusion_reason(trace: pd.DataFrame, column: str) -> str | None` — returns a sentence explaining why `column` is not offered as an axis, or `None` if it is offered or absent entirely.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/test_app.py`:
 
@@ -70,12 +72,12 @@ def test_axis_exclusion_reason_is_none_when_the_column_works():
     assert axis_exclusion_reason(lap, "not_a_column") is None
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest tests/test_app.py -k axis_exclusion -v`
 Expected: FAIL with `ImportError: cannot import name 'axis_exclusion_reason'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `dashboard/loaders.py`, directly below `axis_columns`:
 
@@ -100,12 +102,12 @@ def axis_exclusion_reason(trace: pd.DataFrame, column: str) -> str | None:
     return f"`{column}` does not increase across the run, so it cannot be an axis."
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_app.py -k axis_exclusion -v`
 Expected: PASS (2 passed)
 
-- [ ] **Step 5: Use it in the Trace Explorer**
+- [x] **Step 5: Use it in the Trace Explorer**
 
 In `dashboard/pages/2_Trace_Explorer.py`, replace the hardcoded caption block:
 
@@ -138,7 +140,7 @@ from dashboard.loaders import (
 )
 ```
 
-- [ ] **Step 6: Update the existing caption assertion**
+- [x] **Step 6: Update the existing caption assertion**
 
 In `tests/test_app.py`, inside `test_nedc_distance_is_not_offered_as_an_axis`, replace:
 
@@ -152,12 +154,12 @@ with:
     assert "recorded per step in this workbook rather than cumulatively" in captions
 ```
 
-- [ ] **Step 7: Run the full suite**
+- [x] **Step 7: Run the full suite**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS, 71 passed
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add dashboard/loaders.py dashboard/pages/2_Trace_Explorer.py tests/test_app.py
@@ -178,7 +180,7 @@ The Compare page diffs two runs inline. The Category view needs the same idea ac
 - Consumes: `layout.run_label(powertrain, cycle) -> str` (exists)
 - Produces: `layout.varying_parameters(runs: pd.DataFrame) -> pd.DataFrame` — one row per parameter that is not identical across every run, one column per run named by `run_label`, plus a `Distinct values` column. Sorted with the most-varied parameters first. Returns an empty DataFrame when nothing varies.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_charts.py`:
 
@@ -222,12 +224,12 @@ def test_varying_parameters_is_empty_for_a_single_run(runs):
     assert varying_parameters(one).empty
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest tests/test_charts.py -k varying_parameters -v`
 Expected: FAIL with `ImportError: cannot import name 'varying_parameters'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `dashboard/layout.py`, below `run_label`:
 
@@ -266,12 +268,12 @@ def varying_parameters(runs: pd.DataFrame) -> pd.DataFrame:
     ).reset_index(drop=True)
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_charts.py -k varying_parameters -v`
 Expected: PASS (3 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add dashboard/layout.py tests/test_charts.py
@@ -292,7 +294,7 @@ git commit -m "Add an N-way parameter diff"
 - Consumes: `theme.Palette` (exists), `charts.LINE_WIDTH`, `charts.MARKER_SIZE` (exist)
 - Produces: `charts.overlay_traces(frames: list[pd.DataFrame], labels: list[str], colours: list[str], column: str, x_column: str, pal: Palette) -> go.Figure`. `compare_traces` keeps its current signature and delegates.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_charts.py`:
 
@@ -329,12 +331,12 @@ def test_compare_traces_still_works_through_the_shared_path(lap):
     assert [t.name for t in fig.data] == ["left", "right"]
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `.venv/bin/python -m pytest tests/test_charts.py -k "overlay_traces or shared_path" -v`
 Expected: FAIL with `AttributeError: module 'dashboard.charts' has no attribute 'overlay_traces'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `dashboard/charts.py`, replace the whole `compare_traces` function with:
 
@@ -387,17 +389,17 @@ def compare_traces(
     return fig
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `.venv/bin/python -m pytest tests/test_charts.py -q`
 Expected: PASS
 
-- [ ] **Step 5: Run the full suite to confirm Compare still behaves**
+- [x] **Step 5: Run the full suite to confirm Compare still behaves**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS, 77 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add dashboard/charts.py tests/test_charts.py
@@ -416,7 +418,7 @@ git commit -m "Generalise trace overlay to any number of runs"
 - Consumes: `layout.configure`, `layout.render_run_notices`, `layout.run_notice`, `layout.run_label`, `layout.download`, `layout.CANONICAL_QUANTITIES`, `layout.varying_parameters` (Task 2); `loaders.load_runs`, `loaders.trace_for`, `loaders.axis_columns`, `loaders.numeric_trace_columns`; `charts.grouped_totals`, `charts.overlay_traces` (Task 3); `theme.style_axes`, `theme.POWERTRAIN_ORDER`; `pwt.catalog.POWERTRAIN_NAMES`, `pwt.catalog.CYCLE_NAMES`
 - Produces: nothing other modules import.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/test_category_view.py`:
 
@@ -515,12 +517,12 @@ def test_axis_falls_back_when_the_category_shares_no_distance():
     assert axis.options == ["Step"]
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `.venv/bin/python -m pytest tests/test_category_view.py -q`
 Expected: FAIL with `FileNotFoundError` — the page does not exist yet.
 
-- [ ] **Step 3: Create the page**
+- [x] **Step 3: Create the page**
 
 Create `dashboard/pages/5_Category_View.py`:
 
@@ -719,7 +721,7 @@ else:
     download(varying, f"pwt-category-{choice}-parameters.csv", "Download these parameters as CSV")
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `.venv/bin/python -m pytest tests/test_category_view.py -q`
 Expected: PASS (9 passed)
@@ -735,12 +737,12 @@ for i,s in enumerate(at.selectbox): print(i, s.label, s.options)
 "
 ```
 
-- [ ] **Step 5: Run the full suite**
+- [x] **Step 5: Run the full suite**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS, 86 passed
 
-- [ ] **Step 6: Look at the page**
+- [x] **Step 6: Look at the page**
 
 ```bash
 .venv/bin/streamlit run dashboard/Overview.py --server.port 8560 --server.headless true &
@@ -753,7 +755,7 @@ Open `http://localhost:8560/Category_View`. Check by eye, then stop the server:
 - the trace overlay draws one line per run in the category's colours;
 - no axis label is clipped and nothing overflows horizontally.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add dashboard/pages/5_Category_View.py tests/test_category_view.py
@@ -767,7 +769,7 @@ git commit -m "Add a Category view page"
 **Files:**
 - Modify: `README.md`
 
-- [ ] **Step 1: Update the page list**
+- [x] **Step 1: Update the page list**
 
 In `README.md`, replace the paragraph beginning "Four pages:" with:
 
@@ -783,7 +785,7 @@ sport" is the Francorchamps sport category. That changes when the WLTC highway c
 at which point `regulatory` will cover both NEDC and WLTC.
 ```
 
-- [ ] **Step 2: Record the distance quirk**
+- [x] **Step 2: Record the distance quirk**
 
 In `README.md`, in the "What the reader has to work around" list, replace the bullet beginning "Only 12 of 37 trace headers" by appending a new bullet after it:
 
@@ -794,7 +796,7 @@ In `README.md`, in the "What the reader has to work around" list, replace the bu
   chart axis only when it actually runs forward.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add README.md

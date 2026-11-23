@@ -1,6 +1,6 @@
 # Category View Review Fixes Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Clear the findings from the whole-branch review of `category-view` so the branch can merge.
 
@@ -11,6 +11,8 @@
 **Spec:** No separate spec. Findings are recorded verbatim in `.superpowers/sdd/2026-09-25-category-view/progress.md` under "Final whole-branch review".
 
 **Branch:** `category-view`, currently 6 commits ahead of `main`, 90 tests green, working tree clean.
+
+**Status:** Tasks 1–4 done and merged into `main` with the category view (2038686). Boxes ticked from the git history on 23 Nov 2026. Task 5, the walk-through in the running app, has no record, so its boxes stay open.
 
 ## Global Constraints
 
@@ -40,7 +42,7 @@ Two problems in one table. `Electrical energy (Wh/100 km)` prints the literal `N
 **Interfaces:**
 - Produces: `layout.mark_gap_value(value: float | None, powertrain: str | None, cycle: str | None, *, decimals: int = 3) -> str` — formats a figure for display, returning `"—"` when absent and appending `" — to be filled"` when `run_notice` flags that run.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/test_category_view.py`:
 
@@ -70,12 +72,12 @@ def test_figures_table_formats_to_three_decimals():
     assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.730"
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `.venv/bin/python -m pytest tests/test_category_view.py -k "figures_table" -v`
 Expected: FAIL — the cells currently hold raw floats and `None`.
 
-- [ ] **Step 3: Add the shared formatter to `dashboard/layout.py`**
+- [x] **Step 3: Add the shared formatter to `dashboard/layout.py`**
 
 Place it directly below `run_notice`:
 
@@ -99,7 +101,7 @@ def mark_gap_value(
     return f"{formatted} — to be filled" if run_notice(powertrain, cycle) else formatted
 ```
 
-- [ ] **Step 4: Use it in the Category view**
+- [x] **Step 4: Use it in the Category view**
 
 In `dashboard/pages/5_Category_View.py`, extend the layout import to include `mark_gap_value`, then replace the loop that builds `records` so every canonical figure goes through the formatter:
 
@@ -134,7 +136,7 @@ st.caption(
 )
 ```
 
-- [ ] **Step 5: Switch Overview to the shared formatter**
+- [x] **Step 5: Switch Overview to the shared formatter**
 
 In `dashboard/Overview.py`, delete the local `mark_gaps` function and the loop that calls it, and build `display` with the shared one instead:
 
@@ -151,12 +153,12 @@ for powertrain in matrix.index:
 
 Add `mark_gap_value` to the `dashboard.layout` import list at the top of the file.
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS, 93 passed. The existing Overview assertions (`"245.730"`, `"0.000 — to be filled"`, `"—"`) must still hold — they are the regression check that the shared formatter behaves exactly as Overview's local one did.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add dashboard/layout.py dashboard/Overview.py dashboard/pages/5_Category_View.py tests/test_category_view.py
@@ -174,7 +176,7 @@ git commit -m "Mark gaps and blanks in the Category view figures table"
 - Modify: `dashboard/pages/5_Category_View.py` (caption + blanks in the varying table)
 - Test: `tests/test_charts.py`, `tests/test_category_view.py`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/test_charts.py`:
 
@@ -219,12 +221,12 @@ def test_varying_table_explains_its_blanks():
     assert "absent from" in captions
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run: `.venv/bin/python -m pytest tests/test_charts.py tests/test_category_view.py -k "distinct_values or sorts_above or explains_its_blanks" -v`
 Expected: FAIL — the count is currently 4, and no such caption exists.
 
-- [ ] **Step 3: Fix the count in `dashboard/layout.py`**
+- [x] **Step 3: Fix the count in `dashboard/layout.py`**
 
 Inside `varying_parameters`, replace the record-building and sort. The `Distinct values` column now holds only distinct present values; absence moves to a private sort column that is dropped before returning:
 
@@ -247,7 +249,7 @@ Inside `varying_parameters`, replace the record-building and sort. The `Distinct
     )
 ```
 
-- [ ] **Step 4: Show the varying table's blanks and explain them**
+- [x] **Step 4: Show the varying table's blanks and explain them**
 
 In `dashboard/pages/5_Category_View.py`, where the varying table is rendered, replace the bare `st.dataframe(varying, ...)` call with a formatted one, and add the caption sentence. The run columns are everything except `Parameter` and `Distinct values`:
 
@@ -267,12 +269,12 @@ In `dashboard/pages/5_Category_View.py`, where the varying table is rendered, re
 
 Note the existing `hide_index=True` must be kept; a Styler still honours it.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS, 96 passed.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add dashboard/layout.py dashboard/pages/5_Category_View.py tests/test_charts.py tests/test_category_view.py
@@ -289,7 +291,7 @@ Task 2 of the original plan said to extract the diff "as a reusable helper that 
 - Modify: `dashboard/pages/3_Compare.py`
 - Test: `tests/test_app.py`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_app.py`:
 
@@ -314,12 +316,12 @@ def test_compare_and_category_view_agree_on_what_differs():
     assert shown == expected
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `.venv/bin/python -m pytest tests/test_app.py -k agree_on_what_differs -v`
 Expected: FAIL — Compare's column header is `Parameter` but its row set is built by the inline loop, and its labels are `run_label` form rather than matching.
 
-- [ ] **Step 3: Replace the inline diff in `dashboard/pages/3_Compare.py`**
+- [x] **Step 3: Replace the inline diff in `dashboard/pages/3_Compare.py`**
 
 Delete the whole block from `param_columns = [c for c in runs.columns if c.startswith("param:")]` through the construction of `differences` (the `rows` loop, the `np.isclose` comparison, and the `pd.to_numeric` coercion that followed it), and replace it with:
 
@@ -340,14 +342,14 @@ The caption below the table counts parameters; keep it, but it now reads from `d
     )
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS, 97 passed. The existing Compare tests (`test_compare_lists_differing_inputs`, `test_compare_renders_absent_parameters_as_a_dash_not_none`) are the regression check.
 
 If `test_compare_renders_absent_parameters_as_a_dash_not_none` fails because the columns are no longer numeric dtype, that is expected — `varying_parameters` returns raw values. Fix it by rendering through a Styler exactly as Task 2 Step 4 does for the Category view, then update that test to assert `"—"` appears rather than asserting dtype.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add dashboard/pages/3_Compare.py tests/test_app.py
@@ -364,7 +366,7 @@ Eight small, independent corrections. Do them in one commit.
 - Modify: `dashboard/layout.py`, `dashboard/pages/5_Category_View.py`, `dashboard/pages/2_Trace_Explorer.py`, `dashboard/pages/3_Compare.py`, and four page filenames
 - Test: `tests/test_app.py`, `tests/test_category_view.py`, `tests/test_data_page.py`
 
-- [ ] **Step 1: Hoist the axis labels into `dashboard/layout.py`**
+- [x] **Step 1: Hoist the axis labels into `dashboard/layout.py`**
 
 Three pages need them and two disagree today. Add near `CANONICAL_QUANTITIES`:
 
@@ -381,7 +383,7 @@ Then in `2_Trace_Explorer.py` and `5_Category_View.py`, delete the local `X_LABE
 
 In `3_Compare.py`, the x-axis title currently passes the raw column code. Change `style_axes(fig, pal, x_title=x_column, y_title=column)` to `style_axes(fig, pal, x_title=X_LABELS.get(x_column, x_column), y_title=column)` and import `X_LABELS`.
 
-- [ ] **Step 2: Gate the distance caption on the axis**
+- [x] **Step 2: Gate the distance caption on the axis**
 
 In `5_Category_View.py`, the "Francorchamps lap is 7 km, NEDC about 11 km" caption prints regardless of which axis is selected, so it appears under a chart plotted against step number. Change its condition from `if field == "powertrain":` to:
 
@@ -389,7 +391,7 @@ In `5_Category_View.py`, the "Francorchamps lap is 7 km, NEDC about 11 km" capti
     if field == "powertrain" and x_column == "distance_m":
 ```
 
-- [ ] **Step 3: Reorder the sidebar**
+- [x] **Step 3: Reorder the sidebar**
 
 Category view currently sorts last, after Data, though the README lists it second. Rename so the nav order matches how the pages are used. URLs are derived from the name without the numeric prefix, so no link changes:
 
@@ -408,11 +410,11 @@ grep -rn '5_Category_View.py\|2_Trace_Explorer.py\|3_Compare.py\|4_Data.py' test
 
 and edit each to the new filename. The constants are `CATEGORY_VIEW` in `tests/test_category_view.py`, `TRACE` and `COMPARE` in `tests/test_app.py`, and `DATA` in `tests/test_data_page.py`.
 
-- [ ] **Step 4: Fix the stale docstring**
+- [x] **Step 4: Fix the stale docstring**
 
 `dashboard/layout.py` line 3 says the module serves "all three pages". Change it to "every page".
 
-- [ ] **Step 5: Add the missing dash test**
+- [x] **Step 5: Add the missing dash test**
 
 No test pins that the Category view actually passes `dashes=` — deleting the argument keeps the suite green. `AppTest` cannot inspect a Plotly figure, so assert it at the seam instead. Append to `tests/test_category_view.py`:
 
@@ -439,12 +441,12 @@ def test_page_requests_dashes_only_for_a_powertrain_category(monkeypatch):
     assert captured and captured[-1] is None, "a cycle category is separated by colour"
 ```
 
-- [ ] **Step 6: Run the tests**
+- [x] **Step 6: Run the tests**
 
 Run: `.venv/bin/python -m pytest -q`
 Expected: PASS, 98 passed.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A -- dashboard tests

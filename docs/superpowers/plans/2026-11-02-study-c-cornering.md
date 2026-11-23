@@ -10,7 +10,7 @@
 
 **Deadline:** results by Fri 20 Nov, slide draft by Sun 22 Nov, numbers frozen at TD2, Mon 30 Nov.
 
-**Status:** In progress, owner confirmed. Tasks 1, 3, 4, 5 and 6 are done as a draft; the Task 2 choices, the Task 7 write-up and the slides are the owner's to confirm or rewrite. The dashboard page is built; results come from `python -m pwt.cornering`.
+**Status:** In progress, owner confirmed. Tasks 1, 3, 4, 5 and 6 are done as a draft, and in Task 7 all four powertrains are run and `short_steps` is checked; the Task 2 choices, the Task 7 write-up and the slides are the owner's to confirm or rewrite. The dashboard page is built; results come from `python -m pwt.cornering`.
 
 ## Global Constraints
 
@@ -161,9 +161,9 @@ table = sweep({("petrol", "spoiler"): spoiler}, {"franco_sport_generated": lap})
 
 **Files:** modify `docs/study-c-cornering.md`.
 
-- [ ] Run the other powertrains on the same laps with `fleet.electric()`, `fleet.hybrid(0.6)` and `fleet.plugin(0.98)`.
+- [x] Run the other powertrains on the same laps with `fleet.electric()`, `fleet.hybrid(0.6)` and `fleet.plugin(0.98)`.
 - [ ] Explain each main result through the trade-off: less braking and rebuilding of speed, against higher speeds and added drag.
-- [ ] Check `short_steps` in the table for any step the engine cannot deliver.
+- [x] Check `short_steps` in the table for any step the engine cannot deliver. (0 on every row; `tests/test_cornering_report.py` checks the report says so.)
 - [ ] State these limits:
   - **Radii:** they are inferred or estimated from a coarse outline.
   - **One line:** the model has one line through each corner.

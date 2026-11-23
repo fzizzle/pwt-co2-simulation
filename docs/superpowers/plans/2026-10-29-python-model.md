@@ -1,6 +1,6 @@
 # Python Model Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Port Nelis's spreadsheet model to Python so that it reproduces every supplied and derived workbook exactly (stage A). Then change its behaviour one tested step at a time (stage B): engine capability, a charge-sustaining full hybrid, cited constants, and the assignment sheet's vehicles.
 
@@ -12,7 +12,7 @@
 
 **Deadline:** stage A by Sun 1 Nov, stage B by Tue 3 Nov, checkpoint at TD1, Wed 4 Nov.
 
-**Status (Thu 29 Oct):** Tasks 1–10 and the stretch done. Added after the plan: a 90 % charger efficiency in the harmonised grid CO2, motor boost in the band strategy, and the dashboard's Model page. Where the build departed from this plan:
+**Status (Thu 29 Oct):** Tasks 1–10 and the stretch done. Boxes ticked to match on 23 Nov 2026. Added after the plan: a 90 % charger efficiency in the harmonised grid CO2, motor boost in the band strategy, and the dashboard's Model page. Where the build departed from this plan:
 
 - **Hard-coded zeros** (the table below): they are not repeated timestamps. Most equal what the formula gives anyway. The one exception is sheet row 24's engine torque in the six Francorchamps engine files, a dead cell the golden test skips.
 - **Task 7:** the harmonised convention keeps a 120 kW regeneration cap. Without it, the electric car's sport lap recovers braking power no motor could absorb. A conventional petrol engine idles at standstill; a hybrid's is off.
@@ -68,10 +68,10 @@ This is what `Conventions` must encode. Source: `docs/model-equations.md`, plus 
 - Modify: `README.md` (the `Traces (677 steps)` count, and the density-threshold bullet)
 - Test: `tests/test_extract_golden.py`, `tests/test_derived.py`
 
-- [ ] **Step 1: Measure before choosing the rule.** For all 12 supplied and 7 derived workbooks, list each kept row's fill fraction. If no real step sits at exactly 0.5, tightening to `filled <= 0.5 * len(values)` is enough. If one does, drop trailing rows whose `Time (s)` does not advance and whose distance is not a step's instead.
-- [ ] **Step 2: Write the failing tests.** `read_run(course_file("32 NEDC ELECTRIC.xlsx")).trace` has 105 rows and `summary_rows_skipped == 1`; same for `WLTC3 ELECTRIC.xlsx` with 1801 rows.
-- [ ] **Step 3: Implement, run the full suite,** and update any dashboard test that counted 677 trace steps (the new total is 676).
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Measure before choosing the rule.** For all 12 supplied and 7 derived workbooks, list each kept row's fill fraction. If no real step sits at exactly 0.5, tightening to `filled <= 0.5 * len(values)` is enough. If one does, drop trailing rows whose `Time (s)` does not advance and whose distance is not a step's instead.
+- [x] **Step 2: Write the failing tests.** `read_run(course_file("32 NEDC ELECTRIC.xlsx")).trace` has 105 rows and `summary_rows_skipped == 1`; same for `WLTC3 ELECTRIC.xlsx` with 1801 rows.
+- [x] **Step 3: Implement, run the full suite,** and update any dashboard test that counted 677 trace steps (the new total is 676).
+- [x] **Step 4: Commit.**
 
 ### Task 2: Cycles, vehicles and conventions
 
@@ -84,13 +84,13 @@ This is what `Conventions` must encode. Source: `docs/model-equations.md`, plus 
 - `Vehicle` (frozen dataclass): `wheel_diameter_m, ratios: tuple[float, ...], m_vehicle, m_driver, m_machine, m_battery, g, frontal_area, cx, rho_air, f_roll, eta_drivetrain, eta_max, a1, a2, a3, p_max_w, fuel_density, battery_wh, p_motor_w, motor_eff: tuple[float, float, float] | None, soc0`. Plus `Vehicle.from_run(run: Run) -> Vehicle`, reading `run.params` by `(label, unit)` key.
 - `Conventions` (frozen dataclass) with the fields in the table above. `conventions_for(source_file: str) -> Conventions` holds the per-file table. `HARMONISED: Conventions` is added in Task 7.
 
-- [ ] **Step 1: Write the failing tests.**
+- [x] **Step 1: Write the failing tests.**
   - `Vehicle.from_run` on `07` gives `m_vehicle == 1300` and `ratios[0] == 12.526`.
   - `Vehicle.from_run` on `10` takes the efficiency curve from column C ("atkinson"), not B. The reader already keys on C.
   - `Cycle.from_run` on `33` has 105 points ending at 1240 s; `Cycle.wltc_class3()` has 1801 points.
   - `conventions_for` returns `shift_kph == (18, 38, 50, 70)` for `33` and `fictive_recharge` for `35`.
-- [ ] **Step 2: Implement.** Battery mass is a formula in the sheets (`2*(C45/160)`, …). Read its cached value from `params`; don't re-derive it.
-- [ ] **Step 3: Run, commit.**
+- [x] **Step 2: Implement.** Battery mass is a formula in the sheets (`2*(C45/160)`, …). Read its cached value from `params`; don't re-derive it.
+- [x] **Step 3: Run, commit.**
 
 ### Task 3: Road load and the petrol chain
 
@@ -103,39 +103,39 @@ This is what `Conventions` must encode. Source: `docs/model-equations.md`, plus 
 - `petrol(cycle, vehicle, conv) -> pd.DataFrame`: road load plus `engine_power_w, engine_power_drivetrain_w, engine_torque_nm, energy_wh, engine_efficiency, qfuel_g, qfuel_l, emission_g_co2`.
 - `totals(frame, conv) -> dict[Key, float]`, keyed like `Run.totals`.
 
-- [ ] **Step 1: Write the golden harness.** Parametrise over the golden runs. For each run: model frame vs `run.trace` on every shared column, and model totals vs `run.totals`, at the tolerance above. Start with the petrol four; mark the rest `xfail(strict=True)` so they flip to failures when they start passing.
-- [ ] **Step 2: Implement the road load** from `docs/model-equations.md`, numpy throughout. The traps:
+- [x] **Step 1: Write the golden harness.** Parametrise over the golden runs. For each run: model frame vs `run.trace` on every shared column, and model totals vs `run.totals`, at the tolerance above. Start with the petrol four; mark the rest `xfail(strict=True)` so they flip to failures when they start passing.
+- [x] **Step 2: Implement the road load** from `docs/model-equations.md`, numpy throughout. The traps:
   - Wheel power uses the **mean** of $v_{i-1}$ and $v_i$; aero force uses $v_i$ alone.
   - Rolling resistance is $m g f_r$, not $m g f_r \cos\theta$.
   - At gear 0 the engine speed is idle: $800 \cdot 2\pi/60$ rad/s.
   - Where $\Delta t = 0$ the sheet hard-codes 0 instead of dividing.
-- [ ] **Step 3: Implement the petrol chain** until `07`, `13`, `33` and `WLTC3 PETROL` pass. Idle fuel replaces the computed fuel at gear 0; it isn't added to it.
-- [ ] **Step 4: Commit.**
+- [x] **Step 3: Implement the petrol chain** until `07`, `13`, `33` and `WLTC3 PETROL` pass. Idle fuel replaces the computed fuel at gear 0; it isn't added to it.
+- [x] **Step 4: Commit.**
 
 ### Task 4: Electric
 
 **Files:** Create `pwt/model/electric.py`; extend the harness.
 
-- [ ] **Step 1:** Remove the `xfail` marks on `06`, `12`, `32` and `WLTC3 ELECTRIC`.
-- [ ] **Step 2: Implement.**
+- [x] **Step 1:** Remove the `xfail` marks on `06`, `12`, `32` and `WLTC3 ELECTRIC`.
+- [x] **Step 2: Implement.**
   - Motor efficiency $aN^2 + bN + c$ (%) uses this step's rpm in traction and the **previous** step's in regeneration.
   - Franco EVs cap regenerative power at −120 kW.
   - Torque in regeneration divides by the mean of two engine speeds (`06` column U).
   - CO2 uses the file's grid factor.
-- [ ] **Step 3: Commit.**
+- [x] **Step 3: Commit.**
 
 ### Task 5: Hybrid and plug-in hybrid
 
 **Files:** Create `pwt/model/hybrid.py`; extend the harness.
 
-- [ ] **Step 1:** Remove the `xfail` marks on the eleven hybrid runs.
-- [ ] **Step 2: Implement the step loop.** It's sequential because each step's motor share depends on the previous state of charge. See *Hybrid columns* in `docs/model-equations.md`:
+- [x] **Step 1:** Remove the `xfail` marks on the eleven hybrid runs.
+- [x] **Step 2: Implement the step loop.** It's sequential because each step's motor share depends on the previous state of charge. See *Hybrid columns* in `docs/model-equations.md`:
   - The 0.9 derate applies in traction only.
   - The regeneration branch tests `SOC <= 1`, not `< 1`.
   - Fuel exists only where engine energy is positive.
   - The fictive recharge row prices fuel at `eta_max`, and its energy uses `/11`, which equals the other rows' `0.0909`.
-- [ ] **Step 3: Report the battery side,** as `pwt.derived` adds it: final SOC, battery Wh, Wh/100 km, and grid g/km at a given factor.
-- [ ] **Step 4: Commit.** Stage A is done when the harness has no `xfail` left.
+- [x] **Step 3: Report the battery side,** as `pwt.derived` adds it: final SOC, battery Wh, Wh/100 km, and grid g/km at a given factor.
+- [x] **Step 4: Commit.** Stage A is done when the harness has no `xfail` left.
 
 ### Task 6: One entry point and the checkpoint from Python
 
@@ -143,29 +143,29 @@ This is what `Conventions` must encode. Source: `docs/model-equations.md`, plus 
 
 **Interfaces:** `simulate(vehicle, cycle, conv) -> Result`, where `Result` holds `steps: pd.DataFrame`, `totals: dict`, `phases: dict[str, dict] | None` and `battery: dict | None`.
 
-- [ ] **Step 1:** Test that `pwt.checkpoint.cells(source="model")` returns the same figures as `source="workbooks"` for all 16 headline cells.
-- [ ] **Step 2: Implement** the `source` switch. The R101 weighting stays in `checkpoint.py`.
-- [ ] **Step 3: Commit.**
+- [x] **Step 1:** Test that `pwt.checkpoint.cells(source="model")` returns the same figures as `source="workbooks"` for all 16 headline cells.
+- [x] **Step 2: Implement** the `source` switch. The R101 weighting stays in `checkpoint.py`.
+- [x] **Step 3: Commit.**
 
 ### Task 7: Cited constants and a harmonised convention (stage B)
 
 **Files:** Create `pwt/model/constants.py`, `docs/sources.md`; add `HARMONISED` to `conventions.py`.
 
-- [ ] **Step 1: Write `docs/sources.md`.** For each constant, give its value and a source a reader can open: petrol heating value, density, CO2 per kg of fuel, EU and France grid factors (the assignment sheet cites the EEA for 250 and 73), and charger efficiency. Where no source is found, say so.
-- [ ] **Step 2: Define `HARMONISED`.** Shift speeds 35/57/82/115, `eff_mass="outside"`, idle at standstill for every engine, regeneration with no cap, one grid factor. CO2 is computed per kg of fuel, not per litre, so density no longer moves CO2.
-- [ ] **Step 3: Test** that the harmonised run of `07` differs from the workbook run only by the documented changes. Pin each delta.
-- [ ] **Step 4: Commit.**
+- [x] **Step 1: Write `docs/sources.md`.** For each constant, give its value and a source a reader can open: petrol heating value, density, CO2 per kg of fuel, EU and France grid factors (the assignment sheet cites the EEA for 250 and 73), and charger efficiency. Where no source is found, say so.
+- [x] **Step 2: Define `HARMONISED`.** Shift speeds 35/57/82/115, `eff_mass="outside"`, idle at standstill for every engine, regeneration with no cap, one grid factor. CO2 is computed per kg of fuel, not per litre, so density no longer moves CO2.
+- [x] **Step 3: Test** that the harmonised run of `07` differs from the workbook run only by the documented changes. Pin each delta.
+- [x] **Step 4: Commit.**
 
 ### Task 8: Engine capability (stage B)
 
 **Files:** Modify `pwt/model/petrol.py`, `pwt/model/hybrid.py`; add a `capability: bool` flag to `Conventions`.
 
-- [ ] **Step 1: Write the full-load curve.** Per the assignment sheet: power linear from 0 to 5000 rpm, plateau to 6000 rpm, 74 kW. Torque follows as $P/\omega$. Write it as a function of $\omega_e$.
-- [ ] **Step 2: Write the failing tests.**
+- [x] **Step 1: Write the full-load curve.** Per the assignment sheet: power linear from 0 to 5000 rpm, plateau to 6000 rpm, 74 kW. Torque follows as $P/\omega$. Write it as a function of $\omega_e$.
+- [x] **Step 2: Write the failing tests.**
   - With `capability=True`, `07` and `13` report a positive `shortfall_w` on every step that exceeds the curve. Against the flat 74 kW limit alone, that is 1 step on the eco lap and 7 on the sport lap. The rpm-dependent curve can only add steps.
   - Delivered power never exceeds the curve.
-- [ ] **Step 3: Implement** clipping and a `shortfall_w` column. For hybrids, clip only the engine's share. A shortfall means the imposed speed trace is infeasible: report it, don't hide it.
-- [ ] **Step 4: Commit.**
+- [x] **Step 3: Implement** clipping and a `shortfall_w` column. For hybrids, clip only the engine's share. A shortfall means the imposed speed trace is infeasible: report it, don't hide it.
+- [x] **Step 4: Commit.**
 
 ### Task 9: Charge-sustaining full hybrid (stage B)
 
@@ -173,26 +173,26 @@ This is what `Conventions` must encode. Source: `docs/model-equations.md`, plus 
 
 **Interfaces:** `Strategy` protocol: `motor_share(state, demand_w, dt) -> float`. Implement `NelisStrategy`, today's rule (the default, so stage A stays green), and `SocBandStrategy(low=0.5, high=0.7)`.
 
-- [ ] **Step 1: Write the failing tests.** With `SocBandStrategy` on `WLTC3 HYBRID`:
+- [x] **Step 1: Write the failing tests.** With `SocBandStrategy` on `WLTC3 HYBRID`:
   - final SOC ends within ±2 % of the starting SOC, with no fictive recharge line;
   - SOC stays inside [0.45, 0.75] throughout;
   - fuel is reported beside the Nelis-strategy figure.
-- [ ] **Step 2: Implement.** Below the band, the engine carries extra load towards its best-efficiency point, $x^* = -A_2 / 2A_1$ of $P_\text{max}$, and the surplus charges the battery. Above the band, the motor takes the demand up to its rating. Inside the band, use Nelis's rule.
-- [ ] **Step 3: Commit.**
+- [x] **Step 2: Implement.** Below the band, the engine carries extra load towards its best-efficiency point, $x^* = -A_2 / 2A_1$ of $P_\text{max}$, and the surplus charges the battery. Above the band, the motor takes the demand up to its rating. Inside the band, use Nelis's rule.
+- [x] **Step 3: Commit.**
 
 ### Task 10: Assignment-sheet vehicles and the TD1 checkpoint
 
 **Files:** Create `pwt/model/fleet.py`; write `docs/phase-2-results.md`.
 
-- [ ] **Step 1: Define two vehicle sets.** The workbooks' set uses `Vehicle.from_run` on each file. The assignment-sheet set uses 1280 kg, 74 kW, 0.75 kg/l, 150 Wh/kg battery, EV 22 kWh and 1460 kg, HEV 20–30 kW, PHEV 40–50 kW / 10–20 kWh. Take the midpoint of each range, and note that choice in the doc.
-- [ ] **Step 2: Generate the 4 × 4 table three ways.**
+- [x] **Step 1: Define two vehicle sets.** The workbooks' set uses `Vehicle.from_run` on each file. The assignment-sheet set uses 1280 kg, 74 kW, 0.75 kg/l, 150 Wh/kg battery, EV 22 kWh and 1460 kg, HEV 20–30 kW, PHEV 40–50 kW / 10–20 kWh. Take the midpoint of each range, and note that choice in the doc.
+- [x] **Step 2: Generate the 4 × 4 table three ways.**
   - workbook-exact (must equal `docs/phase-1-results.md`);
   - harmonised;
   - harmonised + capability + charge-sustaining hybrid.
   
   Also show the sport lap's shortfall per step.
-- [ ] **Step 3: Write `docs/phase-2-results.md`:** one paragraph per change, giving what it moved and by how much.
-- [ ] **Step 4: Commit.**
+- [x] **Step 3: Write `docs/phase-2-results.md`:** one paragraph per change, giving what it moved and by how much.
+- [x] **Step 4: Commit.**
 
 ### Stretch: generate the Francorchamps speed profiles
 
