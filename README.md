@@ -123,6 +123,8 @@ and engine-curve checks, French-grid rankings, technology-inspired ranges, regen
 petrol/hybrid laps and two-factor interactions. The report marks provisional comparisons
 and keeps the original approved assumptions separate from these exploratory checks.
 
+Install the deck tools with `.venv/bin/pip install -r requirements-deck.txt`. Write the slide text in `docs/deck/slides.md`, then run `.venv/bin/python -m pwt.deck` to build both PowerPoint themes in `docs/deck/build/`. The full guide, with field lengths, tags and study figures, is [docs/deck/README.md](docs/deck/README.md).
+
 `python -m pwt.phase2` prints the five-scenario comparison in `docs/phase-2-results.md`; the
 dashboard's **Model** page shows it, the generated laps, and any single run. Reboot the
 Cloud app after deploying this — the page imports `pwt.model`, which a running app has not

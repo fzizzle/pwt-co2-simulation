@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from pwt.model import Vehicle, fleet
@@ -85,6 +86,8 @@ def swings(frame: pd.DataFrame, co2: str = "co2_eu") -> pd.DataFrame:
         raise ValueError("Sensitivity endpoints are missing, duplicated or contain CO2 gaps")
     if co2 not in ("co2_eu", "co2_fr"):
         raise ValueError("Choose co2_eu or co2_fr")
+    if co2 not in frame or not np.isfinite(frame[co2].to_numpy(dtype=float, na_value=np.nan)).all():
+        raise ValueError(f"Sensitivity results require finite {co2} values for every row")
     table = endpoints.pivot(index=keys + ["factor"], columns="scale", values=co2)
     table = table.rename(columns={0.9: "co2_low", 1.1: "co2_high"}).rename_axis(columns=None)
     baseline = frame[frame["factor"] == "baseline"].set_index(keys)[co2]

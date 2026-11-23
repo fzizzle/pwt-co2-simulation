@@ -83,3 +83,13 @@ def test_french_grid_changes_phev_rankings_without_changing_feasibility(frame):
     assert not np.allclose(fr.loc["phev"].swing, eu.loc["phev"].swing.reindex(fr.loc["phev"].index))
     assert fr.loc["bev"].baseline.to_numpy() == pytest.approx(
         eu.loc["bev"].baseline.reindex(fr.loc["bev"].index).to_numpy() * 73 / 250)
+
+@pytest.mark.parametrize("factor", ["baseline", "mass"])
+@pytest.mark.parametrize("invalid", [np.nan, np.inf])
+def test_french_grid_rejects_invalid_emissions(frame, factor, invalid):
+    changed = frame.copy()
+    row = changed.index[changed.factor == factor][0]
+    changed.loc[row, "co2_fr"] = invalid
+
+    with pytest.raises(ValueError, match="co2_fr"):
+        swings(changed, "co2_fr")

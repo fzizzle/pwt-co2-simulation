@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Superpowers Brainstorming</title>
+  <style>
+    /*
+     * BRAINSTORM COMPANION FRAME TEMPLATE
+     *
+     * This template provides a consistent frame with:
+     * - OS-aware light/dark theming
+     * - Header branding and connection status
+     * - Scrollable main content area
+     * - CSS helpers for common UI patterns
+     *
+     * Content is injected via placeholder comment in #frame-content.
+     */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e5e5e7;
+      --border: #d1d1d6;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --error: #ff3b30;
+      --selected-bg: #e8f4fd;
+      --selected-border: #0071e3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1d1d1f;
+        --bg-secondary: #2d2d2f;
+        --bg-tertiary: #3d3d3f;
+        --border: #424245;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --text-tertiary: #636366;
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --selected-bg: rgba(10, 132, 255, 0.15);
+        --selected-border: #0a84ff;
+      }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ===== FRAME STRUCTURE ===== */
+    .brand { display: flex; align-items: center; min-width: 0; overflow: hidden; color: var(--text-secondary); line-height: 1; }
+    .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; min-width: 0; max-width: 100%; line-height: 1; }
+    .brand-copy { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; transform: translateY(-1px); }
+    .brand-logo { display: block; height: 1em; width: auto; max-width: 180px; flex-shrink: 0; filter: invert(1); }
+    @media (prefers-color-scheme: dark) {
+      .brand-logo { filter: none; }
+    }
+    .status { font-size: 0.7rem; color: var(--status-color, var(--success)); display: flex; align-items: center; gap: 0.4rem; justify-self: end; white-space: nowrap; line-height: 1; }
+    .status::before { content: ''; width: 6px; height: 6px; background: var(--status-color, var(--success)); border-radius: 50%; }
+
+    .main { flex: 1; overflow-y: auto; }
+    #frame-content { padding: 2rem; min-height: 100%; }
+
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1rem;
+      min-height: 42px;
+    }
+    .header .brand { justify-self: start; width: 100%; font-size: 0.75rem; line-height: 1; }
+    .header .status { grid-column: 2; line-height: 1; }
+    .header span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .header .selected-text {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .section { margin-bottom: 2rem; }
+    .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+    /* ===== OPTIONS (for A/B/C choices) ===== */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .option:hover { border-color: var(--accent); }
+    .option.selected { background: var(--selected-bg); border-color: var(--selected-border); }
+    .option .letter {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      width: 1.75rem; height: 1.75rem;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .option.selected .letter { background: var(--accent); color: white; }
+    .option .content { flex: 1; }
+    .option .content h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .option .content p { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
+
+    /* ===== CARDS (for showing designs/mockups) ===== */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.selected { border-color: var(--selected-border); border-width: 2px; }
+    .card-image { background: var(--bg-tertiary); aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; }
+    .card-body { padding: 1rem; }
+    .card-body h3 { margin-bottom: 0.25rem; }
+    .card-body p { color: var(--text-secondary); font-size: 0.85rem; }
+
+    /* ===== MOCKUP CONTAINER ===== */
+    .mockup {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .mockup-header {
+      background: var(--bg-tertiary);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-body { padding: 1.5rem; }
+
+    /* ===== SPLIT VIEW (side-by-side comparison) ===== */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* ===== PROS/CONS ===== */
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .pros, .cons { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; }
+    .pros h4 { color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .cons h4 { color: var(--error); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .pros ul, .cons ul { margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pros li, .cons li { margin-bottom: 0.25rem; }
+
+    /* ===== PLACEHOLDER (for mockup areas) ===== */
+    .placeholder {
+      background: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    /* ===== INLINE MOCKUP ELEMENTS ===== */
+    .mock-nav { background: var(--accent); color: white; padding: 0.75rem 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .mock-sidebar { background: var(--bg-tertiary); padding: 1rem; min-width: 180px; }
+    .mock-content { padding: 1.5rem; flex: 1; }
+    .mock-button { background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; }
+    .mock-input { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <!-- BRANDING -->
+    <div class="status">Connecting…</div>
+  </div>
+
+  <div class="main">
+    <div id="frame-content">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  .deck { font-family: Inter, -apple-system, "Helvetica Neue", sans-serif; }
+  .slide { aspect-ratio: 16/9; width: 100%; border-radius: 10px; overflow: hidden; position: relative; box-shadow: 0 2px 14px rgba(0,0,0,.18); margin-bottom: 14px; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .s { position:absolute; inset:0; padding: 7% 8%; box-sizing: border-box; display:flex; flex-direction:column; }
+  /* A: white keynote */
+  .a { background:#fff; color:#1d1d1f; }
+  .a .eyebrow { color:#86868b; font-size: 11px; font-weight:500; letter-spacing:.02em; }
+  .a h1 { font-size: 30px; font-weight:700; letter-spacing:-.02em; margin: 6px 0 0; line-height:1.05; }
+  .a .sub { color:#86868b; font-size: 13px; margin-top:8px; }
+  /* B: black keynote */
+  .b { background:#000; color:#f5f5f7; }
+  .b .eyebrow { color:#a1a1a6; font-size: 11px; font-weight:500; }
+  .b h1 { font-size: 30px; font-weight:700; letter-spacing:-.02em; margin: 6px 0 0; line-height:1.05;
+          background: linear-gradient(90deg,#f5f5f7,#a1a1a6); -webkit-background-clip:text; color:transparent; }
+  .b .sub { color:#a1a1a6; font-size: 13px; margin-top:8px; }
+  /* C: warm off-white, editorial */
+  .c { background:#f5f5f7; color:#1d1d1f; }
+  .c .eyebrow { color:#6e6e73; font-size: 10px; font-weight:600; text-transform:uppercase; letter-spacing:.12em; }
+  .c h1 { font-size: 24px; font-weight:600; letter-spacing:-.015em; margin: 8px 0 0; line-height:1.15; max-width: 70%; }
+  .c .sub { color:#6e6e73; font-size: 12px; margin-top:8px; }
+  .c .rule { height:1px; background:#d2d2d7; margin: 12px 0; }
+  .big { font-size: 64px; font-weight:700; letter-spacing:-.04em; line-height:1; }
+  .unit { font-size: 14px; font-weight:500; }
+  .bars { margin-top:auto; display:flex; flex-direction:column; gap:7px; }
+  .bar { display:flex; align-items:center; gap:8px; font-size:11px; }
+  .bar .n { width: 92px; }
+  .bar .t { height: 12px; border-radius: 6px; }
+  .bar .v { font-variant-numeric: tabular-nums; }
+  .foot { position:absolute; bottom: 4%; left: 8%; right: 8%; font-size: 9px; display:flex; justify-content:space-between; }
+  .a .foot, .c .foot { color:#aeaeb2; } .b .foot { color:#6e6e73; }
+  .p{background:#ff9f0a}.e{background:#0a84ff}.h{background:#30d158}.ph{background:#bf5af2}
+  .cmuted .p{background:#c8742a}.cmuted .e{background:#2f6fb5}.cmuted .h{background:#4a8f5e}.cmuted .ph{background:#7b5aa6}
+</style>
+
+<h2>Which look feels right for the deck?</h2>
+<p class="subtitle">Same two slides, three ways: a section title and the comparison slide (real model numbers, WLTC Class 3, EU grid). Click the one closest to what you want; say what to change in the terminal.</p>
+
+<div class="deck">
+<div class="options">
+
+  <div class="option" data-choice="a" >
+    <div class="letter">A</div>
+    <div class="content" style="width:100%">
+      <h3>White Keynote</h3>
+      <p>White page, big bold headline, grey supporting line, lots of empty space. Colour only in the data.</p>
+      <div class="pair">
+        <div class="slide a"><div class="s" style="justify-content:center">
+          <div class="eyebrow">PWT · Powertrains</div>
+          <h1>Four cars.<br>Four cycles.<br>One model.</h1>
+          <div class="sub">Simulating CO2 from forces to tailpipe and grid.</div>
+        </div></div>
+        <div class="slide a"><div class="s">
+          <div class="eyebrow">Comparison · WLTC Class 3</div>
+          <h1 style="font-size:22px">The electric car emits a third of petrol.</h1>
+          <div class="bars">
+            <div class="bar"><span class="n">Petrol</span><span class="t p" style="width:145px"></span><span class="v">145.1</span></div>
+            <div class="bar"><span class="n">Full hybrid</span><span class="t h" style="width:129px"></span><span class="v">128.8</span></div>
+            <div class="bar"><span class="n">Plug-in hybrid</span><span class="t ph" style="width:74px"></span><span class="v">73.6</span></div>
+            <div class="bar"><span class="n">Battery electric</span><span class="t e" style="width:46px"></span><span class="v">45.8</span></div>
+          </div>
+          <div class="foot"><span>g CO2/km · EU grid 250 g/kWh</span><span>3</span></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" >
+    <div class="letter">B</div>
+    <div class="content" style="width:100%">
+      <h3>Black Keynote</h3>
+      <p>Black stage, white type with a soft silver gradient on headlines, bright colours. Most "product launch".</p>
+      <div class="pair">
+        <div class="slide b"><div class="s" style="justify-content:center">
+          <div class="eyebrow">PWT · Powertrains</div>
+          <h1>Four cars.<br>Four cycles.<br>One model.</h1>
+          <div class="sub">Simulating CO2 from forces to tailpipe and grid.</div>
+        </div></div>
+        <div class="slide b"><div class="s">
+          <div class="eyebrow">Comparison · WLTC Class 3</div>
+          <div style="margin-top:10px"><span class="big">45.8</span> <span class="unit" style="color:#a1a1a6">g CO2/km, battery electric</span></div>
+          <div class="bars">
+            <div class="bar"><span class="n">Petrol</span><span class="t p" style="width:145px"></span><span class="v">145.1</span></div>
+            <div class="bar"><span class="n">Full hybrid</span><span class="t h" style="width:129px"></span><span class="v">128.8</span></div>
+            <div class="bar"><span class="n">Plug-in hybrid</span><span class="t ph" style="width:74px"></span><span class="v">73.6</span></div>
+            <div class="bar"><span class="n">Battery electric</span><span class="t e" style="width:46px"></span><span class="v">45.8</span></div>
+          </div>
+          <div class="foot"><span>EU grid 250 g/kWh</span><span>3</span></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" >
+    <div class="letter">C</div>
+    <div class="content" style="width:100%">
+      <h3>Light grey, editorial</h3>
+      <p>Apple's soft grey, small uppercase labels, a hairline rule, quieter muted colours. Feels like a white paper.</p>
+      <div class="pair">
+        <div class="slide c"><div class="s" style="justify-content:center">
+          <div class="eyebrow">PWT · Powertrains · ESILV 2026</div>
+          <h1>Simulating the CO2 of four powertrains on four driving cycles</h1>
+          <div class="rule" style="max-width:40%"></div>
+          <div class="sub">Petrol · Battery electric · Full hybrid · Plug-in hybrid</div>
+        </div></div>
+        <div class="slide c cmuted"><div class="s">
+          <div class="eyebrow">Comparison · WLTC Class 3</div>
+          <h1 style="font-size:18px">The electric car emits about a third of the petrol car's CO2</h1>
+          <div class="rule"></div>
+          <div class="bars">
+            <div class="bar"><span class="n">Petrol</span><span class="t p" style="width:145px;border-radius:2px"></span><span class="v">145.1</span></div>
+            <div class="bar"><span class="n">Full hybrid</span><span class="t h" style="width:129px;border-radius:2px"></span><span class="v">128.8</span></div>
+            <div class="bar"><span class="n">Plug-in hybrid</span><span class="t ph" style="width:74px;border-radius:2px"></span><span class="v">73.6</span></div>
+            <div class="bar"><span class="n">Battery electric</span><span class="t e" style="width:46px;border-radius:2px"></span><span class="v">45.8</span></div>
+          </div>
+          <div class="foot"><span>g CO2/km · EU grid 250 g/kWh · model output</span><span>3</span></div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+<p class="subtitle" style="margin-top:16px">The headlines here are placeholders to show the style, not the group's wording.</p>
+
+    </div>
+  </div>
+
+</body>
+</html>

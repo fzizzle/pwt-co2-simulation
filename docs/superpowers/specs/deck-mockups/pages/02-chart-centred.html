@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Superpowers Brainstorming</title>
+  <style>
+    /*
+     * BRAINSTORM COMPANION FRAME TEMPLATE
+     *
+     * This template provides a consistent frame with:
+     * - OS-aware light/dark theming
+     * - Header branding and connection status
+     * - Scrollable main content area
+     * - CSS helpers for common UI patterns
+     *
+     * Content is injected via placeholder comment in #frame-content.
+     */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg-primary: #f5f5f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e5e5e7;
+      --border: #d1d1d6;
+      --text-primary: #1d1d1f;
+      --text-secondary: #86868b;
+      --text-tertiary: #aeaeb2;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --success: #34c759;
+      --warning: #ff9f0a;
+      --error: #ff3b30;
+      --selected-bg: #e8f4fd;
+      --selected-border: #0071e3;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1d1d1f;
+        --bg-secondary: #2d2d2f;
+        --bg-tertiary: #3d3d3f;
+        --border: #424245;
+        --text-primary: #f5f5f7;
+        --text-secondary: #86868b;
+        --text-tertiary: #636366;
+        --accent: #0a84ff;
+        --accent-hover: #409cff;
+        --selected-bg: rgba(10, 132, 255, 0.15);
+        --selected-border: #0a84ff;
+      }
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* ===== FRAME STRUCTURE ===== */
+    .brand { display: flex; align-items: center; min-width: 0; overflow: hidden; color: var(--text-secondary); line-height: 1; }
+    .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; min-width: 0; max-width: 100%; line-height: 1; }
+    .brand-copy { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1; transform: translateY(-1px); }
+    .brand-logo { display: block; height: 1em; width: auto; max-width: 180px; flex-shrink: 0; filter: invert(1); }
+    @media (prefers-color-scheme: dark) {
+      .brand-logo { filter: none; }
+    }
+    .status { font-size: 0.7rem; color: var(--status-color, var(--success)); display: flex; align-items: center; gap: 0.4rem; justify-self: end; white-space: nowrap; line-height: 1; }
+    .status::before { content: ''; width: 6px; height: 6px; background: var(--status-color, var(--success)); border-radius: 50%; }
+
+    .main { flex: 1; overflow-y: auto; }
+    #frame-content { padding: 2rem; min-height: 100%; }
+
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1.5rem;
+      flex-shrink: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1rem;
+      min-height: 42px;
+    }
+    .header .brand { justify-self: start; width: 100%; font-size: 0.75rem; line-height: 1; }
+    .header .status { grid-column: 2; line-height: 1; }
+    .header span {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+    .header .selected-text {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* ===== TYPOGRAPHY ===== */
+    h2 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+    h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--text-secondary); margin-bottom: 1.5rem; }
+    .section { margin-bottom: 2rem; }
+    .label { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+
+    /* ===== OPTIONS (for A/B/C choices) ===== */
+    .options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .option {
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    .option:hover { border-color: var(--accent); }
+    .option.selected { background: var(--selected-bg); border-color: var(--selected-border); }
+    .option .letter {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      width: 1.75rem; height: 1.75rem;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 0.85rem; flex-shrink: 0;
+    }
+    .option.selected .letter { background: var(--accent); color: white; }
+    .option .content { flex: 1; }
+    .option .content h3 { font-size: 0.95rem; margin-bottom: 0.15rem; }
+    .option .content p { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
+
+    /* ===== CARDS (for showing designs/mockups) ===== */
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.selected { border-color: var(--selected-border); border-width: 2px; }
+    .card-image { background: var(--bg-tertiary); aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; }
+    .card-body { padding: 1rem; }
+    .card-body h3 { margin-bottom: 0.25rem; }
+    .card-body p { color: var(--text-secondary); font-size: 0.85rem; }
+
+    /* ===== MOCKUP CONTAINER ===== */
+    .mockup {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .mockup-header {
+      background: var(--bg-tertiary);
+      padding: 0.5rem 1rem;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-body { padding: 1.5rem; }
+
+    /* ===== SPLIT VIEW (side-by-side comparison) ===== */
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 700px) { .split { grid-template-columns: 1fr; } }
+
+    /* ===== PROS/CONS ===== */
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .pros, .cons { background: var(--bg-secondary); border-radius: 8px; padding: 1rem; }
+    .pros h4 { color: var(--success); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .cons h4 { color: var(--error); font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .pros ul, .cons ul { margin-left: 1.25rem; font-size: 0.85rem; color: var(--text-secondary); }
+    .pros li, .cons li { margin-bottom: 0.25rem; }
+
+    /* ===== PLACEHOLDER (for mockup areas) ===== */
+    .placeholder {
+      background: var(--bg-tertiary);
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    /* ===== INLINE MOCKUP ELEMENTS ===== */
+    .mock-nav { background: var(--accent); color: white; padding: 0.75rem 1rem; display: flex; gap: 1.5rem; font-size: 0.9rem; }
+    .mock-sidebar { background: var(--bg-tertiary); padding: 1rem; min-width: 180px; }
+    .mock-content { padding: 1.5rem; flex: 1; }
+    .mock-button { background: var(--accent); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.85rem; }
+    .mock-input { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem; width: 100%; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <!-- BRANDING -->
+    <div class="status">Connecting…</div>
+  </div>
+
+  <div class="main">
+    <div id="frame-content">
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<h2>Chart in the middle, as the focus</h2>
+<p class="subtitle">Real model numbers (storage-loss baseline, EU grid). Headlines are placeholders to show the style, not the group's wording. Click the closest; say what to change.</p>
+<div class="options">
+<div class="option" data-choice="a" ><div class="letter">A</div><div class="content" style="width:100%"><h3>White, one cycle, one message</h3><p>The chart fills the middle; one headline above, nothing else. Big value labels instead of an axis.</p><div style="margin-top:10px;box-shadow:0 2px 16px rgba(0,0,0,.18);border-radius:12px"><svg viewBox="0 0 1600 900" style="width:100%;display:block;background:#fff;border-radius:12px;font-family:Inter,-apple-system,sans-serif"><text x="800" y="92" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">WLTC Class 3 · g CO2/km</text><text x="800" y="150" text-anchor="middle" fill="#1d1d1f" font-size="46" font-weight="700" letter-spacing="-1">The electric car emits a third of the petrol car</text><line x1="245.0" x2="1355.0" y1="760" y2="760" stroke="#e8e8ed" stroke-width="2"/><path d="M285.0,760 V246.0 q0,-16 16,-16 H459.0 q16,0 16,16 V760 Z" fill="#ff9f0a"/><text x="380.0" y="208.0" text-anchor="middle" fill="#1d1d1f" font-size="44" font-weight="700" letter-spacing="-1">145.1</text><text x="380.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Petrol</text><path d="M565.0,760 V305.53824948311507 q0,-16 16,-16 H739.0 q16,0 16,16 V760 Z" fill="#30d158"/><text x="660.0" y="267.53824948311507" text-anchor="middle" fill="#1d1d1f" font-size="44" font-weight="700" letter-spacing="-1">128.8</text><text x="660.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Full hybrid</text><path d="M845.0,760 V507.16471399035146 q0,-16 16,-16 H1019.0 q16,0 16,16 V760 Z" fill="#bf5af2"/><text x="940.0" y="469.16471399035146" text-anchor="middle" fill="#1d1d1f" font-size="44" font-weight="700" letter-spacing="-1">73.6</text><text x="940.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Plug-in hybrid</text><path d="M1125.0,760 V608.7084769124741 q0,-16 16,-16 H1299.0 q16,0 16,16 V760 Z" fill="#0a84ff"/><text x="1220.0" y="570.7084769124741" text-anchor="middle" fill="#1d1d1f" font-size="44" font-weight="700" letter-spacing="-1">45.8</text><text x="1220.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Battery electric</text><text x="80" y="860" fill="#86868b" font-size="18">EU grid 250 g/kWh · model output · first draft</text><text x="1520" y="860" text-anchor="end" fill="#86868b" font-size="18">5</text></svg></div></div></div>
+<div class="option" data-choice="b" ><div class="letter">B</div><div class="content" style="width:100%"><h3>Black, one cycle, one message</h3><p>Same layout on a black stage. Colours glow more; reads more like a launch event.</p><div style="margin-top:10px;box-shadow:0 2px 16px rgba(0,0,0,.18);border-radius:12px"><svg viewBox="0 0 1600 900" style="width:100%;display:block;background:#000;border-radius:12px;font-family:Inter,-apple-system,sans-serif"><text x="800" y="92" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">WLTC Class 3 · g CO2/km</text><text x="800" y="150" text-anchor="middle" fill="#f5f5f7" font-size="46" font-weight="700" letter-spacing="-1">The electric car emits a third of the petrol car</text><line x1="245.0" x2="1355.0" y1="760" y2="760" stroke="#2c2c2e" stroke-width="2"/><path d="M285.0,760 V246.0 q0,-16 16,-16 H459.0 q16,0 16,16 V760 Z" fill="#ff9f0a"/><text x="380.0" y="208.0" text-anchor="middle" fill="#f5f5f7" font-size="44" font-weight="700" letter-spacing="-1">145.1</text><text x="380.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Petrol</text><path d="M565.0,760 V305.53824948311507 q0,-16 16,-16 H739.0 q16,0 16,16 V760 Z" fill="#30d158"/><text x="660.0" y="267.53824948311507" text-anchor="middle" fill="#f5f5f7" font-size="44" font-weight="700" letter-spacing="-1">128.8</text><text x="660.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Full hybrid</text><path d="M845.0,760 V507.16471399035146 q0,-16 16,-16 H1019.0 q16,0 16,16 V760 Z" fill="#bf5af2"/><text x="940.0" y="469.16471399035146" text-anchor="middle" fill="#f5f5f7" font-size="44" font-weight="700" letter-spacing="-1">73.6</text><text x="940.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Plug-in hybrid</text><path d="M1125.0,760 V608.7084769124741 q0,-16 16,-16 H1299.0 q16,0 16,16 V760 Z" fill="#0a84ff"/><text x="1220.0" y="570.7084769124741" text-anchor="middle" fill="#f5f5f7" font-size="44" font-weight="700" letter-spacing="-1">45.8</text><text x="1220.0" y="810" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Battery electric</text><text x="80" y="860" fill="#86868b" font-size="18">EU grid 250 g/kWh · model output · first draft</text><text x="1520" y="860" text-anchor="end" fill="#86868b" font-size="18">5</text></svg></div></div></div>
+<div class="option" data-choice="c" ><div class="letter">C</div><div class="content" style="width:100%"><h3>White, the whole 4 × 4 in one chart</h3><p>All sixteen results as grouped bars, centred. Busier, but one slide carries the whole comparison.</p><div style="margin-top:10px;box-shadow:0 2px 16px rgba(0,0,0,.18);border-radius:12px"><svg viewBox="0 0 1600 900" style="width:100%;display:block;background:#fff;border-radius:12px;font-family:Inter,-apple-system,sans-serif"><text x="800" y="92" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Four cars on four cycles · g CO2/km</text><text x="800" y="150" text-anchor="middle" fill="#1d1d1f" font-size="46" font-weight="700" letter-spacing="-1">Driving style moves CO2 more than the powertrain</text><circle cx="410.0" cy="205" r="9" fill="#ff9f0a"/><text x="428.0" y="214" fill="#86868b" font-size="22">Petrol</text><circle cx="610.0" cy="205" r="9" fill="#30d158"/><text x="628.0" y="214" fill="#86868b" font-size="22">Full hybrid</text><circle cx="810.0" cy="205" r="9" fill="#bf5af2"/><text x="828.0" y="214" fill="#86868b" font-size="22">Plug-in hybrid</text><circle cx="1010.0" cy="205" r="9" fill="#0a84ff"/><text x="1028.0" y="214" fill="#86868b" font-size="22">Battery electric</text><line x1="81.0" x2="1519.0" y1="770" y2="770" stroke="#e8e8ed" stroke-width="2"/><path d="M111.0,770 V604.9458502024291 q0,-8 8,-8 H161.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="140.0" y="584.9458502024291" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">134</text><path d="M179.0,770 V618.3669028340081 q0,-8 8,-8 H229.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="208.0" y="598.3669028340081" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">124</text><path d="M247.0,770 V690.376012145749 q0,-8 8,-8 H297.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="276.0" y="670.376012145749" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">68</text><path d="M315.0,770 V728.9615384615385 q0,-8 8,-8 H365.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="344.0" y="708.9615384615385" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">38</text><text x="242.0" y="818" text-anchor="middle" fill="#1d1d1f" font-size="26" font-weight="600">NEDC</text><path d="M483.0,770 V590.7505060728745 q0,-8 8,-8 H533.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="512.0" y="570.7505060728745" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">145</text><path d="M551.0,770 V611.7854251012145 q0,-8 8,-8 H601.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="580.0" y="591.7854251012145" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">129</text><path d="M619.0,770 V683.0202429149798 q0,-8 8,-8 H669.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="648.0" y="663.0202429149798" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">74</text><path d="M687.0,770 V718.8957489878543 q0,-8 8,-8 H737.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="716.0" y="698.8957489878543" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">46</text><text x="614.0" y="818" text-anchor="middle" fill="#1d1d1f" font-size="26" font-weight="600">WLTC Class 3</text><path d="M855.0,770 V497.3193319838057 q0,-8 8,-8 H905.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="884.0" y="477.3193319838057" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">218</text><path d="M923.0,770 V495.6417004048583 q0,-8 8,-8 H973.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="952.0" y="475.6417004048583" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">219</text><path d="M991.0,770 V632.1751012145749 q0,-8 8,-8 H1041.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="1020.0" y="612.1751012145749" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">113</text><path d="M1059.0,770 V705.0875506072874 q0,-8 8,-8 H1109.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="1088.0" y="685.0875506072874" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">56</text><text x="986.0" y="818" text-anchor="middle" fill="#1d1d1f" font-size="26" font-weight="600">Spa eco</text><path d="M1227.0,770 V280.9048582995951 q0,-8 8,-8 H1277.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="1256.0" y="260.9048582995951" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">385</text><path d="M1295.0,770 V268.0 q0,-8 8,-8 H1345.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="1324.0" y="248.0" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">395</text><path d="M1363.0,770 V399.88765182186233 q0,-8 8,-8 H1413.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="1392.0" y="379.88765182186233" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">293</text><path d="M1431.0,770 V607.3977732793522 q0,-8 8,-8 H1481.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="1460.0" y="587.3977732793522" text-anchor="middle" fill="#1d1d1f" font-size="19" font-weight="600">132</text><text x="1358.0" y="818" text-anchor="middle" fill="#1d1d1f" font-size="26" font-weight="600">Spa sport</text><text x="80" y="860" fill="#86868b" font-size="18">EU grid 250 g/kWh · model output · first draft</text><text x="1520" y="860" text-anchor="end" fill="#86868b" font-size="18">5</text></svg></div></div></div>
+<div class="option" data-choice="d" ><div class="letter">D</div><div class="content" style="width:100%"><h3>Black, the whole 4 × 4 in one chart</h3><p>The grouped chart on black.</p><div style="margin-top:10px;box-shadow:0 2px 16px rgba(0,0,0,.18);border-radius:12px"><svg viewBox="0 0 1600 900" style="width:100%;display:block;background:#000;border-radius:12px;font-family:Inter,-apple-system,sans-serif"><text x="800" y="92" text-anchor="middle" fill="#86868b" font-size="26" font-weight="500">Four cars on four cycles · g CO2/km</text><text x="800" y="150" text-anchor="middle" fill="#f5f5f7" font-size="46" font-weight="700" letter-spacing="-1">Driving style moves CO2 more than the powertrain</text><circle cx="410.0" cy="205" r="9" fill="#ff9f0a"/><text x="428.0" y="214" fill="#86868b" font-size="22">Petrol</text><circle cx="610.0" cy="205" r="9" fill="#30d158"/><text x="628.0" y="214" fill="#86868b" font-size="22">Full hybrid</text><circle cx="810.0" cy="205" r="9" fill="#bf5af2"/><text x="828.0" y="214" fill="#86868b" font-size="22">Plug-in hybrid</text><circle cx="1010.0" cy="205" r="9" fill="#0a84ff"/><text x="1028.0" y="214" fill="#86868b" font-size="22">Battery electric</text><line x1="81.0" x2="1519.0" y1="770" y2="770" stroke="#2c2c2e" stroke-width="2"/><path d="M111.0,770 V604.9458502024291 q0,-8 8,-8 H161.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="140.0" y="584.9458502024291" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">134</text><path d="M179.0,770 V618.3669028340081 q0,-8 8,-8 H229.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="208.0" y="598.3669028340081" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">124</text><path d="M247.0,770 V690.376012145749 q0,-8 8,-8 H297.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="276.0" y="670.376012145749" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">68</text><path d="M315.0,770 V728.9615384615385 q0,-8 8,-8 H365.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="344.0" y="708.9615384615385" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">38</text><text x="242.0" y="818" text-anchor="middle" fill="#f5f5f7" font-size="26" font-weight="600">NEDC</text><path d="M483.0,770 V590.7505060728745 q0,-8 8,-8 H533.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="512.0" y="570.7505060728745" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">145</text><path d="M551.0,770 V611.7854251012145 q0,-8 8,-8 H601.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="580.0" y="591.7854251012145" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">129</text><path d="M619.0,770 V683.0202429149798 q0,-8 8,-8 H669.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="648.0" y="663.0202429149798" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">74</text><path d="M687.0,770 V718.8957489878543 q0,-8 8,-8 H737.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="716.0" y="698.8957489878543" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">46</text><text x="614.0" y="818" text-anchor="middle" fill="#f5f5f7" font-size="26" font-weight="600">WLTC Class 3</text><path d="M855.0,770 V497.3193319838057 q0,-8 8,-8 H905.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="884.0" y="477.3193319838057" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">218</text><path d="M923.0,770 V495.6417004048583 q0,-8 8,-8 H973.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="952.0" y="475.6417004048583" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">219</text><path d="M991.0,770 V632.1751012145749 q0,-8 8,-8 H1041.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="1020.0" y="612.1751012145749" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">113</text><path d="M1059.0,770 V705.0875506072874 q0,-8 8,-8 H1109.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="1088.0" y="685.0875506072874" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">56</text><text x="986.0" y="818" text-anchor="middle" fill="#f5f5f7" font-size="26" font-weight="600">Spa eco</text><path d="M1227.0,770 V280.9048582995951 q0,-8 8,-8 H1277.0 q8,0 8,8 V770 Z" fill="#ff9f0a"/><text x="1256.0" y="260.9048582995951" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">385</text><path d="M1295.0,770 V268.0 q0,-8 8,-8 H1345.0 q8,0 8,8 V770 Z" fill="#30d158"/><text x="1324.0" y="248.0" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">395</text><path d="M1363.0,770 V399.88765182186233 q0,-8 8,-8 H1413.0 q8,0 8,8 V770 Z" fill="#bf5af2"/><text x="1392.0" y="379.88765182186233" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">293</text><path d="M1431.0,770 V607.3977732793522 q0,-8 8,-8 H1481.0 q8,0 8,8 V770 Z" fill="#0a84ff"/><text x="1460.0" y="587.3977732793522" text-anchor="middle" fill="#f5f5f7" font-size="19" font-weight="600">132</text><text x="1358.0" y="818" text-anchor="middle" fill="#f5f5f7" font-size="26" font-weight="600">Spa sport</text><text x="80" y="860" fill="#86868b" font-size="18">EU grid 250 g/kWh · model output · first draft</text><text x="1520" y="860" text-anchor="end" fill="#86868b" font-size="18">5</text></svg></div></div></div>
+</div>
+    </div>
+  </div>
+
+</body>
+</html>
