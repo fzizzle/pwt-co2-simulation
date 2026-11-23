@@ -2,175 +2,94 @@
 
 Group project for PWT — Powertrains (MESISI471226, Marc Nelis), ESILV 2026-Autumn.
 
-The course's spreadsheet CO2 model, ported to Python and extended: petrol, battery-electric,
-full hybrid and plug-in hybrid over NEDC, Spa-Francorchamps (eco and sport) and WLTC Class 3.
+The course's spreadsheet CO2 model, ported to Python and extended. It compares a petrol car, a battery-electric car, a full hybrid and a plug-in hybrid over NEDC, WLTC Class 3 and two Spa-Francorchamps laps (eco and sport).
+
+```mermaid
+flowchart LR
+    A["Supplied workbooks<br/>data/course-files/"] -->|read by label| B["pwt.workbook<br/>reader"]
+    B --> C["pwt.model<br/>Python port"]
+    A -->|LibreOffice| D["pwt.derived<br/>WLTC and PHEV runs"]
+    D --> C
+    C --> E["pwt.sweep<br/>variants and studies"]
+    E --> F["docs/<br/>figures and reports"]
+    B --> G["dashboard/"]
+    C --> G
+```
+
+## Quick start
+
+```sh
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+.venv/bin/python -m pytest tests
+```
+
+The tests are golden: the reader and the model must reproduce every workbook's totals. For example, the petrol car on the Francorchamps eco lap gives **10.273 l/100 km** and **245.7 g CO2/km**.
 
 ## Layout
 
 | Path | Contents |
 |---|---|
-| `data/course-files/` | The 23 files Nelis supplied, unchanged — the 22 handed out at L3 plus the assignment sheet, `1 Simulation of cars on driving cycles.pdf`. Read-only: never edit these. |
-| `data/derived/` | Workbooks built from the supplied ones by `python -m pwt.derived`: WLTC for all four powertrains, and the plug-in hybrid's charge-depleting and charge-sustaining runs. |
-| `data/track/` | The Spa-Francorchamps outline from [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits), with its MIT licence. |
-| `docs/` | Snapshot of the brief and plan, plus `model-equations.md` (every column as an equation) and `phase-1-results.md` (the 4 × 4 table). The live brief and plan are in the vault, `40 Projects/PWT CO2 Simulation/`. |
-| `pwt/` | Reader for the supplied workbooks, the derived-workbook builder, the checkpoint tables and the sweeps. No Streamlit import — a plain library. |
-| `pwt/model/` | The spreadsheet model in Python (see below). |
-| `dashboard/` | Streamlit app for exploring the workbooks and the model. |
-| `tests/` | Golden tests: the reader and the model must reproduce each workbook's totals before anything changes. |
+| `data/course-files/` | The 23 files Nelis supplied. **Read-only.** |
+| `data/derived/` | WLTC and plug-in hybrid workbooks built by `python -m pwt.derived` |
+| `data/track/` | Spa-Francorchamps outline from [bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (MIT) |
+| `pwt/` | Workbook reader, derived-workbook builder, sweeps and studies. No Streamlit. |
+| `pwt/model/` | The spreadsheet model in Python |
+| `dashboard/` | Streamlit viewer ([dashboard/README.md](dashboard/README.md)) |
+| `docs/` | Equations, results, study reports and sources |
 
-## The dashboard
+## The model
 
-**Hosted:** <https://pwt-co2-simulation-iihscdva9b3woycsyuk7dp.streamlit.app>
-
-> [!important]
-> **Reboot the app after any change to `pwt/`.** Community Cloud pulls new files on push and
-> re-runs the page scripts, but it only re-imports modules inside the app folder
-> (`dashboard/`). The `pwt/` package sits outside that tree and stays in memory from boot, so
-> a page calling a newly added function hits `ImportError: cannot import name …` even though
-> the function is on disk. Manage app → ⋮ → Reboot app. Changes confined to `dashboard/`
-> hot-reload on their own.
-
-Deployed from this repo on Streamlit Community Cloud. Because the repo is private the app is
-invite-only — teammates need their email added under *Settings → Sharing* before the link
-works for them. It sleeps after extended inactivity; the next visitor waits ~30 s for it to
-wake, so open it once before any session where you need it immediately.
-
-An **internal viewer, not a project deliverable**. Five of its ten pages show the supplied figures
-exactly as the workbooks report them — no unit conversion, no recomputation, no corrections, no
-conclusions. **Model**, **Track map**, **Hybrid sizing**, **CO₂ sensitivity** and **Cornering speed** show Python-model results.
-
-Run it locally with:
-
-```sh
-python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/streamlit run dashboard/Overview.py
-```
-
-Ten pages, in three groups in the sidebar menu. `dashboard/Overview.py` is the entry point and
-holds only the menu; the pages are in `dashboard/views/`. Display names, units and number
-formats come from one lookup, `dashboard/labels.py`.
-
-*The workbooks* — figures as reported: **Overview** (all twelve runs, one table and one chart), **Category view** (every run in
-one category together — all the petrols, all the NEDC runs, all the sport runs), **Trace
-Explorer** (per-step data for one run), **Compare** (two runs, with their differing inputs
-listed first), **Data** (the raw datasets as plain tables). *The model* — what `pwt.model`
-computes: **Model** (what `pwt.model` computes) and
-**Track map** (a generated lap, animated). *The reports* — the studies' results: **Hybrid sizing**
-(the hybrid sizing findings) and **CO₂ sensitivity** (Study B: interactive sensitivity charts, EU/French grids, passing-comparison filtering,
-research checks, the full report and artifact downloads) and **Cornering speed** (Study C: lap time and CO₂ against tyre grip or spoiler size, the full report and downloads). CO₂ sensitivity and Cornering speed use saved results without
-rerunning the sweeps. Workbook/model pages showing one Francorchamps lap carry the same
-interactive map, and their charts mark the corners. Every table has a CSV download.
-
-A category is a slice of the 4×3 grid along one field: powertrain (4 categories of 3) or cycle
-(3 categories of 4). Driving style is not a third axis — it maps 1:1 onto cycle today, so "all the
-sport" is the Francorchamps sport category. That changes when the WLTC highway cycle is added,
-at which point `regulatory` will cover both NEDC and WLTC.
-
-The Data page carries five datasets: `Runs` (12 × 74), `Totals` and `Parameters` in long form,
-`Traces` (676 steps), and `Workbook cells` — one workbook's labelled block exactly as the
-sheet holds it, with the original label and unit text, the row number, and how the reader
-classified each row. That last one is where to look when a figure elsewhere seems wrong.
-
-`python -m pwt.build` writes `data/processed/*.parquet` to speed startup. It is optional and
-gitignored — the app reads the workbooks directly when the parquet is absent.
-
-## Derived workbooks
-
-`python -m pwt.derived` builds `data/derived/` from the supplied NEDC workbooks. It needs
-LibreOffice (`soffice`) to recalculate. Each derived file keeps its template's parameter block
-and formulas and changes only the trace, the starting state of charge or the shift speeds.
-Rebuilding a template on its own trace reproduces its supplied totals exactly, which
-`tests/test_derived.py` checks whenever LibreOffice is present.
-
-| File | Template | What changed |
-|---|---|---|
-| `WLTC3 PETROL.xlsx` | `33` | WLTC Class 3 trace; shift speeds 35/57/82/115 km/h |
-| `WLTC3 ELECTRIC.xlsx` | `32` | WLTC Class 3 trace |
-| `WLTC3 HYBRID.xlsx` | `35` | WLTC Class 3 trace |
-| `WLTC3 PHYBRID CD.xlsx` / `CS.xlsx` | `34` | WLTC Class 3 trace; CS starts at the 23 % engine threshold |
-| `NEDC PHYBRID CD.xlsx` / `CS.xlsx` | `34` | CD as supplied; CS starts at 23 % |
-
-Each adds rows below the parameter block: WLTC phase distance, consumption and emission, plus
-battery energy used and grid CO2 for the hybrids. `python -m pwt.checkpoint` prints the
-4 × 4 table in `docs/phase-1-results.md`. The dashboard does not show derived runs yet.
-
-## The Python model
-
-`pwt/model/` is the spreadsheet model ported to Python. `from_workbook(run)` reproduces any
-supplied or derived workbook exactly, totals and every per-step column
-(`tests/test_model_golden.py`). `simulate(vehicle, cycle, conventions, strategy)` takes
-them separately, which is how anything gets changed:
+`from_workbook(run)` reproduces any supplied or derived workbook exactly, totals and every per-step column. `simulate(vehicle, cycle, conventions, strategy)` takes the inputs separately, which is how anything gets changed.
 
 | Module | Holds |
 |---|---|
-| `conventions.py` | Everything the workbooks disagree on, one record per file, and `harmonised()` |
+| `conventions.py` | What the workbooks disagree on, one record per file, and `harmonised()` |
 | `vehicle.py`, `cycle.py` | Inputs, read from a workbook's block and trace |
-| `road_load.py`, `powertrains.py` | Forces, then petrol, electric and hybrid chains |
+| `road_load.py`, `powertrains.py` | Forces, then the petrol, electric and hybrid chains |
 | `strategy.py` | The sheets' motor-share rule and a charge-sustaining band |
-| `constants.py`, `fleet.py` | Cited constants (`docs/sources.md`) and the assignment sheet's vehicles |
+| `constants.py`, `fleet.py` | Cited constants ([docs/sources.md](docs/sources.md)) and the assignment's vehicles |
 | `profile.py` | Francorchamps laps generated from the assignment's eco and sport rules |
 
-`python -m pwt.sweep` runs the hybrid sizing study in `docs/phase-3-sizing.md`. Its `sweep()`
-takes any set of `Vehicle` variants, for other parameter studies. `generate(...,
-corner_speed=...)` replaces the template corner speeds, for tyre and downforce studies.
+Every column is written out as an equation in [docs/model-equations.md](docs/model-equations.md). How the reader copes with the workbooks' differing layouts, and what `pwt.derived` builds, is in [docs/workbooks.md](docs/workbooks.md).
 
-Study B's one-factor sensitivity is in [docs/study-b-sensitivity.md](docs/study-b-sensitivity.md).
-Install `requirements-study-b.txt` locally, then run `python -m pwt.sensitivity_report`
-to regenerate the 168 runs, ranked spans, tornado figures and five-slide review draft.
-The same command also generates the review extensions: intermediate points, total-mass
-and engine-curve checks, French-grid rankings, technology-inspired ranges, regenerated
-petrol/hybrid laps and two-factor interactions. The report marks provisional comparisons
-and keeps the original approved assumptions separate from these exploratory checks.
+## Results and studies
 
-Install the deck tools with `.venv/bin/pip install -r requirements-deck.txt`. Write the slide text in `docs/deck/slides.md`, then run `.venv/bin/python -m pwt.deck` to build both PowerPoint themes in `docs/deck/build/`. The full guide, with field lengths, tags and study figures, is [docs/deck/README.md](docs/deck/README.md).
+Each figure is regenerated by the command under it.
 
-`python -m pwt.phase2` prints the five-scenario comparison in `docs/phase-2-results.md`; the
-dashboard's **Model** page shows it, the generated laps, and any single run. Reboot the
-Cloud app after deploying this — the page imports `pwt.model`, which a running app has not
-loaded.
+**Phase 1–2: the base comparison.** `python -m pwt.checkpoint` prints the 4 × 4 table in [docs/phase-1-results.md](docs/phase-1-results.md). `python -m pwt.phase2` prints the five-scenario comparison in [docs/phase-2-results.md](docs/phase-2-results.md).
 
-## Runs whose figures leave something out
+**Study A: sizing the hybrids** ([docs/phase-3-sizing.md](docs/phase-3-sizing.md)). CO2 against battery size, with the best motor at each size.
 
-`34 NEDC PHYBRID engine.xlsx` reports 0 l/100 km and 0 g CO₂/km, and that zero is what its
-formulas compute. The 40 kW motor covers every NEDC demand, so the motor's share of power
-(`FACT`) stays at 1 and the battery only falls from 98 % to 78 %, never reaching the 23 % that
-brings the engine in. What the sheet leaves out is the electricity: the energy drawn from the
-battery and its CO₂. The app marks the run "electricity not counted" wherever its figures
-appear. `data/derived/` adds the electricity and a charge-sustaining run (see above).
+![Hybrid CO2 against battery size on each cycle](docs/phase-3-sizing.png)
 
-Record further gaps in `RUN_NOTICES` in `dashboard/layout.py`, keyed by `(powertrain, cycle)`;
-every page picks them up automatically.
+`python -m pwt.sweep`
 
-## What the reader has to work around
+**Study B: one-factor CO2 sensitivity** ([docs/study-b-sensitivity.md](docs/study-b-sensitivity.md)). Each parameter moved by ±10 %, one at a time.
 
-The twelve result workbooks share a shape but not a layout. Found by inspecting all of them:
+![Tornado charts for the petrol car and the full hybrid on WLTC Class 3](docs/study-b-combustion.png)
 
-- Totals sit at different rows in each file (`C47` petrol-Franco, `C48` hybrid, `C45`
-  NEDC-petrol), so lookups are by label, never by cell address.
-- Petrol rows 48 and 49 are both labelled `Total emission:` and differ only in unit, so values
-  are keyed by `(label, unit)`.
-- Column B is a unit *or* a value: files `10`/`15`/`35` lay out a menu of engine efficiency
-  curves across B/C/D with row 30 naming them (`downsized` / `atkinson` / `old`). Column C is
-  the active value everywhere.
-- Only 12 of 37 trace headers are universal. `Time (s)`, `Distance (m)` and `Gear` are each
-  missing from some workbooks, and `Energy (Wh)` is spelled `Engergy (Wh)` in six of them.
-- `Distance (m)` is per-workbook, not per-cycle: the eight Francorchamps files and NEDC
-  hybrid/plug-in hybrid store it cumulatively, `33 NEDC PETROL Car.xlsx` stores it per step,
-  and `32 NEDC ELECTRIC.xlsx` has the column but never fills it. A column is offered as a
-  chart axis only when it actually runs forward.
-- Each trace ends with a cumulative summary row and a unit-annotation row. Real steps fill
-  96-100% of their columns and these artifacts 22-50%, so a density threshold separates them.
-- Three titles contradict their filename, so run identity comes from `pwt/catalog.py`.
+`pip install -r requirements-study-b.txt`, then `python -m pwt.sensitivity_report`
 
-Spa laps are **32 variable-length segments**, not per-second traces; NEDC runs are ~105 steps.
+**Study C: cornering speed** ([docs/study-c-cornering.md](docs/study-c-cornering.md)). Sport-lap CO2 against tyre grip and spoiler size.
 
-## Golden numbers
+![CO2 against grip factor and spoiler size for each powertrain](docs/study-c-co2.png)
 
-Petrol, Francorchamps eco (`07 SPA Franco PETROL car ECO Driving.xlsx`):
-**10.273 l/100 km** and **245.7 g CO2/km**. Locked in `tests/test_extract_golden.py`, along
-with the BEV, hybrid and PHEV headline figures.
+`pip install -r requirements-study-c.txt`, then `python -m pwt.cornering`
+
+The study reports are drafts that belong to their owners. See [AGENTS.md](AGENTS.md) for the rules on working in this repo.
+
+## The deck
+
+Write the slide text in `docs/deck/slides.md`, then build both PowerPoint themes with:
 
 ```sh
-.venv/bin/python -m pytest
+.venv/bin/pip install -r requirements-deck.txt
+.venv/bin/python -m pwt.deck
 ```
+
+The full guide is in [docs/deck/README.md](docs/deck/README.md).
+
+## Dashboard
+
+An internal viewer, not a deliverable: <https://pwt-co2-simulation-iihscdva9b3woycsyuk7dp.streamlit.app>. Run it locally with `.venv/bin/streamlit run dashboard/Overview.py`. **Reboot the Cloud app after any change to `pwt/`**, because it doesn't re-import that package on push. Pages and details are in [dashboard/README.md](dashboard/README.md).
