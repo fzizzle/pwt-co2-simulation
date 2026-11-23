@@ -17,7 +17,7 @@ Text, charts, the flow diagram and the little lap are native PowerPoint shapes, 
 
 **Spec:** `docs/superpowers/specs/2026-11-23-group-deck-design.md`. The reference for the look is `docs/superpowers/specs/deck-mockups/` (`mock16.py` and the scripts it execs). Its geometry code (smoothing, placement search, label search, contour masking) is the starting point to port.
 
-**Status:** Complete. Tasks 1–6 done. Both themes pass the 0.99 threshold on every slide. Lowest score: 0.993670 (dark title).
+**Status:** Done. Tasks 1–6 complete; Task 6's fidelity check retired after it passed. Follow-up: fonts and text fitting (see the commit after `eda54aa`).
 
 ## Global Constraints
 
@@ -294,7 +294,9 @@ def test_both_themes(tmp_path):              # CLI default theme writes group-de
   Fix any visible drift from the mockups before committing.
 - [x] **Step 6: Commit,** and update this plan's **Status:** `git commit -m "Deck: assemble the 23-slide first draft; python -m pwt.deck"`
 
-### Task 6: Fidelity to the mockups, at least 99 %
+### Task 6: Fidelity to the mockups, at least 99 % (done, then retired)
+
+> **Retired on 23 November 2026 at Phred's request.** The check proved the first build reproduced the mockups (every slide ≥ 0.9937 in both themes, commit `eda54aa`). From here the deck is meant to diverge from the mockups as the group fills it in, so the test, `pwt/deck/fidelity.py`, the fixture and `reference.py` were removed. Recover them from `eda54aa` if needed.
 
 Phred's requirement: the built slides must match the approved mockups to at least 99 %. This task makes that a measured, repeatable check, then fixes `render.py` and `art.py` until every slide passes.
 

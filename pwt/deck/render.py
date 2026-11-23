@@ -3,8 +3,7 @@
 from pathlib import Path
 
 import numpy as np
-from matplotlib.font_manager import FontProperties, findfont
-from PIL import Image, ImageFont
+from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_LINE_DASH_STYLE
@@ -14,7 +13,7 @@ from pptx.util import Pt
 from pptx.oxml.xmlchemy import OxmlElement
 
 from pwt.catalog import POWERTRAIN_NAMES
-from pwt.deck import art, data, track
+from pwt.deck import art, data, fonts, track
 from pwt.deck.structure import SLIDES, SECTIONS, lap_position
 from pwt.sweep import cycles
 
@@ -29,6 +28,50 @@ PLACEHOLDERS = {
 }
 
 
+#: Problems found while fitting author text; `python -m pwt.deck` prints them.
+WARNINGS: list[str] = []
+
+
+def _split(text: str, lines: int, size: float, weight: int, spacing: float) -> list[str]:
+    """Break `text` at spaces into at most `lines` rows, as evenly wide as possible."""
+    words = text.split()
+    if lines < 2 or len(words) < 2:
+        return [text]
+    best = None
+    for cut in range(1, len(words)):
+        rows = [" ".join(words[:cut]), " ".join(words[cut:])]
+        widest = max(fonts.text_width(r, size, weight, spacing=spacing) for r in rows)
+        if best is None or widest < best[0]:
+            best = (widest, rows)
+    return best[1]
+
+
+def wrap(text: str, size: float, width: float, weight: int = 400) -> list[str]:
+    """Greedy word wrap of `text` into rows no wider than `width`."""
+    rows: list[str] = []
+    for word in text.split():
+        if rows and fonts.text_width(rows[-1] + " " + word, size, weight) <= width:
+            rows[-1] += " " + word
+        else:
+            rows.append(word)
+    return rows or [""]
+
+
+def fit(text: str, size: float, max_width: float, min_size: float, lines: int,
+        weight: int, spacing: float) -> tuple[list[str], float]:
+    """Shrink, then wrap: the rows and font size (px) that set `text` within `max_width`."""
+    width = lambda t, s: fonts.text_width(t, s, weight, spacing=spacing * s / size)
+    if width(text, size) <= max_width:
+        return [text], size
+    if width(text, min_size) <= max_width:
+        return [text], max(min_size, size * max_width / width(text, size))
+    rows = _split(text, lines, size, weight, spacing)
+    for s in (size, *(size - k for k in range(1, int(size - min_size) + 1))):
+        if max(width(r, s) for r in rows) <= max_width:
+            return rows, s
+    return rows, min_size
+
+
 def u(x):
     return round(x * 7620)
 
@@ -38,8 +81,9 @@ def rgb(color):
 
 
 class Canvas:
-    def __init__(self, slide, theme, fields):
+    def __init__(self, slide, theme, fields, slide_id=""):
         self.slide = slide
+        self.slide_id = slide_id
         self.shapes = slide.shapes
         self.palette = art.THEMES[theme]
         self.fields = fields
@@ -77,7 +121,7 @@ class Canvas:
         p.alignment = PP_ALIGN.CENTER if center else PP_ALIGN.LEFT
         r = p.add_run()
         r.text = value
-        r.font.name = {500: "Inter Medium", 600: "Inter SemiBold"}.get(weight, "Inter")
+        r.font.name = fonts.FAMILIES[weight]
         r.font.bold = weight >= 700
         r.font.size = Pt(size * 0.6)
         r.font.color.rgb = self.color(color)
@@ -94,16 +138,32 @@ class Canvas:
             )
         return box
 
-    def field(self, field, x, y, size, default=None, **style):
+    def field(self, field, x, y, size, default=None, max_width=None, min_size=None,
+              lines=1, **style):
+        """One author field. Written text that is too wide for `max_width` first shrinks
+        (down to `min_size`), then wraps onto up to `lines` lines stacked upwards from the
+        baseline `y`; anything still too wide is reported in WARNINGS."""
         value = self.fields.get(field)
-        return self.text(
-            x,
-            y,
-            value or default or PLACEHOLDERS.get(field, field),
-            size,
-            placeholder=None if value else field,
-            **style,
-        )
+        text = value or default or PLACEHOLDERS.get(field, field)
+        self.rows = 1
+        if not value or not max_width:
+            return self.text(x, y, text, size, placeholder=None if value else field, **style)
+        base = size
+        rows, size = fit(text, size, max_width, min_size or size, lines,
+                         style.get("weight", 400), style.get("spacing", 0))
+        style["_size"] = base
+        if fonts.text_width(max(rows, key=len), size, style.get("weight", 400),
+                            spacing=style.get("spacing", 0)) > max_width + 0.5:
+            WARNINGS.append(f"{self.slide_id}.{field} is too long to fit; shorten it.")
+        if "spacing" in style:  # letter spacing scales with the shrunk size
+            style["spacing"] = style["spacing"] * size / style["_size"]
+        style.pop("_size")
+        self.rows = len(rows)
+        boxes = []
+        for k, row in enumerate(rows):
+            lift = (len(rows) - 1 - k) * size * 1.05
+            boxes.append(self.text(x, y - lift, row, size, **style))
+        return boxes[-1]
 
     def shape(self, x, y, w, h, fill, radius=0, ellipse=False, top_only=False):
         kind = (
@@ -159,10 +219,28 @@ class Canvas:
         x, y = track.label_spot(points, dot, str(i + 1))
         self.text(x, y + 6, str(i + 1), 18, weight=600, center=True).name = "lap-label"
 
-    def parts(self, field, defaults, positions, center=False):
+    def check(self, field, text, size, max_width, weight=400):
+        if fonts.text_width(text, size, weight) > max_width:
+            WARNINGS.append(f"{self.slide_id}.{field} is too long to fit; shorten it.")
+
+    def parts(self, field, defaults, positions, center=False, widths=()):
         value = self.fields.get(field, "")
         parts = [s.strip() for s in value.split("|")] if value else defaults
-        for part, (x, y, size) in zip(parts, positions):
+        if value and len(parts) > len(positions):
+            WARNINGS.append(f"{self.slide_id}.{field} has {len(parts)} parts separated by |; "
+                            f"only {len(positions)} are used.")
+        for n, (part, (x, y, size), width) in enumerate(
+                zip(parts, positions, widths or [None] * len(positions))):
+            if value and width and n == len(positions) - 1 and field.startswith("tile"):
+                rows = wrap(part, size, width, 600)
+                if len(rows) > 3:
+                    WARNINGS.append(f"{self.slide_id}.{field}: the line under the number "
+                                    "wraps past 3 lines; shorten it.")
+                for k, row in enumerate(rows[:3]):
+                    self.text(x, y + k * size * 1.3, row, size, weight=600, center=center)
+                continue
+            if value and width:
+                self.check(field, part, size, width, 600)
             self.text(
                 x,
                 y,
@@ -232,6 +310,8 @@ def flow(c):
         c.text(x + 105, 400, str(i + 1), 20, "muted", 600, True)
         key = f"step{i+1}"
         name, _, detail = c.fields.get(key, "").partition("|")
+        if name.strip():
+            c.check(key, name.strip(), 27, 195, 700)
         c.text(
             x + 105,
             460,
@@ -245,7 +325,10 @@ def flow(c):
         parts = detail.strip().split(", ")
         if len(parts) >= 3:
             parts = [", ".join(parts[:2]), ", ".join(parts[2:])]
-        for j, line in enumerate(parts):
+        if len(parts) > 2:
+            WARNINGS.append(f"sim-model.{key}: the detail wraps onto 2 lines at most.")
+        for j, line in enumerate(parts[:2]):
+            c.check(key, line, 17, 195)
             c.text(x + 105, 505 + j * 24, line, 17, "muted", center=True)
         if i < 5:
             c.arrow(x + 218, 455, 24, 8)
@@ -276,7 +359,8 @@ def cars(c):
         c.text(x + 25, 485, f"{km:.1f} km", 18, "muted")
         c.shape(x + 24, 594, 32, 32, data.CAR_COLOURS[pt], ellipse=True)
         c.text(x + 70, 620, POWERTRAIN_NAMES[pt], 26, weight=700)
-        c.field("spec." + pt, x + 70, 654, 18, PLACEHOLDERS["spec"], weight=600)
+        c.field("spec." + pt, x + 70, 654, 18, PLACEHOLDERS["spec"], weight=600,
+                max_width=255)
 
 
 def body(c, spec):
@@ -295,6 +379,7 @@ def body(c, spec):
                 PLACEHOLDERS["tile"],
                 [(x + 165, 470, 64), (x + 165, 550, 22)],
                 True,
+                widths=(300, 300),
             )
     elif spec.layout == "rows":
         c.text(230, 270, "LIMIT", 19, "muted", 600)
@@ -307,11 +392,17 @@ def body(c, spec):
                 f"row{i+1}",
                 PLACEHOLDERS["row"],
                 [(230, y + 62, 32), (230, y + 100, 21), (900, y + 72, 30)],
+                widths=(510, 510, 470),
             )
     elif spec.layout == "slot":
         path = c.fields.get("figure")
         if path:
             path = Path(__file__).resolve().parents[2] / path
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"{spec.id}.figure: no image at {fields_path(path)}. Give a path from the "
+                    "repository root, e.g. docs/phase-3-sizing.png."
+                )
             with Image.open(path) as image:
                 w, h = image.size
             scale = min(1100 / w, 520 / h)
@@ -336,6 +427,13 @@ def body(c, spec):
             )
 
 
+def fields_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(Path(__file__).resolve().parents[2]))
+    except ValueError:
+        return str(path)
+
+
 def title_credit(c):
     fields = ("subtitle", "byline")
     if all(c.fields.get(k) for k in fields):
@@ -349,8 +447,7 @@ def title_credit(c):
     for field in ("subtitle", None, "byline"):
         missing = field is not None and not c.fields.get(field)
         value = (c.fields.get(field) or field) if field else " · "
-        face = FontProperties(family="Inter", style="italic" if missing else "normal")
-        width = ImageFont.truetype(findfont(face), 104).getlength(value) / 4
+        width = fonts.text_width(value, 26, italic=missing)
         parts.append((value, width, field if missing else None))
     x = 800 - sum(width for _, width, _ in parts) / 2
     for value, width, placeholder in parts:
@@ -358,14 +455,26 @@ def title_credit(c):
         x += width
 
 
+def use_inter_theme(prs) -> None:
+    """Make Inter the theme's heading and body font, so any text box added later is Inter."""
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+    theme = prs.slide_master.part.part_related_by(RT.THEME)
+    blob = theme.blob.decode("utf-8")
+    import re
+    blob = re.sub(r'(<a:(?:majorFont|minorFont)>\s*<a:latin typeface=")[^"]*"', r'\1Inter"', blob)
+    theme._blob = blob.encode("utf-8")
+
+
 def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
+    WARNINGS.clear()
     prs = Presentation()
+    use_inter_theme(prs)
     prs.slide_width, prs.slide_height = u(1600), u(900)
     for i, spec in enumerate(SLIDES):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         fields = {k: data.fill(v) for k, v in content.get(spec.id, {}).items()}
-        c = Canvas(slide, theme, fields)
+        c = Canvas(slide, theme, fields, spec.id)
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = c.color("bg")
         source = "pwt.deck.structure"
@@ -382,11 +491,13 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                 "interpolated from the generated lap's altitude (373–470 m), not survey data."
             )
             if spec.layout == "title":
-                c.field("title", 801, 740, 88, weight=700, center=True, spacing=-3)
+                c.field("title", 801, 740, 88, weight=700, center=True, spacing=-3,
+                        max_width=1380, min_size=60, lines=2)
                 title_credit(c)
             elif spec.layout == "opener":
-                c.text(110, 380, number, 28, "muted", 600)
-                c.field("title", 110, 480, 96, weight=700, spacing=-3.5)
+                c.field("title", 110, 480, 96, weight=700, spacing=-3.5,
+                        max_width=790, min_size=64, lines=2)
+                c.text(110, 380 - (c.rows - 1) * 96 * 1.05, number, 28, "muted", 600)
                 c.text(
                     110,
                     540,
@@ -395,7 +506,8 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                     "muted",
                 )
             else:
-                c.field("title", 110, 480, 110, weight=700, spacing=-4)
+                c.field("title", 110, 480, 110, weight=700, spacing=-4,
+                        max_width=790, min_size=72, lines=2)
                 c.field(
                     "subtitle",
                     110,
@@ -405,7 +517,7 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                     weight=600,
                 )
         else:
-            c.field("label", 110, 92, 24, color="muted", weight=500)
+            c.field("label", 110, 92, 24, color="muted", weight=500, max_width=1270)
             c.field(
                 "headline",
                 110,
@@ -413,6 +525,8 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                 44,
                 PLACEHOLDERS["slot.headline" if spec.layout == "slot" else "headline"],
                 weight=700 if fields.get("headline") else 600,
+                max_width=1270,
+                min_size=32,
             )
             body(c, spec)
             c.text(110, 862, "model output · first draft", 17, "muted")
