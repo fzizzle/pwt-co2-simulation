@@ -145,7 +145,7 @@ The order of the four cars does not change.
 ## C-3
 label: Study C · spoiler minus tyres at the same lap time · g CO2/km
 headline: At equal lap time, the spoiler always emits more
-figure: docs/study-c-comparison.png
+figure: chart:study-c-comparison
 notes: For each spoiler size, the tyre grip factor that gives the same lap time is found, and the two cars' CO2 is compared.
 The difference is positive for every car and for all three radius methods: inferred, fitted to the circuit outline, and the driver's line.
 Matching on lap time is a provisional rule. Matching on the average corner speed or on one reference corner could change the result.

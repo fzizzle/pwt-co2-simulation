@@ -25,7 +25,7 @@ def test_every_chart_renders_on_a_clear_background(tmp_path, name, theme):
 def test_charts_match_the_study_figures():
     assert set(figures.FIGURES) == {
         "study-b-combustion", "study-b-electric", "study-b-plugin", "study-b-provisional",
-        "study-c-lap-time", "study-c-co2",
+        "study-c-lap-time", "study-c-co2", "study-c-comparison",
     }
 
 
@@ -66,3 +66,9 @@ def test_slot_takes_a_themed_chart(tmp_path):
     ]
     assert "docs/study-b-swings.csv" in slide.notes_slide.notes_text_frame.text
     assert (tmp_path / "dark-study-b-combustion.png").is_file()
+
+
+def test_comparison_reads_every_radius_method():
+    frame = pd.read_csv("docs/study-c-comparison.csv")
+    assert set(frame.radius_method) <= set(figures.RADIUS_TITLES)
+    assert frame.delta_co2_eu.notna().all()

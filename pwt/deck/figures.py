@@ -26,6 +26,7 @@ from pwt.deck import art, data, fonts
 DOCS = Path(__file__).resolve().parents[2] / "docs"
 SWINGS = DOCS / "study-b-swings.csv"
 CORNERING = DOCS / "study-c-results.csv"
+COMPARISON = DOCS / "study-c-comparison.csv"
 
 #: The chart fills the slot: 1100 by 520 slide units, drawn at 200 dpi.
 SIZE_IN = (11.0, 5.2)
@@ -50,9 +51,14 @@ SWEEPS = {
 CORNERING_AXES = (("grip", "grip_factor", "Grip factor (tyres)"),
                   ("spoiler", "scz_m2", "Spoiler SCz, m²"))
 
+#: Same panel titles as `pwt.cornering.figures`.
+RADIUS_TITLES = {"inferred": "Inferred radii (default)", "outline": "Fitted outline radii",
+                 "line": "Driver's line radii"}
+
 FIGURES: dict[str, Path] = {
     **{name: SWINGS for name in TORNADOS},
     **{name: CORNERING for name in SWEEPS},
+    "study-c-comparison": COMPARISON,
 }
 
 
@@ -75,6 +81,11 @@ def _swings() -> pd.DataFrame:
 @cache
 def _cornering() -> pd.DataFrame:
     return pd.read_csv(CORNERING)
+
+
+@cache
+def _comparison() -> pd.DataFrame:
+    return pd.read_csv(COMPARISON)
 
 
 def tornado_rows(powertrain: str, cycle: str) -> pd.DataFrame:
@@ -212,11 +223,55 @@ def _sweep(name: str, theme: str):
     return fig
 
 
+def _comparison_chart(theme: str):
+    """Spoiler minus tyres at the same lap time, one panel per radius method."""
+    fig, palette = _figure(theme)
+    frame = _comparison()
+    methods = list(frame.radius_method.unique())
+    axes = fig.subplots(1, len(methods), sharey=True, squeeze=False)[0]
+    for ax, method in zip(axes, methods):
+        _style(ax, palette, "y")
+        part = frame[frame.radius_method == method]
+        for car, d in part.groupby("powertrain", sort=False):
+            colour = data.CAR_COLOURS[car]
+            ax.plot(d.scz_m2, d.delta_co2_eu, color=colour, linewidth=pt(4),
+                    solid_capstyle="round")
+            short = (d.spoiler_short_steps > 0) | (d.tyres_short_steps > 0)
+            ax.scatter(d.scz_m2[~short], d.delta_co2_eu[~short], s=pt(13) ** 2, color=colour,
+                       edgecolors=palette["bg"], linewidths=pt(2.5), zorder=3)
+            ax.scatter(d.scz_m2[short], d.delta_co2_eu[short], s=pt(13) ** 2,
+                       color=palette["bg"], edgecolors=colour, linewidths=pt(2.5), zorder=3)
+        ax.axhline(0, color=palette["muted"], linewidth=pt(2), linestyle=(0, (4, 4)))
+        ax.set_title(RADIUS_TITLES.get(method, method), loc="left", color=palette["fg"],
+                     fontsize=pt(18), fontweight=600, fontfamily="Inter")
+        ax.set_xlabel("Spoiler SCz, m²", color=palette["muted"], fontsize=pt(16),
+                      fontfamily="Inter")
+        ax.set_xticks(sorted(part.scz_m2.unique()))
+    axes[0].set_ylabel("Spoiler minus tyres, g CO2/km", color=palette["muted"],
+                       fontsize=pt(16), fontfamily="Inter")
+    handles = [Line2D([], [], color=data.CAR_COLOURS[car], linewidth=pt(4), marker="o",
+                      markersize=pt(11), label=POWERTRAIN_NAMES[car])
+               for car in data.POWERTRAINS if car in set(frame.powertrain)]
+    if ((frame.spoiler_short_steps > 0) | (frame.tyres_short_steps > 0)).any():
+        handles.append(Line2D([], [], marker="o", ls="", markerfacecolor="none",
+                              markeredgecolor=palette["muted"], markersize=pt(11),
+                              label="hollow: engine short of the trace"))
+    fig.legend(handles=handles, loc="outside upper center", ncol=len(handles), frameon=False,
+               labelcolor=palette["fg"], prop={"family": "Inter", "size": pt(17)},
+               columnspacing=2.0)
+    return fig
+
+
 def render(name: str, theme: str, out_dir: Path) -> Path:
     """Draw chart `name` for `theme` as a transparent PNG in `out_dir`."""
     if name not in FIGURES:
         raise ValueError(f"Unknown chart {name!r}. Use one of: {', '.join(sorted(FIGURES))}.")
-    fig = _tornado(name, theme) if name in TORNADOS else _sweep(name, theme)
+    if name in TORNADOS:
+        fig = _tornado(name, theme)
+    elif name in SWEEPS:
+        fig = _sweep(name, theme)
+    else:
+        fig = _comparison_chart(theme)
     path = Path(out_dir) / f"{theme}-{name}.png"
     fig.savefig(path, dpi=DPI, transparent=True)
     return path
