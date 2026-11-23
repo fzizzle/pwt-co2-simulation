@@ -99,19 +99,19 @@ notes:
 > Study slot. figure: e.g. docs/study-b-combustion.png, docs/study-b-electric.png, docs/study-b-plugin.png.
 label:
 headline:
-figure:
+figure: chart:study-b-combustion
 notes:
 
 ## B-2
 label:
 headline:
-figure:
+figure: chart:study-b-electric
 notes:
 
 ## B-3
 label:
 headline:
-figure:
+figure: chart:study-b-plugin
 notes:
 
 ## C
@@ -123,13 +123,13 @@ notes:
 > Study slot. figure: e.g. docs/study-c-lap-time.png, docs/study-c-co2.png.
 label:
 headline:
-figure:
+figure: chart:study-c-lap-time
 notes:
 
 ## C-2
 label:
 headline:
-figure:
+figure: chart:study-c-co2
 notes:
 
 ## C-3
