@@ -172,4 +172,4 @@ laps = {name: t for name, t, r in ((left_name, left_trace, left_row),
                                    (right_name, right_trace, right_row)) if is_lap(r["cycle"])}
 if laps:
     st.subheader("On the circuit")
-    lap_section(laps, "compare", pal)
+    lap_section(laps, "compare", pal, source="workbook")

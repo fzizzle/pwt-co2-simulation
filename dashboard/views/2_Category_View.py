@@ -215,7 +215,7 @@ laps = {name: trace for name, trace, cycle in zip(member_names, all_traces, memb
         if is_lap(cycle)}
 if laps:
     st.subheader("On the circuit")
-    lap_section(laps, "category", pal)
+    lap_section(laps, "category", pal, source="workbook")
 
 # --- what differs ------------------------------------------------------------------------------
 

@@ -15,6 +15,7 @@ import streamlit as st
 from dashboard.charts import speed_and_altitude
 from dashboard.labels import readable
 from dashboard.layout import configure, download
+from dashboard.theme import style_axes
 from dashboard.track_charts import lap_section, mark_corners
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.phase2 import result_for
@@ -34,10 +35,10 @@ def lap(powertrain: str, cycle: str) -> tuple[pd.DataFrame, dict]:
 
 st.title("Track map")
 st.markdown("### Where a lap of Spa-Francorchamps spends its energy")
-st.caption("The generated laps with the assignment vehicles, on the real circuit. Press **Play** "
-           "to drive the lap, or drag the slider. Hover the track for the figures.")
+st.caption("Model output (`storage losses`, EU 250 g/kWh): generated laps with the assignment "
+           "vehicles on the real circuit. Press **Play** or drag the slider; hover for figures.")
 
-pick_lap, pick_car = st.columns([1, 2])
+pick_lap, pick_car = st.columns([2, 3])
 cycle = pick_lap.segmented_control("Lap", list(LAPS), default="franco_sport_generated",
                                    format_func=LAPS.get) or "franco_sport_generated"
 powertrain = pick_car.segmented_control("Powertrain", list(POWERTRAIN_NAMES), default="petrol",
@@ -51,10 +52,11 @@ fuel = headline["fuel_l_100km"]
 tiles[3].metric("Fuel, l/100 km" if fuel is not None else "Battery, kWh/100 km",
                 f"{fuel if fuel is not None else headline['battery_kwh_100km']:.1f}")
 
-painted, unit = lap_section({LAPS[cycle]: steps}, "track", pal)
+painted, unit = lap_section({LAPS[cycle]: steps}, "track", pal, source="model")
 
 st.subheader("The same lap along the distance")
 fig = speed_and_altitude(steps, "distance_m", pal)
+style_axes(fig, pal, x_title="Distance (m)")
 mark_corners(fig, steps, "distance_m", pal)
 st.plotly_chart(fig, width="stretch", theme=None)
 

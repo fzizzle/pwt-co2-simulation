@@ -83,7 +83,7 @@ st.plotly_chart(fig, width="stretch", theme=None)
 
 if on_lap:
     st.subheader("On the circuit")
-    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal)
+    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal, source="workbook")
 
 left, right = st.columns(2)
 
