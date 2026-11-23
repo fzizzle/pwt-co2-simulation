@@ -13,12 +13,14 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    WB_TRACE_RUN_KEY,
     X_LABELS,
     configure,
     download,
     render_run_notices,
     run_label,
     run_picker,
+    sidebar_reset_button,
     source_caption,
 )
 from dashboard.labels import column as column_label
@@ -44,8 +46,8 @@ st.markdown(
 
 # --- controls -------------------------------------------------------------------------------
 
-st.sidebar.subheader("Run")
-row = run_picker(runs, "Run to explore", key="trace_run", index=0)
+row = run_picker(runs, "Run", key="trace_run", index=0, persist_key=WB_TRACE_RUN_KEY)
+sidebar_reset_button()
 trace = trace_for(row["powertrain"], row["cycle"])
 
 if trace.empty:

@@ -15,12 +15,15 @@ import streamlit as st
 from dashboard import charts
 from dashboard.layout import (
     CANONICAL_QUANTITIES,
+    WB_CMP_LEFT_KEY,
+    WB_CMP_RIGHT_KEY,
     X_LABELS,
     configure,
     download,
     render_run_notices,
     run_label,
     run_picker,
+    sidebar_reset_button,
     source_caption,
     varying_parameters,
 )
@@ -41,9 +44,9 @@ st.markdown(
 
 # --- controls -------------------------------------------------------------------------------
 
-st.sidebar.subheader("Runs")
-left_row = run_picker(runs, "Left", key="cmp_left", index=0)
-right_row = run_picker(runs, "Right", key="cmp_right", index=2)
+left_row = run_picker(runs, "Left run", key="cmp_left", index=0, persist_key=WB_CMP_LEFT_KEY)
+right_row = run_picker(runs, "Right run", key="cmp_right", index=2, persist_key=WB_CMP_RIGHT_KEY)
+sidebar_reset_button()
 
 left_name = run_label(left_row["powertrain"], left_row["cycle"])
 right_name = run_label(right_row["powertrain"], right_row["cycle"])

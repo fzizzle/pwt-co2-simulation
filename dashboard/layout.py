@@ -325,34 +325,158 @@ def varying_parameters(runs: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-def sidebar_filters(runs: pd.DataFrame) -> tuple[list[str], list[str]]:
-    """Powertrain and cycle selection, shared by every page."""
-    st.sidebar.subheader("Show")
+#: Persistent session-state keys for compatible workbook selections across pages.
+#: Stored separately from widget keys because Streamlit clears unmounted widget keys on navigation.
+WB_POWERTRAINS_KEY = "_pwt_wb_powertrains"
+WB_CYCLES_KEY = "_pwt_wb_cycles"
+WB_MEASURE_KEY = "_pwt_wb_measure"
+WB_TRACE_RUN_KEY = "_pwt_wb_trace_run"
+WB_CMP_LEFT_KEY = "_pwt_wb_cmp_left"
+WB_CMP_RIGHT_KEY = "_pwt_wb_cmp_right"
+
+_WB_WIDGET_PREFIXES = (
+    "wb_filter_powertrains",
+    "wb_filter_cycles",
+    "wb_measure_",
+    "trace_run",
+    "cmp_left",
+    "cmp_right",
+)
+
+
+def reset_workbook_selections() -> None:
+    """Restore shared workbook filter, measure and run selections to their defaults."""
+    for key in (
+        WB_POWERTRAINS_KEY,
+        WB_CYCLES_KEY,
+        WB_MEASURE_KEY,
+        WB_TRACE_RUN_KEY,
+        WB_CMP_LEFT_KEY,
+        WB_CMP_RIGHT_KEY,
+    ):
+        st.session_state.pop(key, None)
+    for key in list(st.session_state):
+        if isinstance(key, str) and key.startswith(_WB_WIDGET_PREFIXES):
+            st.session_state.pop(key, None)
+
+
+def sidebar_reset_button(key_suffix: str = "") -> None:
+    """Sidebar button to restore all persisted workbook selections."""
+    btn_key = f"wb_reset_btn_{key_suffix}" if key_suffix else "wb_reset_btn"
+    st.sidebar.button(
+        "Reset selections",
+        key=btn_key,
+        on_click=reset_workbook_selections,
+        width="stretch",
+    )
+
+
+def sidebar_filters(runs: pd.DataFrame, *, key_prefix: str = "wb") -> tuple[list[str], list[str]]:
+    """Powertrain and cycle selection, persisted across workbook pages with a reset."""
+    valid_pts = list(POWERTRAIN_ORDER)
+    valid_cycles = list(CYCLE_NAMES)
+    pts_key = f"wb_filter_powertrains_{key_prefix}"
+    cyc_key = f"wb_filter_cycles_{key_prefix}"
+
+    if WB_POWERTRAINS_KEY in st.session_state:
+        saved_pts = [p for p in st.session_state[WB_POWERTRAINS_KEY] if p in valid_pts]
+    else:
+        saved_pts = valid_pts
+    if WB_CYCLES_KEY in st.session_state:
+        saved_cycles = [c for c in st.session_state[WB_CYCLES_KEY] if c in valid_cycles]
+    else:
+        saved_cycles = valid_cycles
+
+    if pts_key not in st.session_state:
+        st.session_state[pts_key] = list(saved_pts)
+    if cyc_key not in st.session_state:
+        st.session_state[cyc_key] = list(saved_cycles)
+
     powertrains = st.sidebar.multiselect(
         "Powertrains",
-        options=list(POWERTRAIN_ORDER),
-        default=list(POWERTRAIN_ORDER),
+        options=valid_pts,
+        key=pts_key,
         format_func=lambda p: POWERTRAIN_NAMES[p],
     )
     cycles = st.sidebar.multiselect(
-        "Cycles",
-        options=list(CYCLE_NAMES),
-        default=list(CYCLE_NAMES),
+        "Driving cycles",
+        options=valid_cycles,
+        key=cyc_key,
         format_func=lambda c: CYCLE_NAMES[c],
     )
+    st.session_state[WB_POWERTRAINS_KEY] = list(powertrains)
+    st.session_state[WB_CYCLES_KEY] = list(cycles)
+    sidebar_reset_button(key_prefix)
     return powertrains, cycles
 
 
-def run_picker(runs: pd.DataFrame, label: str, *, key: str, index: int = 0) -> pd.Series:
-    """Pick a single run. Returns that run's row."""
+def measure_picker(
+    container,
+    *,
+    key: str,
+    widget: str = "radio",
+    label: str = "Measure",
+    label_visibility: str = "visible",
+) -> str:
+    """Canonical workbook measure selector, persisted across workbook pages."""
+    options = list(CANONICAL_QUANTITIES)
+    saved = st.session_state.get(WB_MEASURE_KEY, options[0])
+    if saved not in options:
+        saved = options[0]
+    if key not in st.session_state or st.session_state[key] not in options:
+        st.session_state[key] = saved
+    if widget == "selectbox":
+        choice = container.selectbox(
+            label,
+            options=options,
+            key=key,
+            format_func=lambda q: CANONICAL_QUANTITIES[q][0],
+            label_visibility=label_visibility,
+        )
+    else:
+        choice = container.radio(
+            label,
+            options=options,
+            key=key,
+            format_func=lambda q: CANONICAL_QUANTITIES[q][0],
+            label_visibility=label_visibility,
+        )
+    st.session_state[WB_MEASURE_KEY] = choice
+    return choice
+
+
+def run_picker(
+    runs: pd.DataFrame,
+    label: str,
+    *,
+    key: str,
+    index: int = 0,
+    persist_key: str | None = None,
+) -> pd.Series:
+    """Pick a single run. Persists across pages when `persist_key` is given."""
     options = list(runs.index)
-    choice = st.selectbox(
-        label,
-        options=options,
-        index=min(index, len(options) - 1),
-        key=key,
-        format_func=lambda i: run_label(runs.loc[i, "powertrain"], runs.loc[i, "cycle"]),
-    )
+    default_value = options[min(index, len(options) - 1)]
+    if persist_key is not None:
+        saved = st.session_state.get(persist_key, default_value)
+        if saved not in options:
+            saved = default_value
+        if key not in st.session_state or st.session_state[key] not in options:
+            st.session_state[key] = saved
+        choice = st.selectbox(
+            label,
+            options=options,
+            key=key,
+            format_func=lambda i: run_label(runs.loc[i, "powertrain"], runs.loc[i, "cycle"]),
+        )
+        st.session_state[persist_key] = choice
+    else:
+        choice = st.selectbox(
+            label,
+            options=options,
+            index=min(index, len(options) - 1),
+            key=key,
+            format_func=lambda i: run_label(runs.loc[i, "powertrain"], runs.loc[i, "cycle"]),
+        )
     return runs.loc[choice]
 
 

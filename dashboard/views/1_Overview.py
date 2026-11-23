@@ -26,6 +26,7 @@ from dashboard.layout import (
     download,
     elevation_strip,
     mark_gap_value,
+    measure_picker,
     render_run_notices,
     run_notice,
     sidebar_filters,
@@ -55,14 +56,8 @@ st.caption(
 
 # --- controls -------------------------------------------------------------------------------
 
-powertrains, cycles = sidebar_filters(runs)
-st.sidebar.subheader("Measure")
-quantity = st.sidebar.radio(
-    "Figure to compare",
-    options=list(CANONICAL_QUANTITIES),
-    format_func=lambda q: CANONICAL_QUANTITIES[q][0],
-    label_visibility="collapsed",
-)
+powertrains, cycles = sidebar_filters(runs, key_prefix="overview")
+quantity = measure_picker(st.sidebar, key="wb_measure_overview", widget="radio")
 display_name, unit = CANONICAL_QUANTITIES[quantity]
 
 selected = runs[runs["powertrain"].isin(powertrains) & runs["cycle"].isin(cycles)]

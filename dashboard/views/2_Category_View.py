@@ -25,9 +25,11 @@ from dashboard.layout import (
     configure,
     download,
     mark_gap_value,
+    measure_picker,
     render_run_notices,
     run_label,
     run_notice,
+    sidebar_reset_button,
     varying_parameters,
 )
 from dashboard.labels import column as column_label
@@ -111,12 +113,9 @@ download(figures, f"pwt-category-{choice}.csv", "Download these figures as CSV")
 # --- one measure, charted ----------------------------------------------------------------------
 
 st.subheader("Compare one measure")
-quantity = st.selectbox(
-    "Measure",
-    options=list(CANONICAL_QUANTITIES),
-    format_func=lambda q: CANONICAL_QUANTITIES[q][0],
-)
+quantity = measure_picker(st, key="wb_measure_category", widget="selectbox")
 display_name, unit = CANONICAL_QUANTITIES[quantity]
+sidebar_reset_button()
 
 gaps = {
     (row["powertrain"], row["cycle"])

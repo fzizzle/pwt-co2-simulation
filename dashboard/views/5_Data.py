@@ -63,7 +63,7 @@ st.caption(DATASETS[choice])
 powertrains: list[str] = []
 cycles: list[str] = []
 if choice != "Workbook cells":
-    powertrains, cycles = sidebar_filters(runs)
+    powertrains, cycles = sidebar_filters(runs, key_prefix="data")
     render_run_notices(
         *(row for _, row in runs[runs["powertrain"].isin(powertrains)
           & runs["cycle"].isin(cycles)].iterrows())
