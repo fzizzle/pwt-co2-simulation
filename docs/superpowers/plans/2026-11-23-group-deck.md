@@ -17,7 +17,7 @@ Text, charts, the flow diagram and the little lap are native PowerPoint shapes, 
 
 **Spec:** `docs/superpowers/specs/2026-11-23-group-deck-design.md`. The reference for the look is `docs/superpowers/specs/deck-mockups/` (`mock16.py` and the scripts it execs). Its geometry code (smoothing, placement search, label search, contour masking) is the starting point to port.
 
-**Status:** In progress. Tasks 1–4 done (b23d88d, a5e593c, f95e191, c49f4dc); Task 5 complete (336 tests passed). Task 6 in progress.
+**Status:** Complete. Tasks 1–6 done. Both themes pass the 0.99 threshold on every slide. Lowest score: 0.993670 (dark title).
 
 ## Global Constraints
 
@@ -341,11 +341,11 @@ Phred's requirement: the built slides must match the approved mockups to at leas
 - `report(theme: str, out_dir: Path) -> list[tuple[int, float]]` builds the deck from the fixture, renders both sides, and returns `(slide number, similarity)` for all 23 slides.
 - CLI: `python -m pwt.deck.fidelity [--theme dark|light|both]` prints a table and exits non-zero if any slide scores below 0.99. It also writes side-by-side diff images (reference | deck | difference) to `docs/deck/build/fidelity/`.
 
-- [ ] **Step 1: Write the failing test.** `test_every_slide_matches_mockup` is parametrised over both themes. It asserts that every one of the 23 slides scores at least 0.99, and lists the failing slides with their scores in the message. It's skipped if `soffice`, `pdftoppm` or `chromium` is missing.
-- [ ] **Step 2: Run it.** Expected: FAIL, with per-slide scores.
-- [ ] **Step 3: Close the gaps.** Read the diff images worst-first and fix `render.py` and `art.py` until every slide scores at least 0.99 in both themes. Expect to calibrate text box offsets: an SVG `y` is the baseline, while a PowerPoint text box is placed from its top. Also expect to calibrate font sizes, chart geometry and the opener fade. Don't lower the threshold or change the metric. If one slide can't reach 0.99 for a reason outside the renderer (for example font hinting), stop and report it with its score and the diff image.
-- [ ] **Step 4: Run** `.venv/bin/python -m pytest -q`. Expected: everything passes.
-- [ ] **Step 5: Commit:** `git commit -m "Deck: measured fidelity to the mockups, every slide >= 99 %"`
+- [x] **Step 1: Write the failing test.** `test_every_slide_matches_mockup` is parametrised over both themes. It asserts that every one of the 23 slides scores at least 0.99, and lists the failing slides with their scores in the message. It's skipped if `soffice`, `pdftoppm` or `chromium` is missing.
+- [x] **Step 2: Run it.** Expected: FAIL, with per-slide scores.
+- [x] **Step 3: Close the gaps.** Read the diff images worst-first and fix `render.py` and `art.py` until every slide scores at least 0.99 in both themes. Expect to calibrate text box offsets: an SVG `y` is the baseline, while a PowerPoint text box is placed from its top. Also expect to calibrate font sizes, chart geometry and the opener fade. Don't lower the threshold or change the metric. If one slide can't reach 0.99 for a reason outside the renderer (for example font hinting), stop and report it with its score and the diff image.
+- [x] **Step 4: Run** `.venv/bin/python -m pytest -q`. Expected: everything passes.
+- [x] **Step 5: Commit:** `git commit -m "Deck: measured fidelity to the mockups, every slide >= 99 %"`
 
 ---
 

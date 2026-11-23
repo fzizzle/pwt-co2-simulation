@@ -3,13 +3,15 @@
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from matplotlib.font_manager import FontProperties, findfont
+from PIL import Image, ImageFont
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_LINE_DASH_STYLE
 from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import PP_ALIGN, MSO_AUTO_SIZE
 from pptx.util import Pt
+from pptx.oxml.xmlchemy import OxmlElement
 
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.deck import art, data, track
@@ -57,10 +59,11 @@ class Canvas:
         placeholder=None,
         spacing=0,
     ):
-        width = 1600 if center else max(100, 1600 - x)
+        # SVG positions text by baseline. Impress positions its Inter line box by top.
+        width = 2 * min(x, 1600 - x) if center else max(100, 1600 - x)
         box = self.shapes.add_textbox(
-            u(x - width / 2 if center else x),
-            u(y - size * 0.97),
+            u(x + 0.7 - (width / 2 if center else 0)),
+            u(y - size * 0.994),
             u(width),
             u(size * 1.55),
         )
@@ -102,12 +105,14 @@ class Canvas:
             **style,
         )
 
-    def shape(self, x, y, w, h, fill, radius=0, ellipse=False):
+    def shape(self, x, y, w, h, fill, radius=0, ellipse=False, top_only=False):
         kind = (
             MSO_SHAPE.OVAL
             if ellipse
             else MSO_SHAPE.ROUNDED_RECTANGLE if radius else MSO_SHAPE.RECTANGLE
         )
+        if top_only:
+            kind = MSO_SHAPE.ROUND_2_SAME_RECTANGLE
         s = self.shapes.add_shape(kind, u(x), u(y), u(w), u(h))
         if radius:
             s.adjustments[0] = radius / min(w, h)
@@ -143,7 +148,11 @@ class Canvas:
 
     def lap(self, i):
         points = track.minimap_points()
-        self.line(points, "muted", 2.5).name = "lap-outline"
+        outline = self.line(points, "muted", 2.5)
+        outline.name = "lap-outline"
+        alpha = OxmlElement("a:alpha")
+        alpha.set("val", "70000")
+        outline.line._get_or_add_ln().solidFill.srgbClr.append(alpha)
         dot = points[track.index_at(lap_position(i))]
         x, y = dot
         self.shape(x - 8, y - 8, 16, 16, "fg", ellipse=True).name = "lap-dot"
@@ -183,7 +192,7 @@ def chart(c, single):
             )
             h = (460 if single else 450) * row.co2_eu / mx
             hollow = row.short_steps > 0
-            s = c.shape(x, base - h, w, h, None if hollow else color, r)
+            s = c.shape(x, base - h, w, h, None if hollow else color, r, top_only=True)
             s.name = f"bar:{pt}:{k}"
             if hollow:
                 s.line.color.rgb = c.color(color)
@@ -302,11 +311,12 @@ def body(c, spec):
     elif spec.layout == "slot":
         path = c.fields.get("figure")
         if path:
+            path = Path(__file__).resolve().parents[2] / path
             with Image.open(path) as image:
                 w, h = image.size
             scale = min(1100 / w, 520 / h)
             c.shapes.add_picture(
-                path,
+                str(path),
                 u(800 - w * scale / 2),
                 u(500 - h * scale / 2),
                 u(w * scale),
@@ -324,6 +334,28 @@ def body(c, spec):
                 [(800, 490, 30), (800, 535, 22)],
                 True,
             )
+
+
+def title_credit(c):
+    fields = ("subtitle", "byline")
+    if all(c.fields.get(k) for k in fields):
+        c.text(
+            800, 800, " · ".join(c.fields[k] for k in fields), 26, "muted", center=True
+        )
+        return
+    # Keep incomplete credits centred on one line while exposing each placeholder
+    # as its own editable shape. Measure advances in the same face as the slide.
+    parts = []
+    for field in ("subtitle", None, "byline"):
+        missing = field is not None and not c.fields.get(field)
+        value = (c.fields.get(field) or field) if field else " · "
+        face = FontProperties(family="Inter", style="italic" if missing else "normal")
+        width = ImageFont.truetype(findfont(face), 104).getlength(value) / 4
+        parts.append((value, width, field if missing else None))
+    x = 800 - sum(width for _, width, _ in parts) / 2
+    for value, width, placeholder in parts:
+        c.text(x, 800, value, 26, "muted", placeholder=placeholder)
+        x += width
 
 
 def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path:
@@ -350,18 +382,8 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                 "interpolated from the generated lap's altitude (373–470 m), not survey data."
             )
             if spec.layout == "title":
-                c.field("title", 800, 740, 88, weight=700, center=True, spacing=-3)
-                box = c.text(800, 800, "", 26, "muted", center=True)
-                p = box.text_frame.paragraphs[0]
-                for j, key in enumerate(("subtitle", "byline")):
-                    r = p.add_run()
-                    r.text = (" · " if j else "") + (fields.get(key) or key)
-                    r.font.name = "Inter"
-                    r.font.size = Pt(15.6)
-                    r.font.color.rgb = c.color("muted")
-                    r.font.italic = not bool(fields.get(key))
-                    if r.font.italic:
-                        box.name = "placeholder:" + key
+                c.field("title", 801, 740, 88, weight=700, center=True, spacing=-3)
+                title_credit(c)
             elif spec.layout == "opener":
                 c.text(110, 380, number, 28, "muted", 600)
                 c.field("title", 110, 480, 96, weight=700, spacing=-3.5)
@@ -400,6 +422,9 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                 source = fields["figure"]
         if i:
             c.lap(i)
+        # Impress applies the theme shadow even to shapes with an empty effectLst.
+        for effect in slide._element.xpath(".//a:effectRef"):
+            effect.set("idx", "0")
         slide.notes_slide.notes_text_frame.text = (
             fields.get("notes", "") + "\n\nSource: " + source
         )

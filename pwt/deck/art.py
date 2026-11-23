@@ -53,10 +53,12 @@ def _render(theme, points, scale, path, *, title):
     ax.set_axis_off()
     offset = points[0] - scale * track.lap().xy[0]
     opacity = 0.14 if theme == "dark" else 0.20
+    if title:
+        opacity *= 1.1
     for i, (_, lines) in enumerate(track.relief()):
         major = i % 5 == 0
         ax.add_collection(LineCollection(
-            [line * scale + offset for line in lines], colors=palette["fg"],
+            [np.rint(line[::2] * scale + offset) for line in lines], colors=palette["fg"],
             linewidths=(1.6 if major else 1) * _PT, alpha=opacity * (1.8 if major else 1),
             joinstyle="round",
         ))
@@ -77,10 +79,13 @@ def _render(theme, points, scale, path, *, title):
     picture.paste(road, mask=road.getchannel("A"))
 
     if title:
+        x, y = points[0] * 2
+        ImageDraw.Draw(picture).rounded_rectangle((x - 28, y - 6, x + 28, y + 6),
+                                                  radius=4, fill=palette["fg"])
         alpha = np.interp(np.linspace(1, 0, picture.height), [0, 0.22, 0.42], [1, 0.82, 0])
         strip = alpha[:, None]
     else:
-        alpha = np.interp(np.linspace(0, 1, picture.width), [0, 0.72 * 0.6, 0.72], [1, 0.8, 0])
+        alpha = np.interp(np.linspace(0, 1, picture.width), [0, 0.62 * 0.55, 0.62], [1, 0.8, 0])
         strip = alpha[None, :]
     fade = Image.fromarray(np.rint(strip * 255).astype("uint8")).resize(picture.size)
     Image.composite(background, picture, fade).save(path)
