@@ -17,7 +17,7 @@ Text, charts, the flow diagram and the little lap are native PowerPoint shapes, 
 
 **Spec:** `docs/superpowers/specs/2026-11-23-group-deck-design.md`. The reference for the look is `docs/superpowers/specs/deck-mockups/` (`mock16.py` and the scripts it execs). Its geometry code (smoothing, placement search, label search, contour masking) is the starting point to port.
 
-**Status:** In progress. Tasks 1–4 done (b23d88d, a5e593c, f95e191, c49f4dc); Tasks 5–6 next.
+**Status:** In progress. Tasks 1–4 done (b23d88d, a5e593c, f95e191, c49f4dc); Task 5 complete (336 tests passed). Task 6 in progress.
 
 ## Global Constraints
 
@@ -272,7 +272,7 @@ def test_title_png_light(tmp_path):  # title_art("light", ...): size (3200,1800)
   - pixel sizes in the mockups are on the 1600-unit canvas, and 1 pt = 1.667 units, so convert font sizes as px × 0.6 = pt (for example the 44 px headline becomes 26.4 pt). Use this rule throughout.
 - Every text field passes through `data.fill` before it's placed.
 
-- [ ] **Step 1: Write the failing tests** (build once per module with a fixture)
+- [x] **Step 1: Write the failing tests** (build once per module with a fixture)
 
 ```python
 def test_builds_without_content(tmp_path):   # build("dark", {}, tmp_path): file exists; 23 slides; slide 7 has placeholder:headline
@@ -284,15 +284,15 @@ def test_writes_only_build_dir(tmp_path):    # CLI with --out tmp_path/build and
 def test_both_themes(tmp_path):              # CLI default theme writes group-deck-dark.pptx and group-deck-light.pptx
 ```
 
-- [ ] **Step 2: Run** the tests. Expected: FAIL.
-- [ ] **Step 3: Implement `render.py` and `__main__.py`.** Then update `.gitignore` and `README.md`.
-- [ ] **Step 4: Run the full suite:** `.venv/bin/python -m pytest -q`. Expected: all tests pass. The LibreOffice test may be skipped.
-- [ ] **Step 5: Build and look.** Run `.venv/bin/python -m pwt.deck`. Render both decks to images and compare them with `deck-mockups/png/31-main-slides-v7.png`:
+- [x] **Step 2: Run** the tests. Expected: FAIL.
+- [x] **Step 3: Implement `render.py` and `__main__.py`.** Then update `.gitignore` and `README.md`.
+- [x] **Step 4: Run the full suite:** `.venv/bin/python -m pytest -q`. Expected: all tests pass. The LibreOffice test may be skipped.
+- [x] **Step 5: Build and look.** Run `.venv/bin/python -m pwt.deck`. Render both decks to images and compare them with `deck-mockups/png/31-main-slides-v7.png`:
   - with LibreOffice: `soffice --headless --convert-to pdf` and `pdftoppm`
   - without it: open the `.pptx` in PowerPoint or Keynote, or upload it to Google Slides
 
   Fix any visible drift from the mockups before committing.
-- [ ] **Step 6: Commit,** and update this plan's **Status:** `git commit -m "Deck: assemble the 23-slide first draft; python -m pwt.deck"`
+- [x] **Step 6: Commit,** and update this plan's **Status:** `git commit -m "Deck: assemble the 23-slide first draft; python -m pwt.deck"`
 
 ### Task 6: Fidelity to the mockups, at least 99 %
 
