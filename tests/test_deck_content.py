@@ -40,9 +40,11 @@ def test_lap_positions():
     assert positions[-1] == CORNERS["finish"]
 
 
-def test_starter_file_parses():
-    assert load(Path("docs/deck/slides.md")) == {
-        slide.id: dict.fromkeys(slide.fields, "") for slide in SLIDES
+def test_slides_file_parses_with_every_slide_and_field():
+    """Owners fill fields in as they go, so only the ids and field names are fixed."""
+    content = load(Path("docs/deck/slides.md"))
+    assert {k: set(v) for k, v in content.items()} == {
+        slide.id: set(slide.fields) for slide in SLIDES
     }
 
 

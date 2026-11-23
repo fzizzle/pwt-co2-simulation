@@ -118,27 +118,38 @@ Petrol sport rankings are provisional where the engine cannot meet the requested
 
 ## C
 > Study C opener at Stavelot.
-title:
-notes:
+title: Corner speed
+notes: Study C asks how tyre grip and a rear spoiler change corner speed, and what that does to lap time and CO2 on the generated Francorchamps sport lap.
+Every car drives the lap the petrol car generates, in the storage-losses scenario.
+This is a draft by Claude for the study owner to rewrite.
 
 ## C-1
 > Study slot. figure: e.g. docs/study-c-lap-time.png, docs/study-c-co2.png.
-label:
-headline:
-figure:
-notes:
+label: Study C · Francorchamps sport, generated · lap time (s)
+headline: More grip shortens the lap; a spoiler slows it
+figure: docs/study-c-lap-time.png
+notes: Left, the tyre grip factor from 0.9 to 1.3 on the 12 corners with a set speed. Right, a spoiler from 0 to 0.4 m² of downforce area, with its added drag and mass.
+Corner speed grows with the square root of grip, so the car brakes less into each corner and has less speed to rebuild out of it.
+The template corners are all slow. Downforce grows with the square of speed, so it adds almost nothing there, while the spoiler's drag and mass cost time on every straight.
+The radii here are inferred from the template speeds at a grip of 0.7, the default method.
 
 ## C-2
-label:
-headline:
-figure:
-notes:
+label: Study C · Francorchamps sport, generated · EU CO2 (g CO2/km)
+headline: More grip cuts fuel-car CO2; the BEV barely moves
+figure: docs/study-c-co2.png
+notes: At baseline the petrol car emits {co2.petrol.sport} on this lap.
+Petrol, full hybrid and plug-in hybrid fall with grip and rise with spoiler size.
+The battery electric car recovers much of its braking energy, so braking less gains it little, but it still pays for the spoiler's drag.
+The order of the four cars does not change.
 
 ## C-3
-label:
-headline:
-figure:
-notes:
+label: Study C · spoiler minus tyres at the same lap time · g CO2/km
+headline: At equal lap time, the spoiler always emits more
+figure: docs/study-c-comparison.png
+notes: For each spoiler size, the tyre grip factor that gives the same lap time is found, and the two cars' CO2 is compared.
+The difference is positive for every car and for all three radius methods: inferred, fitted to the circuit outline, and the driver's line.
+Matching on lap time is a provisional rule. Matching on the average corner speed or on one reference corner could change the result.
+The spoiler's lift-to-drag ratio and its mass are unsourced assumptions. A more efficient wing, a much larger one or a faster track could change this.
 
 ## lim
 > Section opener at Bus Stop.
