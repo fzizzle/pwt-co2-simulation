@@ -10,11 +10,13 @@
 
 **Deadline:** results by Fri 20 Nov, slide draft by Sun 22 Nov, numbers frozen at TD2, Mon 30 Nov.
 
-**Status:** Implemented on `study-b` using the owner's approved starter assumptions (3 November 2026). Results and five-slide draft are in `docs/study-b-sensitivity.md`; interpretation and slides await the owner's review.
+**Status:** The fixed-trace study and review extensions are merged into `main`.
+The [report](../../study-b-sensitivity.md) and [five-slide draft](../../study-b-slides.pptx)
+are ready for owner review. The Study B slots in the [shared deck](../../deck/slides.md)
+are awaiting the owner's presentation content.
 
-Review follow-up is on the canonical `study-b-sensitivity` branch. The owner requested all
-research extensions: these are separate from the approved fixed-trace study. See
-`docs/study-b-review-response.md` for the feedback mapping and remaining model limitations.
+See the [review response](../../study-b-review-response.md) for the feedback mapping
+and remaining model limitations.
 
 ## Global Constraints
 
