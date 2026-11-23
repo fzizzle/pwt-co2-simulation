@@ -98,21 +98,21 @@ We used the assignment vehicles, the storage-loss scenario and EU electricity at
 ## B-1
 label: WLTC CLASS 3 · PETROL AND FULL HYBRID
 headline: Engine efficiency has the largest WLTC effect
-figure: docs/study-b-combustion.png
+figure: chart:study-b-combustion
 notes: For a given engine work demand, higher conversion efficiency reduces fuel energy. This sweep scales peak efficiency and holds the curve shape fixed.
 The full-hybrid comparison passes the model's engine-power check. The petrol WLTC baseline fails that check, so its ranking is conditional on the requested trace. Hollow markers flag individual endpoints and hatching flags provisional comparisons.
 
 ## B-2
 label: NEDC AND WLTC CLASS 3 · BATTERY ELECTRIC
 headline: The BEV's leading factor changes by cycle
-figure: docs/study-b-electric.png
+figure: chart:study-b-electric
 notes: Rolling resistance leads on NEDC, closely followed by body mass. Drag leads on WLTC, where higher speeds increase aerodynamic force. A longer bar represents a larger CO₂ response to the same percentage change in the input.
 The model's flags cover combustion-engine power. BEV motor, battery and thermal limits require a separate feasibility check.
 
 ## B-3
 label: SPA-FRANCORCHAMPS · PLUG-IN HYBRID
 headline: Body mass dominates both PHEV laps
-figure: docs/study-b-plugin.png
+figure: chart:study-b-plugin
 notes: Body mass has the largest span on both fixed Spa traces. The sport trace shows a larger mass response, consistent with greater acceleration work and partial energy recovery.
 Petrol sport rankings are provisional where the engine cannot meet the requested power. The equal ±10% changes compare modeled sensitivity. Real design decisions also depend on achievable ranges, interactions and costs.
 
@@ -127,7 +127,7 @@ This is a draft by Claude for the study owner to rewrite.
 > Study slot. figure: e.g. docs/study-c-lap-time.png, docs/study-c-co2.png.
 label: Study C · Francorchamps sport, generated · lap time (s)
 headline: More grip shortens the lap; a spoiler slows it
-figure: docs/study-c-lap-time.png
+figure: chart:study-c-lap-time
 notes: Left, the tyre grip factor from 0.9 to 1.3 on the 12 corners with a set speed. Right, a spoiler from 0 to 0.4 m² of downforce area, with its added drag and mass.
 Corner speed grows with the square root of grip, so the car brakes less into each corner and has less speed to rebuild out of it.
 The template corners are all slow. Downforce grows with the square of speed, so it adds almost nothing there, while the spoiler's drag and mass cost time on every straight.
@@ -136,7 +136,7 @@ The radii here are inferred from the template speeds at a grip of 0.7, the defau
 ## C-2
 label: Study C · Francorchamps sport, generated · EU CO2 (g CO2/km)
 headline: More grip cuts fuel-car CO2; the BEV barely moves
-figure: docs/study-c-co2.png
+figure: chart:study-c-co2
 notes: At baseline the petrol car emits {co2.petrol.sport} on this lap.
 Petrol, full hybrid and plug-in hybrid fall with grip and rise with spoiler size.
 The battery electric car recovers much of its braking energy, so braking less gains it little, but it still pays for the spoiler's drag.
@@ -145,7 +145,7 @@ The order of the four cars does not change.
 ## C-3
 label: Study C · spoiler minus tyres at the same lap time · g CO2/km
 headline: At equal lap time, the spoiler always emits more
-figure: docs/study-c-comparison.png
+figure: chart:study-c-comparison
 notes: For each spoiler size, the tyre grip factor that gives the same lap time is found, and the two cars' CO2 is compared.
 The difference is positive for every car and for all three radius methods: inferred, fitted to the circuit outline, and the driver's line.
 Matching on lap time is a provisional rule. Matching on the average corner speed or on one reference corner could change the result.
