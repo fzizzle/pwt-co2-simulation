@@ -10,7 +10,7 @@
 
 **Deadline:** results by Fri 20 Nov, slide draft by Sun 22 Nov, numbers frozen at TD2, Mon 30 Nov.
 
-**Status:** In progress, owner confirmed. Tasks 1, 3, 4, 5 and 6 are done as a draft; the Task 2 choices, the Task 7 write-up and the slides are the owner's to confirm or rewrite. The dashboard page is built; results come from `python -m pwt.cornering`.
+**Status:** In progress, owner confirmed. Tasks 1, 3, 4, 5, 6 and 7 are completed as a second-pass draft (adding outline-based corner radii, spoiler source notes, lap-time-matched spoiler-vs-tyres comparison, all four powertrains, feasibility checks and limits); the Task 2 choices, final interpretation and Task 8 slides remain the owner's to confirm or rewrite. The dashboard page is built; results come from `python -m pwt.cornering`.
 
 ## Global Constraints
 
@@ -155,16 +155,16 @@ table = sweep({("petrol", "spoiler"): spoiler}, {"franco_sport_generated": lap})
 
 `DRAG_FACTOR`, `ADDED_KG`, `MU0` and `SCZ` are your choices from Task 2.
 
-- [ ] Sweep several spoiler sizes, and compare with the same grip gain from tyres. (Swept; the like-for-like comparison is still open.)
+- [x] Sweep several spoiler sizes, and compare with the same grip gain from tyres. (Draft matched on lap time; owner to confirm or replace matching rule.)
 
 ## Task 7: Compare the cars and explain
 
 **Files:** modify `docs/study-c-cornering.md`.
 
-- [ ] Run the other powertrains on the same laps with `fleet.electric()`, `fleet.hybrid(0.6)` and `fleet.plugin(0.98)`.
-- [ ] Explain each main result through the trade-off: less braking and rebuilding of speed, against higher speeds and added drag.
-- [ ] Check `short_steps` in the table for any step the engine cannot deliver.
-- [ ] State these limits:
+- [x] Run the other powertrains on the same laps with `fleet.electric()`, `fleet.hybrid(0.6)` and `fleet.plugin(0.98)`.
+- [x] Explain each main result through the trade-off: less braking and rebuilding of speed, against higher speeds and added drag. (Draft factual description only; interpretation is the owner's.)
+- [x] Check `short_steps` in the table for any step the engine cannot deliver.
+- [x] State these limits:
   - **Radii:** they are inferred or estimated from a coarse outline.
   - **One line:** the model has one line through each corner.
   - **Fixed braking:** the sport lap brakes at 0.6 g, and more grip may also allow harder braking.
