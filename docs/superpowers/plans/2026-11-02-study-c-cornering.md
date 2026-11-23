@@ -10,7 +10,7 @@
 
 **Deadline:** results by Fri 20 Nov, slide draft by Sun 22 Nov, numbers frozen at TD2, Mon 30 Nov.
 
-**Status:** In progress, owner confirmed. Tasks 1, 3, 4, 5, 6 and 7 are completed as a second-pass draft (adding outline-based corner radii, spoiler source notes, lap-time-matched spoiler-vs-tyres comparison, all four powertrains, feasibility checks and limits); the Task 2 choices, final interpretation and Task 8 slides remain the owner's to confirm or rewrite. The dashboard page is built; results come from `python -m pwt.cornering`.
+**Status:** In progress, owner confirmed. Tasks 1, 3, 4, 5, 6 and 7 are completed as a third-pass draft (outline radii now fitted by least squares on a 5 m resample, with a driver's-line option; spoiler sources checked; lap-time-matched spoiler-vs-tyres comparison, all four powertrains, feasibility checks and limits); the Task 2 choices, final interpretation and Task 8 slides remain the owner's to confirm or rewrite. The dashboard page is built; results come from `python -m pwt.cornering`.
 
 ## Global Constraints
 
