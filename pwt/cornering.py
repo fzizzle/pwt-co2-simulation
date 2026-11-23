@@ -501,11 +501,22 @@ def figures(frame, comparison=None) -> None:
             (axes[0], "grip", "grip_factor", "Grip factor (tyres)"),
             (axes[1], "spoiler", "scz_m2", "Spoiler SCz (m2)"),
         ):
-            for car, d in frame[frame.variant == variant].groupby("powertrain", sort=False):
-                ax.plot(d[x], d[column], marker="o", label=POWERTRAIN_NAMES[car])
+            part = frame[frame.variant == variant]
+            if column == "lap_time_s":
+                # Every car drives the one lap the petrol car generates, so lap time is shared.
+                lap = part[part.powertrain == "petrol"].sort_values(x)
+                ax.plot(lap[x], lap[column], marker="o", color="#333333",
+                        label="Every car (one shared lap)")
+            else:
+                for car, d in part.groupby("powertrain", sort=False):
+                    ax.plot(d[x], d[column], marker="o", label=POWERTRAIN_NAMES[car])
             ax.set_xlabel(xlabel)
             ax.set_ylabel(label)
-        axes[0].legend()
+        if column == "lap_time_s":
+            axes[0].legend(loc="upper right")
+        else:
+            # The CO2 panels are empty between the plug-in hybrid and the electric car.
+            axes[0].legend(loc="center", bbox_to_anchor=(0.5, 0.28), fontsize="small")
         fig.tight_layout()
         fig.savefig(DOCS / name, dpi=130)
         plt.close(fig)
