@@ -12,8 +12,8 @@
 
 **Status:** The fixed-trace study and review extensions are merged into `main`.
 The [report](../../study-b-sensitivity.md) and [five-slide draft](../../study-b-slides.pptx)
-are ready for owner review. The Study B slots in the [shared deck](../../deck/slides.md)
-are awaiting the owner's presentation content.
+are ready for owner review. The [shared deck](../../deck/slides.md) now includes a four-slide
+Study B draft, also available as a [PowerPoint extract](../../deck/study-b-draft.pptx).
 
 See the [review response](../../study-b-review-response.md) for the feedback mapping
 and remaining model limitations.
