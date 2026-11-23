@@ -129,7 +129,7 @@ for slot, (label, text) in zip(st.columns(len(tiles)), tiles):
 
 on_lap = is_lap(cycle)
 if on_lap:
-    lap_section({CYCLE_CHOICES[cycle]: trace}, "model", pal)
+    lap_section({CYCLE_CHOICES[cycle]: trace}, "model", pal, source="model")
 else:
     st.caption("This is a test cycle, not a circuit, so it has no track map. Pick a "
                "Francorchamps drive to see one.")
