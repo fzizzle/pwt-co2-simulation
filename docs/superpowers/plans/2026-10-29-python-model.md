@@ -1,6 +1,6 @@
 # Python Model Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Port Nelis's spreadsheet model to Python so that it reproduces every supplied and derived workbook exactly (stage A). Then change its behaviour one tested step at a time (stage B): engine capability, a charge-sustaining full hybrid, cited constants, and the assignment sheet's vehicles.
 
