@@ -27,6 +27,7 @@ from pwt.catalog import POWERTRAIN_NAMES
 from pwt.checkpoint import CYCLE_LABELS, CYCLE_ORDER
 from pwt.model import fleet
 from pwt.model.profile import generate
+from pwt.sweep import CYCLES
 from pwt.phase2 import (
     ASSIGNMENT_VEHICLES,
     GENERATED,
@@ -42,11 +43,11 @@ pal = configure("Model")
 
 #: Numbered because each scenario builds on the one before it.
 SCENARIO_LABELS = {
-    "exact": "1 · Workbook vehicles, 250 g/kWh grid",
+    "exact": "1 · Workbook vehicles",
     "harmonised": "2 · One convention",
-    "stage B": "3 · Better hybrid control",
-    "assignment": "4 · Assignment vehicles",
-    "storage losses": "5 · With storage losses",
+    "stage B": "3 · Hybrid control",
+    "assignment": "4 · Assignment",
+    "storage losses": "5 · Storage losses",
 }
 SCENARIO_NOTES = {
     "exact": "Each workbook's vehicle and formulas reproduced exactly, with electricity counted "
@@ -62,8 +63,8 @@ SCENARIO_NOTES = {
 }
 SMALL_CHARTS = {"gear": "Gear", "batt_soc": "Battery charge",
                 "engine_power_drivetrain_w": "Power demand"}
-CYCLE_CHOICES = {**CYCLE_LABELS, "franco_eco_generated": "Francorchamps — eco, generated",
-                 "franco_sport_generated": "Francorchamps — sport, generated"}
+CYCLE_CHOICES = {**CYCLE_LABELS, "franco_eco_generated": CYCLES["franco_eco_generated"],
+                 "franco_sport_generated": CYCLES["franco_sport_generated"]}
 
 
 def _format_shortfall(short_steps: int | None, short_kw: float | None) -> str:
@@ -137,13 +138,19 @@ def comparison() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     results = {scenario: scenario_cells(scenario) for scenario in SCENARIOS}
     summary = {scenario: cells_ for scenario, (cells_, _) in results.items()}
     co2_table = side_by_side(summary).reset_index()
+    # Rows in the chart's order (petrol, hybrid, plug-in hybrid, electric), readable headers.
+    rank = {POWERTRAIN_NAMES[p]: i for i, p in enumerate(POWERTRAIN_ORDER)}
+    co2_table = co2_table.sort_values(
+        "powertrain", key=lambda s: s.map(rank), kind="stable"
+    ).rename(columns={"powertrain": "Powertrain", "cycle": "Cycle"}).reset_index(drop=True)
 
     feas_rows = []
     long_rows = []
-    for powertrain, p_name in POWERTRAIN_NAMES.items():
+    for powertrain in POWERTRAIN_ORDER:
+        p_name = POWERTRAIN_NAMES[powertrain]
         for cycle in CYCLE_ORDER:
             c_name = CYCLE_LABELS[cycle]
-            feas_row = {"powertrain": p_name, "cycle": c_name}
+            feas_row = {"Powertrain": p_name, "Cycle": c_name}
             for scenario in SCENARIOS:
                 cells_, shortfall = results[scenario]
                 cell = next(
@@ -259,10 +266,17 @@ powertrain = left.selectbox("Powertrain", list(POWERTRAIN_NAMES),
 drives = list(CYCLE_ORDER) + list(GENERATED)
 cycle = middle.selectbox("Drive", drives, index=drives.index("franco_sport_generated"),
                          format_func=CYCLE_CHOICES.get, key="model_cycle")
-scenario = right.selectbox("Scenario", list(SCENARIOS), index=2, key="model_scenario",
-                           format_func=SCENARIO_LABELS.get, disabled=cycle in GENERATED)
 if cycle in GENERATED:
-    st.caption("A generated lap has no workbook, so it only exists with the assignment vehicles.")
+    # A generated lap has no workbook; steps() runs it with the assignment vehicles unless
+    # the saved choice already is one of their scenarios. Say which, instead of showing a
+    # disabled picker that names a scenario it does not run.
+    saved = st.session_state.get("model_scenario", "stage B")
+    scenario = saved if saved in ASSIGNMENT_VEHICLES else "assignment"
+    right.caption(f"Scenario: {SCENARIO_LABELS[scenario]}. A generated lap has no workbook, so "
+                  "it only exists with the assignment vehicles.")
+else:
+    scenario = right.selectbox("Scenario", list(SCENARIOS), index=2, key="model_scenario",
+                               format_func=SCENARIO_LABELS.get)
 if powertrain == "phev" and cycle in ("nedc", "wltc"):
     st.caption("The plug-in hybrid's charge-depleting run (from 98 %); the scenario table "
                "weights it with the charge-sustaining run.")
@@ -275,10 +289,11 @@ tiles = [(label, text) for label, text in (
     ("Fuel", None if fuel is None or fuel == 0 else f"{fuel:.2f} l/100 km"),
     ("From the battery", None if battery is None or battery == 0
      else f"{battery:.1f} kWh/100 km"),
-    ("CO₂ (fuel, or grid for the electric car)", f"{co2:.1f} g/km"),
+    ("CO₂", f"{co2:.1f} g/km"),
 ) if text is not None]
 for slot, (label, text) in zip(st.columns(len(tiles)), tiles):
     slot.metric(label, text)
+st.caption("CO₂ counts the fuel burned, and for the electric car the grid electricity.")
 
 if cycle in GENERATED:
     drive_shortfall = gen_shortfall

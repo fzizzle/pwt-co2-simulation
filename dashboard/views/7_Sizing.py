@@ -35,8 +35,15 @@ from pwt.sweep import (
 pal = configure("Hybrid sizing")
 
 SHORT = {"NEDC": "NEDC", "WLTC Class 3": "WLTC",
-         "Francorchamps eco, generated": "Francorchamps — eco",
-         "Francorchamps sport, generated": "Francorchamps — sport"}
+         CYCLES["franco_eco_generated"]: CYCLES["franco_eco_generated"],
+         CYCLES["franco_sport_generated"]: CYCLES["franco_sport_generated"]}
+
+
+def _motor(kw: float) -> str:
+    """'a 50 kW motor', 'an 80 kW motor': the article follows how the number is said."""
+    text = f"{kw:g}"
+    article = "an" if text.startswith("8") or text in ("11", "18") else "a"
+    return f"{article} {text} kW motor"
 LOSSY = 0.85
 
 st.title("Hybrid sizing")
@@ -68,18 +75,18 @@ hyb_wltc_sel = best_selection(hybrid[hybrid["cycle"] == "wltc"])
 hyb_sport_sel = best_selection(hybrid[hybrid["cycle"] == "franco_sport_generated"])
 fit_wltc = hyb_wltc_sel["feasible"] if hyb_wltc_sel["feasible"] is not None else hyb_wltc_sel["provisional"]
 fit_sport = hyb_sport_sel["feasible"] if hyb_sport_sel["feasible"] is not None else hyb_sport_sel["provisional"]
-wltc_note = f"with a {fit_wltc['motor_kw']:g} kW motor" + (
+wltc_note = f"with {_motor(fit_wltc['motor_kw'])}" + (
     f" ({PROVISIONAL_LABEL})" if hyb_wltc_sel["feasible"] is None else ""
 )
-sport_note = f"with a {fit_sport['motor_kw']:g} kW motor, set by the limits" + (
+sport_note = f"with {_motor(fit_sport['motor_kw'])}, set by the limits" + (
     f" ({PROVISIONAL_LABEL})" if hyb_sport_sel["feasible"] is None else ""
 )
 tiles = (
-    ("Full hybrid on WLTC, with losses", f"+{rise:.0%}",
+    ("WLTC hybrid, with losses", f"+{rise:.0%}",
      f"{band_wltc[1.0]:.0f} → {band_wltc[LOSSY]:.0f} g CO₂/km"),
     ("Band stops paying below", f"{crossing[0]:.0%}", "energy kept each way, on WLTC"),
     ("Best full hybrid on WLTC", f"{fit_wltc['battery_kwh']:g} kWh", wltc_note),
-    ("Best full hybrid, Francorchamps — sport", f"{fit_sport['battery_kwh']:g} kWh", sport_note),
+    ("Best full hybrid, sport lap", f"{fit_sport['battery_kwh']:g} kWh", sport_note),
 )
 for column, (label, value, note) in zip(st.columns(4), tiles):
     column.metric(label, value)
@@ -123,7 +130,7 @@ left, right = st.columns(2)
 left.markdown("**WLTC: every buildable size is within 11 % of the best**")
 left.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=True),
                   width="stretch", theme=None)
-right.markdown("**Francorchamps — sport: the spread reaches 27 %**")
+right.markdown(f"**{CYCLES['franco_sport_generated']}: the spread reaches 27 %**")
 right.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "franco_sport_generated"], pal),
                    width="stretch", theme=None)
 st.caption(

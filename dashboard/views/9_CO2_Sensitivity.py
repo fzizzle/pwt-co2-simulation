@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from dashboard.layout import configure, download, show_chart
+from dashboard.layout import configure, download, rounded, show_chart
 from dashboard import sensitivity_charts as _sensitivity_charts
 
 # A running Streamlit process may retain an imported helper after the page updates.
@@ -50,6 +50,8 @@ def render_report(text: str) -> None:
     for index in range(0, len(parts), 3):
         # Repo-relative documents are downloads below, not URLs on the Streamlit server.
         markdown = re.sub(r"\[([^\]]+)\]\((?!https?://)[^)]+\)", r"\1", parts[index])
+        # The page already has its h1; demote the report's headings one level.
+        markdown = re.sub(r"^(#{1,5}) ", r"#\1 ", markdown, flags=re.MULTILINE)
         st.markdown(markdown)
         if index+2 < len(parts):
             path = (DOCS / parts[index+2]).resolve()
@@ -69,7 +71,7 @@ except FileNotFoundError:
     st.stop()
 
 left, middle, right = st.columns(3)
-powertrain = left.selectbox("Car", list(POWERTRAIN_NAMES), format_func=POWERTRAIN_NAMES.get,
+powertrain = left.selectbox("Powertrain", list(POWERTRAIN_NAMES), format_func=POWERTRAIN_NAMES.get,
                            key="study_b_powertrain")
 cycle = middle.selectbox("Driving cycle", list(CYCLES), index=3, format_func=CYCLES.get,
                          key="study_b_cycle")
@@ -120,7 +122,7 @@ with explore:
         st.caption("≈ means the gap is less than 2% of the largest span in that tie group. "
                    "† means provisional. This is a reporting convention, not statistical confidence.")
         numbers = comparison_table(visible)
-        st.dataframe(numbers, width="stretch", hide_index=True)
+        st.dataframe(rounded(numbers), width="stretch", hide_index=True)
         download(numbers, "pwt-study-b-selected.csv", "Download this comparison")
     with st.expander("How to read the study", expanded=False):
         st.markdown("Each factor is changed alone by ±10%. The span is the absolute difference between "
@@ -180,7 +182,7 @@ with research:
                 baseline_lap = rows[rows.factor == "baseline"].iloc[0]
                 st.metric("Regenerated baseline lap time", f"{baseline_lap.lap_time_s:.1f} s")
             research_numbers = research_table(rows)
-            st.dataframe(research_numbers, width="stretch", hide_index=True)
+            st.dataframe(rounded(research_numbers), width="stretch", hide_index=True)
             download(research_numbers, f"pwt-study-b-{experiment}-selected.csv", "Download these research rows")
     except FileNotFoundError:
         st.info("This research table is unavailable in the saved study files.")

@@ -167,6 +167,19 @@ def inject_css(pal: Palette) -> None:
         [data-testid="stMultiSelectTagsContainer"] [data-tag] * {{
             background-color: transparent;
         }}
+        /* Metric labels and values wrap instead of ending in an ellipsis. */
+        [data-testid="stMetricLabel"],
+        [data-testid="stMetricLabel"] * {{
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }}
+        [data-testid="stMetricValue"] > div {{
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            line-height: 1.15;
+        }}
         /* Inline code (file names, formulas) in quiet greys instead of Streamlit's green. */
         .stApp code {{
             background-color: {pal.surface_raised} !important;
@@ -513,6 +526,14 @@ def source_caption(*rows: pd.Series) -> None:
     files = [f"`{row['source_file']}`" for row in rows]
     prefix = "Workbook: " if len(files) == 1 else "Workbooks: "
     st.caption(prefix + " · ".join(files))
+
+
+def rounded(frame: pd.DataFrame) -> pd.DataFrame:
+    """A table for the screen: one decimal, two for elasticities. Downloads keep full precision."""
+    out = frame.copy()
+    for column in out.select_dtypes("number").columns:
+        out[column] = out[column].round(2 if "lastic" in str(column) else 1)
+    return out
 
 
 def download(frame: pd.DataFrame, filename: str, label: str = "Download CSV") -> None:

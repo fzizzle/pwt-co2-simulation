@@ -43,7 +43,9 @@ st.title("Trace explorer")
 
 # --- controls -------------------------------------------------------------------------------
 
-row = run_picker(runs, "Run", key="trace_run", index=0, persist_key=WB_TRACE_RUN_KEY)
+run_column, axis_column = st.columns([3, 1], vertical_alignment="bottom")
+with run_column:
+    row = run_picker(runs, "Run", key="trace_run", index=0, persist_key=WB_TRACE_RUN_KEY)
 sidebar_reset_button()
 trace = trace_for(row["powertrain"], row["cycle"])
 
@@ -53,7 +55,7 @@ if trace.empty:
 
 available = numeric_trace_columns(trace)
 x_options = axis_columns(trace)
-x_column = st.sidebar.selectbox(
+x_column = axis_column.selectbox(
     "X-axis", options=x_options, format_func=lambda c: X_LABELS[c]
 )
 x_label = X_LABELS[x_column]
@@ -61,7 +63,7 @@ x_label = X_LABELS[x_column]
 for excluded in ("distance_m", "time_s"):
     reason = axis_exclusion_reason(trace, excluded)
     if reason:
-        st.sidebar.caption(reason)
+        st.caption(reason)
 if x_column == "step":
     trace = trace.assign(step=range(len(trace)))
 
