@@ -74,8 +74,9 @@ SLIDES: tuple[SlideSpec, ...] = (
     *(slide for study in ("A", "B", "C") for slide in (
         _opener(study),
         # Study A's owner asked for a method overview and a glossary before the charts.
-        *((_content("A-steps", "dataflow", *DATAFLOW_FIELDS),
-           _content("A-terms", "terms", *(f"term{i}" for i in range(1, 7))))
+        # The glossary comes first, so the method slide's terms are defined before use.
+        *((_content("A-terms", "terms", *(f"term{i}" for i in range(1, 7))),
+           _content("A-steps", "dataflow", *DATAFLOW_FIELDS))
           if study == "A" else ()),
         _content(f"{study}-1", "slot", "figure"),
         _content(f"{study}-2", "slot", "figure"),

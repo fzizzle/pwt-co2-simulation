@@ -342,9 +342,9 @@ def flow(c):
 
 
 #: Dataflow geometry in design units: node size, column and row pitch.
-DF_W, DF_H = 220, 104
-DF_X = [40 + 310 * k for k in range(5)]
-DF_Y = [248, 438, 628]
+DF_W, DF_H = 228, 112
+DF_X = [36 + 312 * k for k in range(5)]
+DF_Y = [240, 430, 620]
 
 
 def _df_box(col, row):
@@ -363,9 +363,9 @@ def _df_arrow(c, points, label=""):
     if label:
         (x0, y0), (x1, y1) = points[0], points[1]
         if y0 == y1:  # horizontal: centred above the arrow
-            c.text((x0 + x1) / 2, y0 - 10, label, 16, "muted", center=True)
+            c.text((x0 + x1) / 2, y0 - 10, label, 17, "muted", center=True)
         else:  # vertical: to the right of it
-            c.text(x0 + 12, (y0 + y1) / 2 + 6, label, 16, "muted")
+            c.text(x0 + 12, (y0 + y1) / 2 + 6, label, 17, "muted")
 
 
 def dataflow(c):
@@ -396,17 +396,17 @@ def dataflow(c):
         title, _, detail = (t.strip() for t in c.fields.get(key, "").partition("|"))
         cx, top = x + w / 2, y + (14 if kind == "file" else 0)
         room = w - (70 if shape_kind == S.PARALLELOGRAM else 36)
-        rows = wrap(detail, 16.5, room) if detail else []
+        rows = wrap(detail, 18, room) if detail else []
         if title:
-            c.check(key, title, 21, room, 700)
+            c.check(key, title, 23, room, 700)
             if len(rows) > 2:
                 WARNINGS.append(f"{c.slide_id}.{key}: the detail wraps past 2 lines; "
                                 "shorten it.")
-        lift = 11 if len(rows) > 1 else 0  # centre two detail lines in the box
-        c.text(cx, top + 45 - lift, title or name, 21, ink, 700, True,
+        lift = 12 if len(rows) > 1 else 0  # centre two detail lines in the box
+        c.text(cx, top + 48 - lift, title or name, 23, ink, 700, True,
                placeholder=None if title else key)
         for k, row in enumerate(rows[:2]):
-            c.text(cx, top + 72 - lift + k * 21, row, 16.5, "muted" if ink == "fg" else ink,
+            c.text(cx, top + 78 - lift + k * 22, row, 18, "muted" if ink == "fg" else ink,
                    center=True)
     for a, b in DATAFLOW_EDGES:
         ax, ay, aw, ah = boxes[a]
@@ -438,7 +438,7 @@ def dataflow(c):
             s.fill.background()
             s.line.color.rgb = c.color("muted")
             s.line.width = u(2)
-        c.text(x + 60, y + 22, text, 15, "muted")
+        c.text(x + 60, y + 22, text, 17, "muted")
 
 
 def _marker(c, x, y, kind):
@@ -457,7 +457,7 @@ def _marker(c, x, y, kind):
 def wrapup(c, spec):
     """Conclusions and open questions in two columns, model limits in a strip below."""
     study = spec.section
-    columns = (("point", 110, "WHAT WE CAN CONCLUDE"), ("open", 840, "STILL OPEN"))
+    columns = (("point", 110, "WHAT WE CAN CONCLUDE"), ("open", 830, "STILL OPEN"))
     for kind, x, heading in columns:
         c.text(x, 262, heading, 19, "muted", 600)
         for i in range(3):
@@ -471,14 +471,14 @@ def wrapup(c, spec):
                 c.text(x + 52, y + 58, sub, 18, placeholder=key)
                 continue
             statement, _, example = (t.strip() for t in value.partition("|"))
-            c.check(key, statement, 24, 600, 600)
-            c.text(x + 52, y + 26, statement, 24, weight=600)
-            rows = wrap(example, 18, 600)
+            c.check(key, statement, 26, 610, 600)
+            c.text(x + 52, y + 26, statement, 26, weight=600)
+            rows = wrap(example, 20, 610)
             if len(rows) > 2:
                 WARNINGS.append(f"{c.slide_id}.{key}: the example wraps past 2 lines; "
                                 "shorten it.")
             for k, row in enumerate(rows[:2]):
-                c.text(x + 52, y + 56 + k * 24, row, 18, "muted")
+                c.text(x + 52, y + 58 + k * 26, row, 20, "muted")
     c.shape(110, 668, 1380, 150, "soft", 22)
     c.text(140, 708, "MODEL LIMITS", 17, "muted", 600)
     for i in range(3):
@@ -489,32 +489,32 @@ def wrapup(c, spec):
         if not value:
             c.text(x + 48, 752, PLACEHOLDERS["limit"], 18, placeholder=key)
             continue
-        rows = wrap(value, 18, 380)
+        rows = wrap(value, 20, 390)
         if len(rows) > 2:
             WARNINGS.append(f"{c.slide_id}.{key}: wraps past 2 lines; shorten it.")
         for k, row in enumerate(rows[:2]):
-            c.text(x + 48, 752 + k * 24, row, 18)
+            c.text(x + 48, 752 + k * 26, row, 20)
 
 
 def terms(c):
     """A glossary: up to six rows of `term | what it means`, the meaning on up to 2 lines."""
     for i in range(6):
         key = f"term{i+1}"
-        y = 262 + i * 96
+        y = 262 + i * 98
         c.line([(180, y - 40), (1420, y - 40)], "line", 2)
         value = c.fields.get(key, "")
         term, _, meaning = (s.strip() for s in value.partition("|"))
         if not value:
-            c.text(180, y, PLACEHOLDERS["term"][0], 26, weight=700, placeholder=key)
-            c.text(560, y, PLACEHOLDERS["term"][1], 21, placeholder=key)
+            c.text(160, y, PLACEHOLDERS["term"][0], 28, weight=700, placeholder=key)
+            c.text(520, y, PLACEHOLDERS["term"][1], 23, placeholder=key)
             continue
-        c.check(key, term, 26, 350, 700)
-        c.text(180, y, term, 26, weight=700)
-        rows = wrap(meaning, 21, 860)
+        c.check(key, term, 28, 340, 700)
+        c.text(160, y, term, 28, weight=700)
+        rows = wrap(meaning, 23, 920)
         if len(rows) > 2:
             WARNINGS.append(f"{c.slide_id}.{key}: the meaning wraps past 2 lines; shorten it.")
         for k, row in enumerate(rows[:2]):
-            c.text(560, y + k * 28, row, 21)
+            c.text(520, y + k * 30, row, 23)
 
 
 def cars(c):

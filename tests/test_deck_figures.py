@@ -134,25 +134,32 @@ def test_study_a_chart_names_its_study_document(tmp_path):
 
 # The Study A headlines in docs/deck/slides.md quote these results.
 def test_study_a_headlines_match_the_data():
-    from pwt.sweep import MOTOR_KW
+    from pwt.sweep import MAX_C_RATE, MOTOR_KW
     text = open("docs/deck/slides.md").read()
-    # A-1: at 85 % the band strategy emits more on WLTC; only the band-strategy car keeps up.
-    assert "With 85 % storage, the band strategy costs CO2 on WLTC, yet only it keeps up" in text
-    assert figures.storage_gap("wltc")[figures.ASSUMED_STORAGE] > 0
+    # A-1: the WLTC gap crosses zero near 91 %; the sheets'-rule car is short on every run.
+    assert "Below about 91 % storage efficiency, the band strategy loses on WLTC" in text
+    gap = figures.storage_gap("wltc")
+    crossing = 0.90 + 0.05 * gap[0.90] / (gap[0.90] - gap[0.95])
+    assert round(crossing, 2) == 0.91
     for cycle in figures.SHOWN_CYCLES:
         rows = figures.storage_rows(cycle)
         assert (rows[rows.strategy == "band"].short_steps == 0).all()
         assert (rows[rows.strategy == "sheets' rule"].short_steps > 0).all()
-    # A-2: WLTC flat (within 1.5 g) from 1 to 3 kWh; the sport lap's lowest uses the top motor.
-    assert "Full hybrid: WLTC is flat up to 3 kWh; the sport lap wants maximum motor" in text
+    # A-2: WLTC flat (within 1.5 g) from 1 to 3 kWh; the sport lap's lowest is on both limits.
+    assert "Full hybrid: 1–3 kWh is enough on WLTC; the sport lap's best sits on our limits" in text
     wltc = figures.best_by_battery("hybrid", "wltc").set_index("battery_kwh").co2_eu
     assert wltc.loc[1:3].max() - wltc.loc[1:3].min() < 1.5
     sport = figures.best_by_battery("hybrid", "franco_sport_generated")
-    assert sport.loc[sport.co2_eu.idxmin()].motor_kw == max(MOTOR_KW)
+    top = sport.loc[sport.co2_eu.idxmin()]
+    assert top.motor_kw == max(MOTOR_KW) and top.motor_kw / top.battery_kwh == MAX_C_RATE
+    # "beats petrol on that lap by about 11 g CO2/km"
+    petrol = figures.data.cell("petrol", "franco_sport_generated").co2_eu
+    assert round(petrol - top.co2_eu) == 11
     # A-3: the plug-in hybrid's sport-lap CO2 bottoms out at 6 kWh, then rises.
-    assert "Plug-in on the sport lap: past 6 kWh, the pack only adds mass" in text
+    assert "Plug-in: 6 kWh covers one sport lap; on WLTC, R101 rewards every extra kWh" in text
     phev = figures.best_by_battery("phev", "franco_sport_generated").set_index("battery_kwh")
     assert phev.co2_eu.idxmin() == 6 and phev.co2_eu.loc[6:].is_monotonic_increasing
+    assert figures.best_by_battery("phev", "wltc").co2_eu.is_monotonic_decreasing
 
 
 def test_study_a_charts_show_two_cycles():
@@ -167,7 +174,8 @@ def test_study_a_dataflow_counts_match_the_saved_results():
     assert f"edge.grid.sim: {cars} cars" in text and cars == 154
     assert f"edge.sim.runs: {len(figures._sizing())} runs" in text
     assert f"edge.sweep.storage: {len(figures._storage())} runs" in text
-    assert f"node.grid: Factorial sweep | tries all {len(BATTERY_KWH)} packs × {len(MOTOR_KW)} motors" in text
+    assert f"node.grid: Size grid | {len(BATTERY_KWH)} packs × {len(MOTOR_KW)} motors" in text
+    assert f"ran {cars} sizes on {len(figures.data.CYCLE_KEYS)} cycles" in text
 
 
 def test_dataflow_fields_are_known_and_drawn(tmp_path):
@@ -179,25 +187,36 @@ def test_dataflow_fields_are_known_and_drawn(tmp_path):
     path = build("dark", content, tmp_path)
     slide = Presentation(path).slides[_index("A-steps")]
     texts = [s.text_frame.text for s in slide.shapes if s.has_text_frame]
-    assert "Backward sim" in texts and "616 runs" in texts
+    assert "Model run" in texts and "616 runs" in texts
 
 
 def test_study_a_wrapup_quotes_match_the_data():
     # A-end quotes model results; check each against the saved results.
     from pwt.deck.content import load
-    from pwt.sweep import MAX_C_RATE, MOTOR_KW
     end = load(Path("docs/deck/slides.md"))["A-end"]
-    assert "CO2 barely moves from 1 to 3 kWh" in end["point1"]
+    assert "a full hybrid needs only 1–3 kWh" in end["point1"]
     wltc = figures.best_by_battery("hybrid", "wltc").set_index("battery_kwh").co2_eu
     assert wltc.loc[1:3].max() - wltc.loc[1:3].min() < 1.5
-    assert "lowest sits at our 80 kW and 20C limits" in end["point2"]
+    assert "4 kWh · 80 kW" in end["point2"]
     sport = figures.best_by_battery("hybrid", "franco_sport_generated")
-    top = sport.loc[sport.co2_eu.idxmin()]
-    assert top.motor_kw == max(MOTOR_KW) == 80
-    assert top.motor_kw / top.battery_kwh == MAX_C_RATE == 20
-    assert "costs CO2 on WLTC Class 3" in end["point3"]
-    assert figures.storage_gap("wltc")[0.85] > 0
+    assert tuple(sport.loc[sport.co2_eu.idxmin(), ["battery_kwh", "motor_kw"]]) == (4, 80)
+    # point3: the hybrid's WLTC lead over petrol, 28 % with free storage, 11 % at 85 %.
+    assert "falls from 28 % with free storage to 11 % at 85 %" in end["point3"]
+    rows = figures.storage_rows("wltc")
+    band = rows[rows.strategy == "band"].set_index("storage_efficiency").co2_eu
+    petrol = figures.data.cell("petrol", "wltc").co2_eu
+    assert round(100 * (1 - band[1.0] / petrol)) == 28
+    assert round(100 * (1 - band[0.85] / petrol)) == 11
     assert "past 6 kWh the pack only adds mass" in end["open3"]
+
+
+def test_study_a_glossary_floors_match_the_model():
+    from pwt.deck.content import load
+    from pwt.model.conventions import harmonised
+    terms = load(Path("docs/deck/slides.md"))["A-terms"]
+    assert "(30 % full hybrid, 23 % plug-in)" in terms["term2"]
+    assert harmonised("time", "hybrid", None).soc_min == 0.3
+    assert harmonised("time", "phev", None).soc_min == 0.23
 
 
 def test_empty_wrapup_shows_the_owners_placeholders(tmp_path):

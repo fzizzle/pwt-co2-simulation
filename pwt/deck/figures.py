@@ -78,7 +78,7 @@ SIZING_CHARTS = {
 #: a leader line joins it to the point.
 LABEL_SPOTS = {
     ("phase-3-plugin", "franco_sport_generated"): (0.40, 0.62),
-    ("phase-3-plugin", "wltc"): (0.50, 0.32),
+    ("phase-3-plugin", "wltc"): (0.48, 0.25),
 }
 #: The assumed one-way storage efficiency of the "storage losses" scenario (0.85 each way).
 ASSUMED_STORAGE = 0.85
@@ -186,7 +186,7 @@ def _figure(theme: str, constrained: bool = True):
     return fig, palette
 
 
-def _style(ax, palette, grid_axis: str, tick: float = 17) -> None:
+def _style(ax, palette, grid_axis: str, tick: float = 20) -> None:
     ax.set_facecolor("none")
     ax.spines[:].set_visible(False)
     ax.tick_params(colors=palette["muted"], labelsize=pt(tick), length=0, pad=8)
@@ -226,20 +226,20 @@ def _tornado(name: str, theme: str):
                 ax.annotate(f"{getattr(row, f'co2_{end}'):.1f}", (x, y),
                             xytext=(outward * pt(16), 0), textcoords="offset points",
                             ha="left" if outward > 0 else "right", va="center",
-                            fontsize=pt(15), color=palette["muted"], fontfamily="Inter")
+                            fontsize=pt(18), color=palette["muted"], fontfamily="Inter")
         ax.set_yticks(range(len(rows)), [FACTOR_NAMES[f] for f in rows.factor],
-                      color=palette["fg"], fontsize=pt(18), fontfamily="Inter")
+                      color=palette["fg"], fontsize=pt(21), fontfamily="Inter")
         ax.set_ylim(len(rows) - 0.4, -0.7)
         ax.set_xlim(-bound, bound)
         ax.axvline(0, color=palette["muted"], linewidth=pt(2), linestyle=(0, (4, 4)))
         ax.set_xlabel("Change from baseline, g CO2/km", color=palette["muted"],
-                      fontsize=pt(16), fontfamily="Inter")
+                      fontsize=pt(19), fontfamily="Inter")
         warning = " · baseline fails engine check" if rows.baseline_short_steps.iloc[0] else ""
         half.suptitle(f"{POWERTRAIN_NAMES[powertrain]} · {data.CYCLE_LABELS[cycle]}",
-                      x=0.0, ha="left", color=palette["fg"], fontsize=pt(21), fontweight=600,
+                      x=0.0, ha="left", color=palette["fg"], fontsize=pt(24), fontweight=600,
                       fontfamily="Inter")
         ax.set_title(f"Baseline {rows.baseline.iloc[0]:.1f} g CO2/km{warning}", loc="left",
-                     color=palette["muted"], fontsize=pt(16), fontfamily="Inter", pad=pt(10))
+                     color=palette["muted"], fontsize=pt(19), fontfamily="Inter", pad=pt(10))
     key = palette["muted"]
     handles = [
         Line2D([], [], marker="o", ls="", color=key, markersize=pt(13), label="parameter −10 %"),
@@ -251,11 +251,11 @@ def _tornado(name: str, theme: str):
                markersize=pt(13), markeredgewidth=pt(2.5),
                label="outlined bar: baseline or an endpoint fails it"),
     ]
-    fig.legend(handles=handles, loc="outside lower center", ncol=4, frameon=False,
-               labelcolor=key, prop={"family": "Inter", "size": pt(15)},
+    fig.legend(handles=handles, loc="outside lower center", ncol=2, frameon=False,
+               labelcolor=key, prop={"family": "Inter", "size": pt(18)},
                handletextpad=0.3, columnspacing=1.6,
                title="labels: absolute g CO2/km", title_fontproperties={
-                   "family": "Inter", "size": pt(15)})
+                   "family": "Inter", "size": pt(18)})
     fig.legends[0].get_title().set_color(key)
     return fig
 
@@ -279,9 +279,9 @@ def _sweep(name: str, theme: str):
                        edgecolors=palette["bg"], linewidths=pt(2.5), zorder=3)
             ax.scatter(d[x][short], d[column][short], s=pt(13) ** 2, color=palette["bg"],
                        edgecolors=colour, linewidths=pt(2.5), zorder=3)
-        ax.set_xlabel(xlabel, color=palette["muted"], fontsize=pt(16), fontfamily="Inter")
+        ax.set_xlabel(xlabel, color=palette["muted"], fontsize=pt(19), fontfamily="Inter")
         ax.set_xticks(sorted(rows[x].unique()))
-    axes[0].set_ylabel(label, color=palette["muted"], fontsize=pt(16), fontfamily="Inter")
+    axes[0].set_ylabel(label, color=palette["muted"], fontsize=pt(19), fontfamily="Inter")
     if one_line:
         note = "one line: every car drives the same lap at each setting"
         handles = [Line2D([], [], color=palette["fg"], linewidth=pt(4), marker="o",
@@ -295,7 +295,7 @@ def _sweep(name: str, theme: str):
                               markeredgecolor=palette["muted"], markersize=pt(11),
                               label="hollow: engine short of the trace"))
     fig.legend(handles=handles, loc="outside upper center", ncol=len(handles), frameon=False,
-               labelcolor=palette["fg"], prop={"family": "Inter", "size": pt(17)},
+               labelcolor=palette["fg"], prop={"family": "Inter", "size": pt(20)},
                columnspacing=2.0)
     return fig
 
@@ -320,12 +320,12 @@ def _comparison_chart(theme: str):
                        color=palette["bg"], edgecolors=colour, linewidths=pt(2.5), zorder=3)
         ax.axhline(0, color=palette["muted"], linewidth=pt(2), linestyle=(0, (4, 4)))
         ax.set_title(RADIUS_TITLES.get(method, method), loc="left", color=palette["fg"],
-                     fontsize=pt(18), fontweight=600, fontfamily="Inter")
-        ax.set_xlabel("Spoiler SCz, m²", color=palette["muted"], fontsize=pt(16),
+                     fontsize=pt(21), fontweight=600, fontfamily="Inter")
+        ax.set_xlabel("Spoiler SCz, m²", color=palette["muted"], fontsize=pt(19),
                       fontfamily="Inter")
         ax.set_xticks(sorted(part.scz_m2.unique()))
     axes[0].set_ylabel("Spoiler minus tyres, g CO2/km", color=palette["muted"],
-                       fontsize=pt(16), fontfamily="Inter")
+                       fontsize=pt(19), fontfamily="Inter")
     handles = [Line2D([], [], color=data.CAR_COLOURS[car], linewidth=pt(4), marker="o",
                       markersize=pt(11), label=POWERTRAIN_NAMES[car])
                for car in data.POWERTRAINS if car in set(frame.powertrain)]
@@ -334,7 +334,7 @@ def _comparison_chart(theme: str):
                               markeredgecolor=palette["muted"], markersize=pt(11),
                               label="hollow: engine short of the trace"))
     fig.legend(handles=handles, loc="outside upper center", ncol=len(handles), frameon=False,
-               labelcolor=palette["fg"], prop={"family": "Inter", "size": pt(17)},
+               labelcolor=palette["fg"], prop={"family": "Inter", "size": pt(20)},
                columnspacing=2.0)
     return fig
 
@@ -342,7 +342,7 @@ def _comparison_chart(theme: str):
 def _a_axes(fig, palette, rows: int = 1):
     # Fixed margins: the line labels on the right need room the automatic layout
     # doesn't reserve. The terms are defined on the Study A glossary slide (A-terms).
-    fig.subplots_adjust(left=0.09, right=0.75, top=0.88, bottom=0.14, hspace=0.18)
+    fig.subplots_adjust(left=0.09, right=0.75, top=0.88, bottom=0.14, hspace=0.42)
     axes = fig.subplots(rows, 1, sharex=True, squeeze=False)[:, 0]
     for ax in axes:
         _style(ax, palette, "y", A_TICK)
@@ -374,9 +374,11 @@ def _petrol_line(ax, palette, cycle: str) -> None:
     ax.axhline(petrol.co2_eu, color=colour, linewidth=pt(3), linestyle=(0, (1, 2.5)),
                dash_capstyle="round")
     flag = " (engine short)" if petrol.short_steps > 0 else ""
-    ax.annotate(f"petrol{flag}", (20.6, petrol.co2_eu), xytext=(0, pt(6)),
+    name = "sport lap" if cycle == "franco_sport_generated" else data.CYCLE_LABELS[cycle]
+    # The label is in the text colour: the petrol orange is too faint on the light theme.
+    ax.annotate(f"petrol, {name}{flag}", (20.6, petrol.co2_eu), xytext=(0, pt(6)),
                 textcoords="offset points", ha="right", va="bottom", fontsize=pt(A_NOTE),
-                color=colour, fontfamily="Inter")
+                color=palette["muted"], fontfamily="Inter")
 
 
 def _points(ax, palette, x, y, short, colour, size=13) -> None:
@@ -422,8 +424,13 @@ def _sizing_chart(name: str, theme: str):
             ax.annotate(text, (top.battery_kwh, top[column]), xytext=(pt(20), -pt(16)),
                         textcoords="offset points", ha="left", va="top", **style)
         last = rows.iloc[-1]
-        _end_label(ax, last.battery_kwh, last[column], data.CYCLE_LABELS[cycle], colour)
+        if not split:
+            _end_label(ax, last.battery_kwh, last[column], data.CYCLE_LABELS[cycle], colour)
         if split:
+            # Each panel has its own scale, so each names its cycle.
+            ax.set_title(data.CYCLE_LABELS[cycle] + ", own scale", loc="left",
+                         color=palette["fg"], fontsize=pt(A_LABEL), fontweight=600,
+                         fontfamily="Inter", pad=pt(8))
             low, high = ax.get_ylim()
             ax.set_ylim(low - 0.25 * (high - low), high + 0.1 * (high - low))
     if not split:
@@ -461,8 +468,10 @@ def _storage_chart(theme: str):
     _note(ax, palette, 0.99, 0.97, "↑ band strategy emits more", ha="right")
     _note(ax, palette, 0.99, 0.03, "↓ band strategy emits less", ha="right", va="bottom")
     if any_short:
-        _hollow_key(fig, palette, "hollow point: the sheets'-rule car's engine is short of "
-                    "the trace, so the gap is conditional")
+        every = all(storage_short(c).all() for c in SHOWN_CYCLES)
+        _hollow_key(fig, palette, "every point is conditional: the sheets'-rule car's engine "
+                    "can't follow either trace" if every else "hollow point: the sheets'-rule "
+                    "car's engine is short of the trace, so the gap is conditional")
     bound = max(abs(v) for v in ax.get_ylim()) * 1.15
     ax.set_ylim(-bound, bound)
     ax.set_xticks(sorted(_storage().storage_efficiency.unique()))

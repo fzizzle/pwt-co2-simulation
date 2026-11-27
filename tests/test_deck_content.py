@@ -8,7 +8,7 @@ from pwt.deck.structure import CORNERS, SECTIONS, SLIDES, lap_position
 
 def test_order_and_count():
     expected = ("title sim sim-model sim-cars sim-changed cmp cmp-all cmp-wltc "
-                "A A-steps A-terms A-1 A-2 A-3 A-end B B-1 B-2 B-3 B-end C C-1 C-2 C-3 C-end lim lim-rows questions")
+                "A A-terms A-steps A-1 A-2 A-3 A-end B B-1 B-2 B-3 B-end C C-1 C-2 C-3 C-end lim lim-rows questions")
     assert [slide.id for slide in SLIDES] == expected.split()
     assert len(SLIDES) == 28
 
