@@ -290,11 +290,14 @@ def trace_lines(
     return fig
 
 
-def speed_and_altitude(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.Figure:
+def speed_and_altitude(
+    trace: pd.DataFrame, x_column: str, pal: Palette, *, colour: str | None = None
+) -> go.Figure:
     """Speed over the cycle, with altitude as a recessive filled band behind it.
 
     Altitude is drawn on its own subplot row rather than a second y-axis, so the two are
-    readable together without two scales on one frame.
+    readable together without two scales on one frame. `colour` is the run's powertrain
+    colour; a car-independent cycle profile leaves it out and is drawn in neutral ink.
     """
     from plotly.subplots import make_subplots
 
@@ -308,7 +311,7 @@ def speed_and_altitude(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.F
         row_heights=[0.68, 0.32] if has_altitude else [1.0],
     )
 
-    speed_colour = pal.for_powertrain("bev")
+    speed_colour = colour or pal.text_secondary
     fig.add_scatter(
         name="Speed (km/h)",
         x=trace[x_column],
@@ -345,10 +348,12 @@ def speed_and_altitude(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.F
     return fig
 
 
-def gear_steps(trace: pd.DataFrame, x_column: str, pal: Palette) -> go.Figure:
+def gear_steps(
+    trace: pd.DataFrame, x_column: str, pal: Palette, *, colour: str | None = None
+) -> go.Figure:
     """Gear as a step plot — it is a held state, not a continuous quantity."""
     fig = go.Figure()
-    gear_colour = pal.series[0]
+    gear_colour = colour or pal.text_secondary
     fig.add_scatter(
         name="Gear",
         x=trace[x_column],

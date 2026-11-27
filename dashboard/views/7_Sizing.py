@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from dashboard.layout import configure, download
+from dashboard.layout import configure, download, show_chart
 from dashboard.sizing_charts import (
     HEAT_MAX_PCT,
     PROVISIONAL_LABEL,
@@ -94,14 +94,11 @@ st.markdown("The band charges the battery from the engine, and that energy now p
 cycle_label = st.segmented_control(
     "Cycle", list(CYCLES.values()), default=wltc, format_func=SHORT.get, key="storage_cycle",
 ) or wltc
-st.plotly_chart(
-    efficiency_lines(
+show_chart(efficiency_lines(
         sensitivity.xs("band", level="strategy")[cycle_label],
         sensitivity.xs("sheets' rule", level="strategy")[cycle_label],
         petrol[cycle_label], pal,
-    ),
-    width="stretch", theme=None,
-)
+    ))
 if cycle_label.startswith("Francorchamps"):
     st.caption("On the laps the band keeps its lead at every efficiency tested.")
 
@@ -114,7 +111,7 @@ st.markdown("The assignment's 1.5 kWh, 25 kW hybrid with its band. Left of the l
 band = sensitivity.xs("band", level="strategy")
 free_gap = {SHORT[c]: (band[c][1.0] / petrol[c] - 1) * 100 for c in CYCLES.values()}
 lossy_gap = {SHORT[c]: (band[c][LOSSY] / petrol[c] - 1) * 100 for c in CYCLES.values()}
-st.plotly_chart(petrol_gap(free_gap, lossy_gap, pal), width="stretch", theme=None)
+show_chart(petrol_gap(free_gap, lossy_gap, pal))
 
 # --- 3 ----------------------------------------------------------------------------------------
 

@@ -235,6 +235,20 @@ def configure(title: str) -> Palette:
     return pal
 
 
+def show_chart(
+    fig: go.Figure, *, toolbar: bool = False, scroll_zoom: bool = False, key: str | None = None
+) -> None:
+    """Draw a Plotly figure. The only place in the dashboard that calls `st.plotly_chart`.
+
+    The toolbar is off by default because it sat on top of legends and corner labels. Charts
+    where zooming helps pass `toolbar=True` and get it on hover only.
+    """
+    config = {"displayModeBar": "hover" if toolbar else False, "displaylogo": False}
+    if scroll_zoom:
+        config["scrollZoom"] = True
+    st.plotly_chart(fig, width="stretch", theme=None, key=key, config=config)
+
+
 def _rgba(hex_colour: str, alpha: float) -> str:
     """A hex colour as rgba(), so fills track the active palette instead of being hardcoded."""
     h = hex_colour.lstrip("#")
@@ -243,35 +257,46 @@ def _rgba(hex_colour: str, alpha: float) -> str:
 
 
 def elevation_strip(trace: pd.DataFrame, pal: Palette) -> go.Figure | None:
-    """The Spa elevation profile as a thin band.
+    """The Spa elevation profile as a quiet band, with its scale.
 
-    This is the recurring motif of the tool and it is real data, not ornament: the altitude
-    column drives the grade term, which is why the same car returns different figures on the
-    lap and on NEDC. Drawn flat and quiet so it frames the page without competing with it.
+    Real data, not ornament: the altitude column drives the grade term, which is why the same
+    car returns different figures on the lap and on NEDC. It describes the circuit, not a car,
+    so it is drawn in neutral ink. The x-axis stays in the workbook's own metres, and the
+    y-axis marks only the lowest and highest point.
     """
     if "altitude_m" not in trace.columns or trace["altitude_m"].isna().all():
         return None
     x = "distance_m" if "distance_m" in trace.columns else "step"
-    accent = pal.for_powertrain("bev")
+    ink = pal.text_secondary
     fig = go.Figure()
     fig.add_scatter(
         x=trace[x],
         y=trace["altitude_m"],
         mode="lines",
-        line=dict(color=accent, width=1.5),  # linear: smoothing would misstate the profile
+        line=dict(color=ink, width=1.5),  # linear: smoothing would misstate the profile
         fill="tozeroy",
-        fillcolor=_rgba(accent, 0.14),
-        hoverinfo="skip",
+        fillcolor=_rgba(ink, 0.10),
+        hovertemplate="%{x:,.0f} m along the lap · %{y:.0f} m altitude<extra></extra>",
     )
-    low, high = trace["altitude_m"].min(), trace["altitude_m"].max()
+    low, high = float(trace["altitude_m"].min()), float(trace["altitude_m"].max())
+    span = max(high - low, 1.0)
+    tick = dict(color=pal.text_muted, size=11)
     fig.update_layout(
-        height=64,
-        margin=dict(l=0, r=0, t=0, b=0),
+        height=110,
+        margin=dict(l=8, r=8, t=4, b=8),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         showlegend=False,
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False, range=[low - (high - low) * 0.4, high + (high - low) * 0.2]),
+        font=dict(family=FONT_STACK),
+        xaxis=dict(
+            showgrid=False, zeroline=False, ticks="", tickfont=tick, ticksuffix=" m",
+            tickformat=",.0f", nticks=8,
+        ),
+        yaxis=dict(
+            range=[low - span * 0.4, high + span * 0.2], showgrid=False, zeroline=False,
+            tickmode="array", tickvals=[low, high],
+            ticktext=[f"{low:.0f} m", f"{high:.0f} m"], tickfont=tick,
+        ),
     )
     return fig
 

@@ -14,6 +14,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    show_chart,
     CANONICAL_QUANTITIES,
     WB_CMP_LEFT_KEY,
     WB_CMP_RIGHT_KEY,
@@ -151,7 +152,7 @@ both_laps = is_lap(left_row["cycle"]) and is_lap(right_row["cycle"])
 # Eco and sport reach a corner at different times, so only distance suits both.
 if both_laps and (x_column == "distance_m" or left_row["cycle"] == right_row["cycle"]):
     mark_corners(fig, left_trace, x_column, pal)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig, toolbar=True)
 
 if left_row["cycle"] != right_row["cycle"] and x_column == "step":
     st.caption("Step numbers refer to each workbook's own trace.")

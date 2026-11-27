@@ -19,7 +19,7 @@ import pandas as pd
 import streamlit as st
 
 from dashboard import charts
-from dashboard.layout import configure
+from dashboard.layout import configure, show_chart
 from dashboard.theme import POWERTRAIN_ORDER, Palette
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.deck.data import baseline
@@ -155,7 +155,7 @@ def _render_wltc_preview(wltc: pd.DataFrame, pal: Palette) -> None:
     )
 
     fig = charts.model_co2_bars(wltc, pal, height=230, show_footnote=False)
-    st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, theme=None)
+    show_chart(fig)
     st.caption(
         "Model output (assignment vehicles, storage losses, EU grid 250 g CO₂/kWh, Plug-in hybrid R101-weighted). "
         "Outlined bars and * mark runs where the engine falls short of the trace (conditional result)."

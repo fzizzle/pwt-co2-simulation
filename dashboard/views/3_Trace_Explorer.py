@@ -13,6 +13,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    show_chart,
     WB_TRACE_RUN_KEY,
     X_LABELS,
     configure,
@@ -71,28 +72,29 @@ on_lap = is_lap(row["cycle"]) and "distance_m" in x_options
 # --- the three standing views ---------------------------------------------------------------
 
 st.subheader("Speed and altitude")
-fig = charts.speed_and_altitude(trace, x_column, pal)
+fig = charts.speed_and_altitude(trace, x_column, pal, colour=pal.for_powertrain(row["powertrain"]))
 style_axes(fig, pal, x_title=x_label)
 fig.update_layout(height=420)
 if on_lap:
     mark_corners(fig, trace, x_column, pal)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig, toolbar=True)
 
 if on_lap:
     st.subheader("Circuit map")
-    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal, source="workbook")
+    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal, source="workbook",
+                colour=pal.for_powertrain(row["powertrain"]))
 
 left, right = st.columns(2)
 
 with left:
     if "gear" in trace.columns and trace["gear"].notna().any():
         st.subheader("Gear")
-        fig = charts.gear_steps(trace, x_column, pal)
+        fig = charts.gear_steps(trace, x_column, pal, colour=pal.for_powertrain(row["powertrain"]))
         style_axes(fig, pal, x_title=x_label, y_title="Gear")
         fig.update_layout(height=300)
         if on_lap:
             mark_corners(fig, trace, x_column, pal, labels=False)
-        st.plotly_chart(fig, width="stretch", theme=None)
+        show_chart(fig)
     else:
         st.subheader("Gear")
         st.caption("This workbook has no gear data.")
@@ -104,7 +106,7 @@ with right:
     fig.update_layout(height=300)
     if on_lap:
         mark_corners(fig, trace, x_column, pal, labels=False)
-    st.plotly_chart(fig, width="stretch", theme=None)
+    show_chart(fig)
     st.caption(
         "Acceleration force can be negative during braking. "
         "Resistive force can be negative on descents."
@@ -125,7 +127,7 @@ if columns:
     fig.update_layout(height=380)
     if on_lap:
         mark_corners(fig, trace, x_column, pal)
-    st.plotly_chart(fig, width="stretch", theme=None)
+    show_chart(fig, toolbar=True)
     if len(columns) > 1:
         st.caption(
             "Selected columns share one scale. Plot columns with different units separately."

@@ -14,7 +14,7 @@ import streamlit as st
 
 from dashboard.charts import speed_and_altitude
 from dashboard.labels import readable
-from dashboard.layout import configure, download
+from dashboard.layout import configure, download, show_chart
 from dashboard.theme import style_axes
 from dashboard.track_charts import lap_section, mark_corners
 from pwt import phase2
@@ -90,13 +90,14 @@ elif short_steps > 0:
 else:
     st.caption("Engine power check: pass (0 short steps).")
 
-painted, unit = lap_section({LAPS[cycle]: steps}, "track", pal, source="model")
+painted, unit = lap_section({LAPS[cycle]: steps}, "track", pal, source="model",
+                            colour=pal.for_powertrain(powertrain))
 
 st.subheader("Speed and altitude by distance")
-fig = speed_and_altitude(steps, "distance_m", pal)
+fig = speed_and_altitude(steps, "distance_m", pal, colour=pal.for_powertrain(powertrain))
 style_axes(fig, pal, x_title="Distance (m)")
 mark_corners(fig, steps, "distance_m", pal)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig)
 
 if st.toggle("Show lap table"):
     table = steps[["distance_m", "time_s", "speed_kph", "altitude_m"]].copy()

@@ -20,7 +20,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.labels import readable
-from dashboard.layout import X_LABELS, configure, download
+from dashboard.layout import X_LABELS, configure, download, show_chart
 from dashboard.theme import POWERTRAIN_ORDER, Palette, style_axes
 from dashboard.track_charts import is_lap, lap_section, mark_corners
 from pwt.catalog import POWERTRAIN_NAMES
@@ -228,7 +228,7 @@ bar_scenario = st.selectbox(
     format_func=SCENARIO_LABELS.get,
     key="model_bar_scenario",
 )
-st.plotly_chart(_scenario_bars(long_frame, bar_scenario, pal), width="stretch", theme=None)
+show_chart(_scenario_bars(long_frame, bar_scenario, pal))
 if bar_scenario == "exact":
     st.caption("g CO₂/km, EU grid 250 g/kWh · Engine check: unchecked for this scenario.")
 else:
@@ -309,26 +309,27 @@ else:
 
 on_lap = is_lap(cycle)
 if on_lap:
-    lap_section({CYCLE_CHOICES[cycle]: trace}, "model", pal, source="model")
+    lap_section({CYCLE_CHOICES[cycle]: trace}, "model", pal, source="model",
+                colour=pal.for_powertrain(powertrain))
 else:
     st.caption("This is a test cycle, not a circuit, so it has no track map. Pick a "
                "Francorchamps drive to see one.")
 
 x_column = "distance_m" if on_lap else "time_s"
 st.markdown("**Speed and elevation**")
-fig = charts.speed_and_altitude(trace, x_column, pal)
+fig = charts.speed_and_altitude(trace, x_column, pal, colour=pal.for_powertrain(powertrain))
 style_axes(fig, pal, x_title=X_LABELS[x_column])
 fig.update_layout(height=420)
 if on_lap:
     mark_corners(fig, trace, x_column, pal)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig)
 
 plots = [c for c in SMALL_CHARTS if c in trace.columns]
 cols = st.columns(len(plots))
 for column, slot in zip(plots, cols):
     with slot:
         st.markdown(f"**{SMALL_CHARTS[column]}**")
-        fig = (charts.gear_steps(trace, x_column, pal) if column == "gear"
+        fig = (charts.gear_steps(trace, x_column, pal, colour=pal.for_powertrain(powertrain)) if column == "gear"
                else charts.trace_lines(trace, [column], x_column, pal))
         style_axes(fig, pal, x_title=X_LABELS[x_column],
                    y_title="" if column == "gear" else
@@ -336,7 +337,7 @@ for column, slot in zip(plots, cols):
         fig.update_layout(height=300)
         if on_lap:
             mark_corners(fig, trace, x_column, pal, labels=False)
-        st.plotly_chart(fig, width="stretch", theme=None)
+        show_chart(fig)
 
 with st.expander("How the generated laps are built"):
     st.markdown(

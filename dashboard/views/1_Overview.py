@@ -18,6 +18,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    show_chart,
     CANONICAL_QUANTITIES,
     CYCLE_DEFINITIONS,
     configure,
@@ -92,7 +93,7 @@ gaps = {
 fig = charts.grouped_totals(selected, quantity, pal, unit=unit, gaps=gaps, show_footnote=False)
 style_axes(fig, pal, y_title=f"{display_name} ({unit})")
 fig.update_layout(height=420, margin=dict(t=28, b=12))
-st.plotly_chart(fig, width="stretch", config={"displayModeBar": False}, theme=None)
+show_chart(fig)
 if gaps:
     st.caption(f"{charts.GAP_MARKER} {charts.GAP_LABEL}.")
 
@@ -110,7 +111,7 @@ lap = trace_for("petrol", "franco_eco")
 eco_label = run_label("petrol", "franco_eco")
 strip = elevation_strip(lap, pal)
 if strip is not None:
-    st.plotly_chart(strip, width="stretch", config={"displayModeBar": False}, theme=None)
+    show_chart(strip)
     st.caption(f"Altitude from the {eco_label} workbook.")
     with st.expander("Circuit map"):
         lap_section({eco_label: lap}, "overview", pal, paint="Altitude")

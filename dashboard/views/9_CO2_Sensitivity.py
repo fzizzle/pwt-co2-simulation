@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from dashboard.layout import configure, download
+from dashboard.layout import configure, download, show_chart
 from dashboard import sensitivity_charts as _sensitivity_charts
 
 # A running Streamlit process may retain an imported helper after the page updates.
@@ -111,12 +111,12 @@ with explore:
     else:
         chart_column, key_column = st.columns([3, 2])
         with chart_column:
-            st.plotly_chart(tornado(visible, powertrain, pal), width="stretch", theme=None)
+            show_chart(tornado(visible, powertrain, pal))
         with key_column:
             st.markdown(variable_key(selected))
         st.caption("Labels show absolute g CO₂/km. Circles: parameter −10%; diamonds: +10%. "
                    "Hollow markers fail the engine check. Hatched bars have a failing baseline or endpoint.")
-        st.plotly_chart(ranking_visual(visible, pal), width="stretch", theme=None)
+        show_chart(ranking_visual(visible, pal))
         st.caption("≈ means the gap is less than 2% of the largest span in that tie group. "
                    "† means provisional. This is a reporting convention, not statistical confidence.")
         numbers = comparison_table(visible)
@@ -140,9 +140,9 @@ with compare:
     st.caption("Model output · Saved study results · Hatched bars and hollow markers mean provisional (†): "
                "the baseline or an endpoint fails the engine check. The BEV engine row is empty.")
     st.subheader("Elasticity by car, per driving cycle")
-    st.plotly_chart(elasticity_panels(ranked, "cars", pal), width="stretch", theme=None)
+    show_chart(elasticity_panels(ranked, "cars", pal))
     st.subheader("Elasticity by driving cycle, per car")
-    st.plotly_chart(elasticity_panels(ranked, "cycles", pal), width="stretch", theme=None)
+    show_chart(elasticity_panels(ranked, "cycles", pal))
     st.caption("Colour is the car. Marker shape is the driving cycle.")
     download(research_table(ranked), f"pwt-study-b-elasticities-{grid}.csv", "Download the data for both charts")
 

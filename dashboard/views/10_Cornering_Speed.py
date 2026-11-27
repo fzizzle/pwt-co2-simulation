@@ -16,7 +16,7 @@ import streamlit as st
 from dashboard.cornering_charts import (
     CO2, VARIANTS, baseline_row, comparison_table, infeasible, line_chart, rows_for,
 )
-from dashboard.layout import configure, download
+from dashboard.layout import configure, download, show_chart
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.sweep import CYCLES
 
@@ -82,10 +82,8 @@ with explore:
     elif infeasible(rows).any():
         st.warning("Some variants cannot follow their lap. Their rows are marked as provisional "
                    "and drawn with hollow markers.")
-    st.plotly_chart(line_chart(rows, variant, "lap_time_s", "Lap time (s)", powertrain, pal),
-                    width="stretch", theme=None)
-    st.plotly_chart(line_chart(rows, variant, grid, "CO₂ emissions (g CO₂/km)", powertrain, pal),
-                    width="stretch", theme=None)
+    show_chart(line_chart(rows, variant, "lap_time_s", "Lap time (s)", powertrain, pal))
+    show_chart(line_chart(rows, variant, grid, "CO₂ emissions (g CO₂/km)", powertrain, pal))
     st.caption("Hollow markers cannot follow the lap at the engine's full-load power (provisional).")
     numbers = comparison_table(rows, variant, grid)
     st.dataframe(numbers, width="stretch", hide_index=True)

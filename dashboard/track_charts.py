@@ -12,6 +12,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from dashboard.layout import show_chart
 from dashboard.theme import Palette, style_axes
 from pwt.trackmap import LANDMARKS, outline, place
 
@@ -474,8 +475,13 @@ def metric_strip(
     *,
     car_index: int = 0,
     source: str = "model",
+    colour: str | None = None,
 ) -> go.Figure:
-    """Plot the selected painted measure along lap distance with a synced car cursor."""
+    """Plot the selected painted measure along lap distance with a synced car cursor.
+
+    `colour` is the car's colour; without one the line is neutral ink.
+    """
+    line_colour = colour or pal.text_secondary
     car_idx = max(0, min(int(car_index), len(steps) - 1))
     dist_km = steps["distance_m"].to_numpy(dtype=float) / 1000.0
     y_arr = values.to_numpy(dtype=float)
@@ -490,8 +496,8 @@ def metric_strip(
         y=y_arr,
         mode=mode,
         showlegend=False,
-        line=dict(color=pal.series[0], width=2),
-        marker=dict(size=6, color=pal.series[0], line=dict(color=pal.surface, width=1.5)),
+        line=dict(color=line_colour, width=2),
+        marker=dict(size=6, color=line_colour, line=dict(color=pal.surface, width=1.5)),
         customdata=formatted,
         hovertemplate=f"%{{x:.2f}} km<br>{label}: %{{customdata}} {unit}<extra></extra>",
     ))
@@ -546,7 +552,15 @@ def mark_corners(fig: go.Figure, trace: pd.DataFrame, x_column: str, pal: Palett
                                xanchor="center", yanchor="bottom", yshift=2 + 14 * (i % 2),
                                font=dict(color=pal.text_muted, size=11))
     if labels:
-        fig.update_layout(margin=dict(t=max(fig.layout.margin.t or 0, 44)))
+        # A top legend would print on the two label rows, so lift it above them.
+        shows_legend = fig.layout.showlegend is True or (
+            fig.layout.showlegend is None and sum(t.showlegend is not False for t in fig.data) > 1
+        )
+        top = 76 if shows_legend else 44
+        fig.update_layout(margin=dict(t=max(fig.layout.margin.t or 0, top)))
+        if shows_legend:
+            fig.update_layout(legend=dict(orientation="h", y=1.16, yanchor="bottom",
+                                          x=0, xanchor="left"))
 
 
 def lap_section(
@@ -556,6 +570,7 @@ def lap_section(
     paint: str = "Speed",
     *,
     source: str = "workbook",
+    colour: str | None = None,
 ) -> tuple[pd.Series, str] | None:
     """The map for one lap, with native keyboard-accessible playback and a painted-metric strip.
 
@@ -650,12 +665,10 @@ def lap_section(
                 car_idx = frame_ids[min(int(chosen_pos), max_frame)]
 
             strip_fig = metric_strip(
-                steps, values, metric, unit, diverging, pal, car_index=car_idx, source=source
+                steps, values, metric, unit, diverging, pal, car_index=car_idx, source=source,
+                colour=colour,
             )
-            st.plotly_chart(
-                strip_fig, width="stretch", theme=None,
-                config={"displayModeBar": "hover"}, key=f"{key}_strip",
-            )
+            show_chart(strip_fig, key=f"{key}_strip")
 
         with map_col:
             map_fig = lap_map(
@@ -664,10 +677,7 @@ def lap_section(
                 car_index=car_idx,
                 uirevision=f"{key}_{name}_{st.session_state[reset_key]}",
             )
-            st.plotly_chart(
-                map_fig, width="stretch", theme=None,
-                config={"scrollZoom": True, "displayModeBar": "hover"}, key=f"{key}_map",
-            )
+            show_chart(map_fig, scroll_zoom=True, key=f"{key}_map")
 
     run_every = 0.25 if st.session_state[play_key] else None
     st.fragment(run_every=run_every)(_render_player)()
