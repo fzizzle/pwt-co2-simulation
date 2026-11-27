@@ -37,7 +37,7 @@ Workbook pages show the supplied figures exactly as reported: no unit conversion
 
 ## Look and feel
 
-- **Dark for every viewer.** `.streamlit/config.toml` has no `[theme.light]`, so Streamlit never follows a light system setting. `theme.LIGHT` still serves a viewer who switches in the settings menu.
+- **Dark for every viewer.** `.streamlit/config.toml` has no `[theme.light]`, so Streamlit never follows a light system setting. A viewer who picks Light in the settings menu gets the charts and chips in `theme.LIGHT`, but Streamlit's stock light controls (red radios, sliders and toggles), because no light theme is configured.
 - **Colour means powertrain.** The four deck colours (`theme.CAR_COLOURS`) belong to the cars. Controls use the neutral silver accent `theme.ACCENT` (`#d1d1d6`) with black ink. A trace that belongs to no car, such as the elevation strip, is drawn in neutral ink.
 - **One chart helper.** Draw every Plotly figure with `layout.show_chart()`. It hides the Plotly toolbar, which covered legends and corner labels. Pass `toolbar=True` only where zooming helps; `tests/test_chart_chrome.py` fails on a direct `.plotly_chart(` call.
 - **Page CSS lives in `layout.inject_css()`.** Its selectors come from the live Streamlit 1.66 DOM: the active segmented control is `button[data-variant="segmented_control"][aria-checked="true"]`, and a multiselect chip is `[data-tag]` in `stMultiSelectTagsContainer`. Check them again after a Streamlit upgrade.

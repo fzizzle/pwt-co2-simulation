@@ -138,3 +138,18 @@ def test_study_tables_show_sensible_precision(name):
         limit = 2 if "lastic" in column else 1
         worst = max((_decimals(v) for v in frame[column].dropna()), default=0)
         assert worst <= limit, (column, worst)
+
+
+def test_model_keeps_the_chosen_scenario_across_a_generated_lap():
+    """Review finding: hiding the scenario picker on a generated lap dropped its state, so an
+    unrelated click switched the figures to "assignment" and the picker came back reset."""
+    app = run("6_Model.py")
+    app.selectbox(key="model_cycle").set_value("wltc").run()
+    app.selectbox(key="model_scenario").set_value("storage losses").run()
+    app.selectbox(key="model_cycle").set_value("franco_sport_generated").run()
+    assert "5 · Storage losses" in " ".join(c.value for c in app.caption)
+    app.selectbox(key="model_powertrain").set_value("hybrid").run()
+    assert not app.exception, [e.value for e in app.exception]
+    assert "5 · Storage losses" in " ".join(c.value for c in app.caption)
+    app.selectbox(key="model_cycle").set_value("wltc").run()
+    assert app.selectbox(key="model_scenario").value == "storage losses"

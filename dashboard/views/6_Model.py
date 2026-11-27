@@ -266,17 +266,24 @@ powertrain = left.selectbox("Powertrain", list(POWERTRAIN_NAMES),
 drives = list(CYCLE_ORDER) + list(GENERATED)
 cycle = middle.selectbox("Drive", drives, index=drives.index("franco_sport_generated"),
                          format_func=CYCLE_CHOICES.get, key="model_cycle")
+# The choice lives under its own key: Streamlit drops a widget's state on any run where the
+# widget is not drawn, and the picker is hidden on a generated lap.
+SCENARIO_CHOICE = "model_scenario_choice"
+st.session_state.setdefault(SCENARIO_CHOICE, "stage B")
 if cycle in GENERATED:
     # A generated lap has no workbook; steps() runs it with the assignment vehicles unless
-    # the saved choice already is one of their scenarios. Say which, instead of showing a
+    # the chosen scenario already is one of theirs. Say which, instead of showing a
     # disabled picker that names a scenario it does not run.
-    saved = st.session_state.get("model_scenario", "stage B")
-    scenario = saved if saved in ASSIGNMENT_VEHICLES else "assignment"
+    chosen = st.session_state[SCENARIO_CHOICE]
+    scenario = chosen if chosen in ASSIGNMENT_VEHICLES else "assignment"
     right.caption(f"Scenario: {SCENARIO_LABELS[scenario]}. A generated lap has no workbook, so "
                   "it only exists with the assignment vehicles.")
 else:
-    scenario = right.selectbox("Scenario", list(SCENARIOS), index=2, key="model_scenario",
-                               format_func=SCENARIO_LABELS.get)
+    options = list(SCENARIOS)
+    scenario = right.selectbox("Scenario", options,
+                               index=options.index(st.session_state[SCENARIO_CHOICE]),
+                               key="model_scenario", format_func=SCENARIO_LABELS.get)
+    st.session_state[SCENARIO_CHOICE] = scenario
 if powertrain == "phev" and cycle in ("nedc", "wltc"):
     st.caption("The plug-in hybrid's charge-depleting run (from 98 %); the scenario table "
                "weights it with the charge-sustaining run.")
