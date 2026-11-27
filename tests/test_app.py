@@ -158,15 +158,16 @@ def test_compare_refuses_two_identical_runs():
     assert any("same run" in i.value for i in app.info)
 
 
-def test_compare_avoids_percentage_change_from_zero():
-    """NEDC PHEV reports 0, so a percent change against it must be suppressed, not infinite."""
+def test_compare_keeps_the_nedc_phev_zero_labelled():
+    """NEDC PHEV reports 0; Compare shows it as reported, with its gap label, and no arithmetic."""
     app = run(COMPARE)
     app.selectbox(key="cmp_left").set_value(run_index("phev", "nedc")).run()
     app.selectbox(key="cmp_right").set_value(run_index("petrol", "nedc")).run()
     assert not app.exception, [e.value for e in app.exception]
-    changes = app.dataframe[0].value["Change from left (%)"].tolist()
-    assert not any(isinstance(c, float) for c in changes)
-    assert "inf" not in " ".join(str(c) for c in changes).lower()
+    figures = app.dataframe[0].value
+    assert "Change from left (%)" not in figures.columns
+    co2 = figures.set_index("Figure").loc["CO₂ emissions (g CO₂/km)"]
+    assert co2.iloc[0].startswith("0") and "electricity not counted" in co2.iloc[0]
 
 
 def test_compare_renders_absent_parameters_as_a_dash_not_none():
@@ -176,8 +177,8 @@ def test_compare_renders_absent_parameters_as_a_dash_not_none():
     app.selectbox(key="cmp_right").set_value(run_index("hybrid", "franco_eco")).run()
     differences = app.dataframe[1].value
     for column in differences.columns[1:]:
-        assert not (differences[column] == "None").any()
-        assert pd.api.types.is_numeric_dtype(differences[column])
+        assert not differences[column].isin(["None", "nan"]).any()
+        assert differences[column].notna().all()
 
 
 def test_compare_says_when_two_runs_share_a_trace():

@@ -186,8 +186,10 @@ def _nearest_landmark(distance_m: float) -> str:
 
 
 def _car_label(row: pd.Series, metric_label: str = "", value: float | None = None,
-               unit: str = "") -> str:
-    parts = [f"{float(row['distance_m']) / 1000.0:.2f} km"]
+               unit: str = "", *, distance_unit: str = "km") -> str:
+    metres = float(row["distance_m"])
+    # Workbook laps keep the reported metres; model laps read in km.
+    parts = [f"{metres:,.0f} m" if distance_unit == "m" else f"{metres / 1000.0:.2f} km"]
     if "time_s" in row and pd.notna(row["time_s"]):
         parts.append(f"{float(row['time_s']):.0f} s")
     parts.append(f"{float(row['speed_kph']):.0f} km/h")
@@ -476,14 +478,17 @@ def metric_strip(
     car_index: int = 0,
     source: str = "model",
     colour: str | None = None,
+    distance_unit: str = "km",
 ) -> go.Figure:
     """Plot the selected painted measure along lap distance with a synced car cursor.
 
-    `colour` is the car's colour; without one the line is neutral ink.
+    `colour` is the car's colour; without one the line is neutral ink. `distance_unit="m"`
+    keeps a workbook lap in the metres the workbook reports.
     """
     line_colour = colour or pal.text_secondary
     car_idx = max(0, min(int(car_index), len(steps) - 1))
-    dist_km = steps["distance_m"].to_numpy(dtype=float) / 1000.0
+    scale = 1.0 if distance_unit == "m" else 1000.0
+    dist_km = steps["distance_m"].to_numpy(dtype=float) / scale
     y_arr = values.to_numpy(dtype=float)
     car_km = float(dist_km[car_idx])
     car_val = float(y_arr[car_idx]) if pd.notna(y_arr[car_idx]) else 0.0
@@ -499,16 +504,17 @@ def metric_strip(
         line=dict(color=line_colour, width=2),
         marker=dict(size=6, color=line_colour, line=dict(color=pal.surface, width=1.5)),
         customdata=formatted,
-        hovertemplate=f"%{{x:.2f}} km<br>{label}: %{{customdata}} {unit}<extra></extra>",
+        hovertemplate=(f"%{{x:,.0f}} m" if distance_unit == "m" else "%{x:.2f} km")
+        + f"<br>{label}: %{{customdata}} {unit}<extra></extra>",
     ))
 
     if diverging:
         fig.add_hline(y=0, line=dict(color=pal.axis, width=1, dash="dot"), layer="below")
 
-    max_km = float(dist_km[-1]) if len(dist_km) else 7.0
+    max_km = float(dist_km[-1]) if len(dist_km) else 7000.0 / scale
     for at in LANDMARKS:
-        if at <= max_km * 1000.0:
-            fig.add_vline(x=at / 1000.0, line=dict(color=pal.grid, width=1, dash="dot"),
+        if at <= max_km * scale:
+            fig.add_vline(x=at / scale, line=dict(color=pal.grid, width=1, dash="dot"),
                           layer="below")
 
     clean = values.dropna()
@@ -530,9 +536,9 @@ def metric_strip(
         marker=dict(size=10, color=pal.text_primary, line=dict(color=pal.surface, width=2)),
     ))
 
-    style_axes(fig, pal, x_title="Lap distance (km)", y_title=f"{label} ({unit})")
+    style_axes(fig, pal, x_title=f"Lap distance ({distance_unit})", y_title=f"{label} ({unit})")
     fig.update_layout(height=STRIP_HEIGHT, showlegend=False, margin=dict(l=8, r=8, t=12, b=8))
-    fig.update_xaxes(range=[0.0, max_km], dtick=1)
+    fig.update_xaxes(range=[0.0, max_km], dtick=1000.0 / scale)
     fig.update_yaxes(range=[y_lo, y_hi])
     return fig
 
@@ -638,7 +644,10 @@ def lap_section(
                 else "Workbook figures as reported — exact values at segment ends."
             )
             st.caption(scope)
-            st.markdown(f"**{_car_label(row, metric, cur_val, unit)}** · near *{corner}*")
+            st.markdown(
+                f"**{_car_label(row, metric, cur_val, unit, distance_unit='m' if source == 'workbook' else 'km')}**"
+                f" · near *{corner}*"
+            )
 
             btn_play, btn_reset = st.columns([1, 1])
             toggle_label = "❚❚ Pause" if st.session_state[play_key] else "▶ Play"
@@ -666,7 +675,7 @@ def lap_section(
 
             strip_fig = metric_strip(
                 steps, values, metric, unit, diverging, pal, car_index=car_idx, source=source,
-                colour=colour,
+                colour=colour, distance_unit="m" if source == "workbook" else "km",
             )
             show_chart(strip_fig, key=f"{key}_strip")
 
