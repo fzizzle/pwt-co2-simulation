@@ -51,3 +51,13 @@ On the petrol eco lap (`07`), with the sheet's own vehicle:
 | … and density 750 kg/m³ | 8.817 (−14.2 %) | 203.0 |
 
 The −10.6 % is exactly 0.0813 / 0.0909: the lap never stops, so no idle fuel dilutes it. CO2 falls further than fuel because the sheets' 2392 g/l at 720 kg/m³ is 3.32 g CO2 per g of fuel, against 3.07.
+
+## Real-world comparisons on the Study A closing slide (deck)
+
+The closing slide `A-end` in `docs/deck/slides.md` sets three model results beside real-world figures. These are for scale only: none of them enter the model. **None has been checked against the original yet.** They were drafted from general knowledge and must be verified before the presentation.
+
+| Comparison | Figure quoted | Where to check |
+|---|---|---|
+| Toyota full-hybrid battery packs | about 1–1.6 kWh (2016 Prius about 1.3 kWh, RAV4 hybrid about 1.6 kWh) | Manufacturer specifications |
+| Formula 1 power unit, 2014 onwards | MGU-K limited to 120 kW; energy store may deploy 4 MJ (about 1.1 kWh) per lap | FIA Formula 1 Technical Regulations |
+| Real-world plug-in hybrid CO2 | about 2–4 times the type-approval value | Plötz, Moll, Bieker, Mock & Li, *Real-world usage of plug-in hybrid electric vehicles*, ICCT white paper, September 2020 |

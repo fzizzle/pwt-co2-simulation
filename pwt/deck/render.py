@@ -14,7 +14,8 @@ from pptx.oxml.xmlchemy import OxmlElement
 
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.deck import art, data, figures, fonts, track
-from pwt.deck.structure import SLIDES, SECTIONS, lap_position
+from pwt.deck.structure import (DATAFLOW_EDGES, DATAFLOW_NODES, SLIDES, SECTIONS,
+                                lap_position)
 from pwt.sweep import cycles
 
 PLACEHOLDERS = {
@@ -23,6 +24,10 @@ PLACEHOLDERS = {
     "spec": "key specs",
     "tile": ("number", "one line"),
     "row": ("limit", "why it matters", "next step"),
+    "term": ("term", "what it means"),
+    "point": ("Study {} owner's conclusion", "a real-world example"),
+    "open": ("Study {} owner's open question", "why it matters"),
+    "limit": "a limit of the model",
     "figure": ("chart or figure from the study", "Study {} owner's slides"),
     "questions.subtitle": "then, if time allows: the live demo",
 }
@@ -328,12 +333,188 @@ def flow(c):
         if len(parts) >= 3:
             parts = [", ".join(parts[:2]), ", ".join(parts[2:])]
         if len(parts) > 2:
-            WARNINGS.append(f"sim-model.{key}: the detail wraps onto 2 lines at most.")
+            WARNINGS.append(f"{c.slide_id}.{key}: the detail wraps onto 2 lines at most.")
         for j, line in enumerate(parts[:2]):
             c.check(key, line, 17, 195)
             c.text(x + 105, 505 + j * 24, line, 17, "muted", center=True)
         if i < 5:
             c.arrow(x + 218, 455, 24, 8)
+
+
+#: Dataflow geometry in design units: node size, column and row pitch.
+DF_W, DF_H = 220, 104
+DF_X = [40 + 310 * k for k in range(5)]
+DF_Y = [248, 438, 628]
+
+
+def _df_box(col, row):
+    return DF_X[col], DF_Y[row], DF_W, DF_H
+
+
+def _df_arrow(c, points, label=""):
+    """A polyline with an arrowhead at its end, and its data label beside the first leg."""
+    shape = c.line(points, "muted", 2.5)
+    ln = shape.line._get_or_add_ln()
+    tail = OxmlElement("a:tailEnd")
+    tail.set("type", "triangle")
+    tail.set("w", "med")
+    tail.set("len", "med")
+    ln.append(tail)
+    if label:
+        (x0, y0), (x1, y1) = points[0], points[1]
+        if y0 == y1:  # horizontal: centred above the arrow
+            c.text((x0 + x1) / 2, y0 - 10, label, 16, "muted", center=True)
+        else:  # vertical: to the right of it
+            c.text(x0 + 12, (y0 + y1) / 2 + 6, label, 16, "muted")
+
+
+def dataflow(c):
+    """Study A's method as a dataflow chart: inputs, processes, saved files and results."""
+    from pptx.enum.shapes import MSO_SHAPE as S
+
+    kinds = {"data": (S.PARALLELOGRAM, None, "fg"), "process": (S.ROUNDED_RECTANGLE, "soft", "fg"),
+             "file": (S.CAN, "line", "fg"), "result": (S.PARALLELOGRAM, "fg", "bg")}
+    boxes = {}
+    for name, kind, col, row in DATAFLOW_NODES:
+        x, y, w, h = _df_box(col, row)
+        boxes[name] = (x, y, w, h)
+        shape_kind, fill, ink = kinds[kind]
+        s = c.shapes.add_shape(shape_kind, u(x), u(y), u(w), u(h))
+        if shape_kind == S.ROUNDED_RECTANGLE:
+            s.adjustments[0] = 18 / h
+        elif shape_kind == S.PARALLELOGRAM:
+            s.adjustments[0] = 0.2  # a shallow slant leaves room for the text
+        if fill:
+            s.fill.solid()
+            s.fill.fore_color.rgb = c.color(fill)
+            s.line.fill.background()
+        else:
+            s.fill.background()
+            s.line.color.rgb = c.color("muted")
+            s.line.width = u(2.5)
+        key = f"node.{name}"
+        title, _, detail = (t.strip() for t in c.fields.get(key, "").partition("|"))
+        cx, top = x + w / 2, y + (14 if kind == "file" else 0)
+        room = w - (70 if shape_kind == S.PARALLELOGRAM else 36)
+        rows = wrap(detail, 16.5, room) if detail else []
+        if title:
+            c.check(key, title, 21, room, 700)
+            if len(rows) > 2:
+                WARNINGS.append(f"{c.slide_id}.{key}: the detail wraps past 2 lines; "
+                                "shorten it.")
+        lift = 11 if len(rows) > 1 else 0  # centre two detail lines in the box
+        c.text(cx, top + 45 - lift, title or name, 21, ink, 700, True,
+               placeholder=None if title else key)
+        for k, row in enumerate(rows[:2]):
+            c.text(cx, top + 72 - lift + k * 21, row, 16.5, "muted" if ink == "fg" else ink,
+                   center=True)
+    for a, b in DATAFLOW_EDGES:
+        ax, ay, aw, ah = boxes[a]
+        bx, by, bw, bh = boxes[b]
+        label = c.fields.get(f"edge.{a}.{b}", "")
+        if ay == by:  # same row
+            y = ay + ah / 2
+            points = ([(ax + aw, y), (bx, y)] if bx > ax else [(ax, y), (bx + bw, y)])
+        elif ax == bx:  # same column
+            x = ax + aw / 2
+            points = ([(x, ay + ah), (x, by)] if by > ay else [(x, ay), (x, by + bh)])
+        else:  # down, then across
+            x, y = ax + aw / 2, by + bh / 2
+            points = [(x, ay + ah), (x, y), (bx, y)]
+        _df_arrow(c, points, label)
+    # Key to the shapes, in one row under the chart.
+    kx, ky = DF_X[0] + 20, DF_Y[2] + DF_H + 46
+    for k, (shape_kind, fill, text) in enumerate((
+            (S.PARALLELOGRAM, None, "input or output"), (S.ROUNDED_RECTANGLE, "soft", "process"),
+            (S.CAN, "line", "saved file"), (S.PARALLELOGRAM, "fg", "result on a later slide"))):
+        x = kx + k * 330
+        y = ky
+        s = c.shapes.add_shape(shape_kind, u(x), u(y), u(46), u(30))
+        if fill:
+            s.fill.solid()
+            s.fill.fore_color.rgb = c.color(fill)
+            s.line.fill.background()
+        else:
+            s.fill.background()
+            s.line.color.rgb = c.color("muted")
+            s.line.width = u(2)
+        c.text(x + 60, y + 22, text, 15, "muted")
+
+
+def _marker(c, x, y, kind):
+    """A filled circle with a check, question mark or exclamation mark: native shapes."""
+    fill = {"point": "#30d158", "open": "#ff9f0a", "limit": None}[kind]
+    s = c.shapes.add_shape(MSO_SHAPE.OVAL, u(x), u(y), u(34), u(34))
+    s.fill.solid()
+    s.fill.fore_color.rgb = RGBColor.from_string(fill[1:]) if fill else c.color("muted")
+    s.line.fill.background()
+    if kind == "point":
+        c.line([(x + 9, y + 18), (x + 15, y + 24), (x + 26, y + 11)], "bg", 3.5)
+    else:
+        c.text(x + 17, y + 25, "?" if kind == "open" else "!", 22, "bg", 700, True)
+
+
+def wrapup(c, spec):
+    """Conclusions and open questions in two columns, model limits in a strip below."""
+    study = spec.section
+    columns = (("point", 110, "WHAT WE CAN CONCLUDE"), ("open", 840, "STILL OPEN"))
+    for kind, x, heading in columns:
+        c.text(x, 262, heading, 19, "muted", 600)
+        for i in range(3):
+            key = f"{kind}{i+1}"
+            y = 300 + i * 118
+            _marker(c, x, y, kind)
+            value = c.fields.get(key, "")
+            if not value:
+                main, sub = (t.format(study) for t in PLACEHOLDERS[kind])
+                c.text(x + 52, y + 26, main, 24, weight=600, placeholder=key)
+                c.text(x + 52, y + 58, sub, 18, placeholder=key)
+                continue
+            statement, _, example = (t.strip() for t in value.partition("|"))
+            c.check(key, statement, 24, 600, 600)
+            c.text(x + 52, y + 26, statement, 24, weight=600)
+            rows = wrap(example, 18, 600)
+            if len(rows) > 2:
+                WARNINGS.append(f"{c.slide_id}.{key}: the example wraps past 2 lines; "
+                                "shorten it.")
+            for k, row in enumerate(rows[:2]):
+                c.text(x + 52, y + 56 + k * 24, row, 18, "muted")
+    c.shape(110, 668, 1380, 150, "soft", 22)
+    c.text(140, 708, "MODEL LIMITS", 17, "muted", 600)
+    for i in range(3):
+        key = f"limit{i+1}"
+        x = 140 + i * 450
+        _marker(c, x, 728, "limit")
+        value = c.fields.get(key, "")
+        if not value:
+            c.text(x + 48, 752, PLACEHOLDERS["limit"], 18, placeholder=key)
+            continue
+        rows = wrap(value, 18, 380)
+        if len(rows) > 2:
+            WARNINGS.append(f"{c.slide_id}.{key}: wraps past 2 lines; shorten it.")
+        for k, row in enumerate(rows[:2]):
+            c.text(x + 48, 752 + k * 24, row, 18)
+
+
+def terms(c):
+    """A glossary: up to six rows of `term | what it means`, the meaning on up to 2 lines."""
+    for i in range(6):
+        key = f"term{i+1}"
+        y = 262 + i * 96
+        c.line([(180, y - 40), (1420, y - 40)], "line", 2)
+        value = c.fields.get(key, "")
+        term, _, meaning = (s.strip() for s in value.partition("|"))
+        if not value:
+            c.text(180, y, PLACEHOLDERS["term"][0], 26, weight=700, placeholder=key)
+            c.text(560, y, PLACEHOLDERS["term"][1], 21, placeholder=key)
+            continue
+        c.check(key, term, 26, 350, 700)
+        c.text(180, y, term, 26, weight=700)
+        rows = wrap(meaning, 21, 860)
+        if len(rows) > 2:
+            WARNINGS.append(f"{c.slide_id}.{key}: the meaning wraps past 2 lines; shorten it.")
+        for k, row in enumerate(rows[:2]):
+            c.text(560, y + k * 28, row, 21)
 
 
 def cars(c):
@@ -383,6 +564,12 @@ def body(c, spec):
                 True,
                 widths=(300, 300),
             )
+    elif spec.layout == "wrapup":
+        wrapup(c, spec)
+    elif spec.layout == "dataflow":
+        dataflow(c)
+    elif spec.layout == "terms":
+        terms(c)
     elif spec.layout == "rows":
         c.text(230, 270, "LIMIT", 19, "muted", 600)
         c.text(900, 270, "NEXT STEP", 19, "muted", 600)
@@ -545,7 +732,7 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                 name = fields["figure"].removeprefix("chart:").strip()
                 source = (
                     f"pwt.deck.figures, redrawn from "
-                    f"{fields_path(figures.FIGURES[name])} (study figure docs/{name}.png)"
+                    f"{fields_path(figures.FIGURES[name])} (study figure {figures.study_figure(name)})"
                 )
             elif fields.get("figure"):
                 source = fields["figure"]

@@ -4,7 +4,10 @@
 with a different grid. Everything runs under the "storage losses" scenario: without a loss,
 storing energy is free and a bigger battery only ever looks better.
 
-    python -m pwt.sweep       # print the tables as Markdown, write the figure
+    python -m pwt.sweep       # print the tables as Markdown, write the figure and the CSVs
+
+The CSVs (`docs/phase-3-sizing.csv`, `docs/phase-3-storage.csv`) are the saved results the
+group deck redraws its Study A charts from.
 """
 
 from __future__ import annotations
@@ -20,7 +23,7 @@ from pwt.model.constants import CHARGER_EFFICIENCY, GRID_G_PER_KWH
 from pwt.model.conventions import harmonised
 from pwt.model.profile import generate
 from pwt.model.strategy import NelisStrategy, SocBandStrategy
-from pwt.phase2 import GRID, _source, powertrain_cells
+from pwt.phase2 import GRID, RATED_W, SHORTFALL_NOISE_W, _source, powertrain_cells
 
 SCENARIO = "storage losses"
 #: The cycles a car can actually drive: the regulatory two and the generated laps.
@@ -131,6 +134,29 @@ def storage_sensitivity(cycle_map: dict[str, Cycle] | None = None) -> pd.DataFra
     return table
 
 
+def storage_shortfall(cycle_map: dict[str, Cycle] | None = None) -> pd.DataFrame:
+    """Engine steps short of the full-load curve for each `storage_sensitivity` run.
+
+    The same check `pwt.phase2` applies to every other result: rerun with the engine clipped
+    at its full-load curve and count the steps it falls short. CO2 on a run with short steps
+    is conditional.
+    """
+    cycle_map = cycle_map or cycles()
+    vehicle = fleet.hybrid(START_SOC["hybrid"])
+    vehicle = replace(vehicle, p_rated_w=vehicle.p_rated_w or RATED_W)
+    rows = []
+    for eta in (1.0, 0.95, 0.9, 0.85, 0.8):
+        for name, strategy in (("band", SocBandStrategy()), ("sheets' rule",
+                                                             NelisStrategy("engine"))):
+            for cycle, cyc in cycle_map.items():
+                conv = replace(harmonised(cyc.kind, "hybrid", GRID), storage_efficiency=eta,
+                               capability=True)
+                short = simulate(vehicle, cyc, conv, strategy).steps["shortfall_w"]
+                rows.append({"storage_efficiency": eta, "strategy": name, "cycle": cycle,
+                             "short_steps": int((short > SHORTFALL_NOISE_W).sum())})
+    return pd.DataFrame(rows)
+
+
 def petrol_reference(cycle_map: dict[str, Cycle] | None = None) -> dict[str, float]:
     cycle_map = cycle_map or cycles()
     return {
@@ -200,10 +226,19 @@ def plot(frame: pd.DataFrame, path: Path) -> None:
     plt.close(fig)
 
 
-def markdown(frame: pd.DataFrame) -> str:
+def storage_long(table: pd.DataFrame) -> pd.DataFrame:
+    """`storage_sensitivity` as one row per efficiency, strategy and cycle key."""
+    keys = {label: key for key, label in CYCLES.items()}
+    long = table.rename(columns=keys).stack().rename("co2_eu").reset_index()
+    long.columns = ["storage_efficiency", "strategy", "cycle", "co2_eu"]
+    return long
+
+
+def markdown(frame: pd.DataFrame, storage: pd.DataFrame | None = None) -> str:
+    storage = storage_sensitivity() if storage is None else storage
     return "\n\n".join([
         "## The assignment's full hybrid by storage efficiency (g CO2/km)\n\n"
-        + storage_sensitivity().to_markdown(),
+        + storage.to_markdown(),
         "Petrol on the same cycles: "
         + ", ".join(f"{k} {v}" for k, v in petrol_reference().items()) + ".",
         "## Best size per cycle, EU grid (250 g/kWh)\n\n"
@@ -221,5 +256,9 @@ def markdown(frame: pd.DataFrame) -> str:
 
 if __name__ == "__main__":
     frame = sizing()
+    storage = storage_sensitivity()
     plot(frame, HERE / "phase-3-sizing.png")
-    print(markdown(frame))
+    frame.to_csv(HERE / "phase-3-sizing.csv", index=False)
+    storage_long(storage).merge(storage_shortfall(), how="left").to_csv(
+        HERE / "phase-3-storage.csv", index=False)
+    print(markdown(frame, storage))

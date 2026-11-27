@@ -14,6 +14,37 @@ SECTIONS: dict[str, tuple[str, str, float]] = {
 }
 
 
+#: Study A's dataflow chart: (field, kind, column, row). Kinds: "data" (input or output,
+#: a parallelogram), "process" (a box), "file" (a saved CSV, a cylinder), "result" (output
+#: shown on a later slide). Columns 0–4 run left to right, rows 0–2 top to bottom.
+DATAFLOW_NODES: tuple[tuple[str, str, int, int], ...] = (
+    ("cars", "data", 0, 0), ("fix", "process", 1, 0), ("grid", "process", 2, 0),
+    ("sim", "process", 3, 0), ("runs", "file", 4, 0),
+    ("cycles", "data", 3, 1), ("filter", "process", 4, 1),
+    ("argmin", "process", 4, 2), ("sizes", "result", 3, 2),
+    ("sweep", "process", 0, 2), ("storage", "file", 1, 2), ("gap", "result", 2, 2),
+)
+#: Arrows (from, to), each labelled by its own field `edge.<from>.<to>`.
+DATAFLOW_EDGES: tuple[tuple[str, str], ...] = (
+    ("cars", "fix"), ("fix", "grid"), ("grid", "sim"), ("cycles", "sim"), ("sim", "runs"),
+    ("runs", "filter"), ("filter", "argmin"), ("argmin", "sizes"),
+    ("cars", "sweep"), ("sweep", "storage"), ("storage", "gap"),
+)
+DATAFLOW_FIELDS: tuple[str, ...] = (
+    *(f"node.{n[0]}" for n in DATAFLOW_NODES),
+    *(f"edge.{a}.{b}" for a, b in DATAFLOW_EDGES),
+)
+
+
+#: A study's closing slide: three conclusions, three open questions, three model limits.
+#: `pointN` and `openN` take `statement | example or reason`; `limitN` is one short line.
+WRAPUP_FIELDS: tuple[str, ...] = (
+    *(f"point{i}" for i in range(1, 4)),
+    *(f"open{i}" for i in range(1, 4)),
+    *(f"limit{i}" for i in range(1, 4)),
+)
+
+
 @dataclass(frozen=True)
 class SlideSpec:
     id: str
@@ -42,9 +73,15 @@ SLIDES: tuple[SlideSpec, ...] = (
     _content("cmp-wltc", "single"),
     *(slide for study in ("A", "B", "C") for slide in (
         _opener(study),
+        # Study A's owner asked for a method overview and a glossary before the charts.
+        *((_content("A-steps", "dataflow", *DATAFLOW_FIELDS),
+           _content("A-terms", "terms", *(f"term{i}" for i in range(1, 7))))
+          if study == "A" else ()),
         _content(f"{study}-1", "slot", "figure"),
         _content(f"{study}-2", "slot", "figure"),
         _content(f"{study}-3", "slot", "figure"),
+        # Each study closes on its conclusions, open questions and model limits.
+        _content(f"{study}-end", "wrapup", *WRAPUP_FIELDS),
     )),
     _opener("lim"),
     _content("lim-rows", "rows", "row1", "row2", "row3"),

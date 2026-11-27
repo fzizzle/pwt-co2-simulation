@@ -8,9 +8,9 @@ from pwt.deck.structure import CORNERS, SECTIONS, SLIDES, lap_position
 
 def test_order_and_count():
     expected = ("title sim sim-model sim-cars sim-changed cmp cmp-all cmp-wltc "
-                "A A-1 A-2 A-3 B B-1 B-2 B-3 C C-1 C-2 C-3 lim lim-rows questions")
+                "A A-steps A-terms A-1 A-2 A-3 A-end B B-1 B-2 B-3 B-end C C-1 C-2 C-3 C-end lim lim-rows questions")
     assert [slide.id for slide in SLIDES] == expected.split()
-    assert len(SLIDES) == 23
+    assert len(SLIDES) == 28
 
 
 def test_parse_fields_and_notes():
@@ -36,7 +36,8 @@ def test_lap_positions():
     for index, slide in enumerate(SLIDES):
         if slide.layout == "opener":
             assert lap_position(index) == CORNERS[SECTIONS[slide.section][0]]
-    assert lap_position(21) == (CORNERS["bus_stop"] + CORNERS["finish"]) / 2
+    lim_rows = [s.id for s in SLIDES].index("lim-rows")
+    assert lap_position(lim_rows) == (CORNERS["bus_stop"] + CORNERS["finish"]) / 2
     assert positions[-1] == CORNERS["finish"]
 
 

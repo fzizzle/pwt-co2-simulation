@@ -15,7 +15,9 @@ The assignment sheet asks for "a ppt presentation with a short introduction made
 | Medium | PowerPoint (`.pptx`), 16:9 | Assignment sheet: "a ppt presentation" |
 | Required content | general approach; vehicle comparison including highway ("must be done"); NEDC "for information"; weaknesses, improvements and "what is the next step?"; one personal study per student | Assignment sheet, rules file |
 
-## Running order (23 slides)
+## Running order (23 slides; 28 since 27 November 2026)
+
+On 27 November 2026 the Study A owner added a method slide and a glossary after the Study A opener (`A-steps`, `A-terms`), and a closing slide to every study (`A-end`, `B-end`, `C-end`). The numbers below are the original order. Check the 15-minute limit with the group: 28 slides is about 32 s each.
 
 The mockup `docs/superpowers/specs/deck-mockups/png/` and `mock16.py` show this order slide by slide.
 
