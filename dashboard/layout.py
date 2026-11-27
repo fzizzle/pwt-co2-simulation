@@ -133,8 +133,6 @@ def render_run_notices(*runs: pd.Series) -> None:
 def inject_css(pal: Palette) -> None:
     """Apply deck typography, tabular numerals, WCAG-AA active controls, and card tokens."""
     is_dark = pal.name == "dark"
-    active_bg = "#2c2c2e" if is_dark else "#1d1d1f"
-    active_fg = "#f5f5f7" if is_dark else "#ffffff"
     link_fg = "#6eb4fa" if is_dark else "#1f63a8"
     badge_wb_fg = "#e2b36a" if is_dark else "#7a5210"
     badge_model_fg = "#7bb4ec" if is_dark else "#1b5594"
@@ -148,25 +146,34 @@ def inject_css(pal: Palette) -> None:
         .stMetricValue, [data-testid="stMetricValue"], .pwt-tabular {{
             font-variant-numeric: tabular-nums;
         }}
-        /* High-contrast active segmented controls and pills (WCAG AA >= 4.5:1). */
-        [data-testid="stBaseButton-segmented_controlActive"],
-        [data-testid="stBaseButton-pillsActive"],
-        button[kind="segmented_controlActive"],
-        button[kind="pillsActive"] {{
-            background-color: {active_bg} !important;
-            color: {active_fg} !important;
+        /* Active segmented controls and pills, filled with the accent and its own ink.
+           Selectors come from the live Streamlit 1.66 DOM: the selected button carries
+           data-variant and aria-checked, not a `kind` attribute. */
+        .stApp button[data-variant="segmented_control"][aria-checked="true"],
+        .stApp button[data-variant="pills"][aria-checked="true"] {{
+            background-color: {pal.primary} !important;
+            color: {pal.primary_ink} !important;
             border-color: {pal.primary} !important;
             font-weight: 600 !important;
         }}
-        /* Multiselect tags: white text on accessible primaryColor (>= 4.5:1). */
-        span[data-baseweb="tag"] {{
-            background-color: {pal.primary} !important;
-            color: #ffffff !important;
+        /* Multiselect chips: Streamlit fills them with primaryColor but forces white text,
+           which is unreadable on silver. Give the chip, its label and its close icon the ink. */
+        [data-testid="stMultiSelectTagsContainer"] [data-tag],
+        [data-testid="stMultiSelectTagsContainer"] [data-tag] * {{
+            background-color: {pal.primary};
+            color: {pal.primary_ink} !important;
+            fill: {pal.primary_ink} !important;
         }}
-        span[data-baseweb="tag"] span,
-        span[data-baseweb="tag"] svg {{
-            color: #ffffff !important;
-            fill: #ffffff !important;
+        [data-testid="stMultiSelectTagsContainer"] [data-tag] * {{
+            background-color: transparent;
+        }}
+        /* Inline code (file names, formulas) in quiet greys instead of Streamlit's green. */
+        .stApp code {{
+            background-color: {pal.surface_raised} !important;
+            color: {pal.text_secondary} !important;
+            border: 1px solid {pal.border};
+            border-radius: 5px;
+            padding: 1px 5px;
         }}
         /* Keep caption hyperlinks at full contrast instead of inheriting 0.6 opacity. */
         [data-testid="stCaptionContainer"] {{

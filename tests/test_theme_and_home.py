@@ -23,6 +23,8 @@ from dashboard.theme import (
     POWERTRAIN_DASHES,
     POWERTRAIN_MARKERS,
     POWERTRAIN_ORDER,
+    ACCENT,
+    ACCENT_INK,
     plotly_template,
     style_axes,
 )
@@ -82,7 +84,8 @@ def test_dark_and_light_surfaces_match_deck():
     assert LIGHT.text_primary.lower() == "#1d1d1f"
 
 
-def test_config_toml_defines_deck_dark_and_light_twins():
+def test_config_toml_pins_dark_with_no_light_twin():
+    """Owner decision D1: dark for every viewer, so no [theme.light] for Streamlit to follow."""
     cfg = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     theme = cfg["theme"]
     assert theme["base"] == "dark"
@@ -96,11 +99,7 @@ def test_config_toml_defines_deck_dark_and_light_twins():
     assert dark["textColor"].lower() == "#f5f5f7"
     assert dark["borderColor"].lower() == "#2c2c2e"
 
-    light = theme["light"]
-    assert light["backgroundColor"].lower() == "#ffffff"
-    assert light["secondaryBackgroundColor"].lower() == "#f5f5f7"
-    assert light["textColor"].lower() == "#1d1d1f"
-    assert light["borderColor"].lower() == "#e5e5ea"
+    assert "light" not in theme
 
 
 @pytest.mark.parametrize("pal", [DARK, LIGHT], ids=["dark", "light"])
@@ -109,23 +108,60 @@ def test_palette_ink_and_primary_meet_wcag_aa(pal):
         assert _contrast_ratio(pal.text_primary, surface) >= 4.5
         assert _contrast_ratio(pal.text_secondary, surface) >= 4.5
         assert _contrast_ratio(pal.text_muted, surface) >= 4.5
-    # Primary must meet AA both against main surface and under white tag/button text.
+    # The accent fills chips and active controls; its own ink sits on it.
     assert _contrast_ratio(pal.primary, pal.surface) >= 4.5
-    assert _contrast_ratio("#ffffff", pal.primary) >= 4.5
+    assert _contrast_ratio(pal.primary_ink, pal.primary) >= 4.5
 
 
 def test_config_primary_and_links_meet_wcag_aa():
     cfg = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-    for mode in ("dark", "light"):
-        section = cfg["theme"][mode]
+    for section in (cfg["theme"], cfg["theme"]["dark"]):
         primary = section["primaryColor"]
         bg = section["backgroundColor"]
         raised = section["secondaryBackgroundColor"]
         link = section["linkColor"]
-        assert _contrast_ratio("#ffffff", primary) >= 4.5, f"{mode} white on primary"
-        assert _contrast_ratio(primary, bg) >= 4.5, f"{mode} primary on bg"
-        assert _contrast_ratio(link, bg) >= 4.5, f"{mode} link on bg"
-        assert _contrast_ratio(link, raised) >= 4.5, f"{mode} link on raised"
+        assert _contrast_ratio(ACCENT_INK, primary) >= 4.5, "ink on primary"
+        assert _contrast_ratio(primary, bg) >= 4.5, "primary on bg"
+        assert _contrast_ratio(link, bg) >= 4.5, "link on bg"
+        assert _contrast_ratio(link, raised) >= 4.5, "link on raised"
+
+
+def test_accent_is_not_a_powertrain_colour():
+    cfg = tomllib.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    cars = {c.lower() for c in CAR_COLOURS.values()}
+    assert ACCENT.lower() == "#d1d1d6"
+    assert ACCENT.lower() not in cars
+    assert cfg["theme"]["primaryColor"].lower() == ACCENT.lower()
+    assert cfg["theme"]["dark"]["primaryColor"].lower() == ACCENT.lower()
+    for pal in (DARK, LIGHT):
+        assert pal.primary.lower() not in cars
+
+
+def test_accent_contrast():
+    assert _contrast_ratio(ACCENT, "#000000") >= 4.5
+    assert _contrast_ratio(ACCENT_INK, ACCENT) >= 4.5
+
+
+@pytest.mark.parametrize("pal", [DARK, LIGHT], ids=["dark", "light"])
+def test_css_paints_active_controls_with_the_accent_and_tames_code(pal, monkeypatch):
+    from dashboard import layout
+
+    seen = []
+    monkeypatch.setattr(layout.st, "html", lambda body: seen.append(body))
+    layout.inject_css(pal)
+    css = "".join(seen)
+    # Selectors taken from the live Streamlit 1.66 DOM (27 Nov 2026): the active segmented
+    # control is button[data-variant=...][aria-checked="true"] (no `kind` attribute), and a
+    # multiselect chip is span[data-tag] inside stMultiSelectTagsContainer.
+    assert "segmented_controlActive" not in css
+    active = css.split('button[data-variant="segmented_control"][aria-checked="true"]', 1)[1]
+    active = active.split("}", 1)[0]
+    assert f"background-color: {pal.primary}" in active
+    assert f"color: {pal.primary_ink}" in active
+    chip = css.split('[data-testid="stMultiSelectTagsContainer"] [data-tag]', 1)[1].split("}", 1)[0]
+    assert f"color: {pal.primary_ink}" in chip
+    assert ".stApp code" in css
+    assert pal.primary in css and pal.primary_ink in css
 
 
 def test_cvd_redundancy_separates_bev_and_phev():
