@@ -57,6 +57,44 @@ def line_chart(rows: pd.DataFrame, variant: str, column: str, y_title: str,
     return fig
 
 
+#: The setting each variant starts from: baseline tyres, no spoiler.
+BASELINE_SETTING = {"grip": 1.0, "spoiler": 0.0}
+
+
+def response_chart(rows: pd.DataFrame, variant: str, grid: str, powertrain: str,
+                   pal: Palette) -> go.Figure:
+    """Lap time and CO₂ against the same setting, in two short rows on one shared axis.
+
+    A dotted line marks the baseline setting. Hollow markers cannot follow the lap
+    (provisional), as in `line_chart`.
+    """
+    from plotly.subplots import make_subplots
+
+    x_column, x_title, _ = VARIANTS[variant]
+    colour = pal.for_powertrain(powertrain)
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08)
+    for row, (column, title) in enumerate(
+        (("lap_time_s", "Lap time (s)"), (grid, "CO₂ (g CO₂/km)")), start=1
+    ):
+        fig.add_scatter(
+            x=rows[x_column].tolist(), y=rows[column].tolist(), mode="lines+markers",
+            name=title, showlegend=False,
+            line=dict(color=colour, width=2.5),
+            marker=dict(color=colour, size=10, line=dict(color=pal.text_primary, width=1.5),
+                        symbol=["circle-open" if short else "circle" for short in infeasible(rows)]),
+            customdata=rows[["short_steps", "short_kw"]].to_numpy(),
+            hovertemplate=f"%{{x}}<br>{title}: %{{y:.1f}}<br>Short steps: %{{customdata[0]:.0f}}"
+                          "<br>Worst shortfall: %{customdata[1]:.2f} kW<extra></extra>",
+            row=row, col=1,
+        )
+        fig.update_yaxes(title_text=title, row=row, col=1)
+        fig.add_vline(x=BASELINE_SETTING[variant], line=dict(color=pal.axis, width=1, dash="dot"),
+                      row=row, col=1)
+    style_axes(fig, pal, x_title=x_title)
+    fig.update_layout(height=460)
+    return fig
+
+
 def comparison_table(rows: pd.DataFrame, variant: str, grid: str) -> pd.DataFrame:
     x_column, x_title, _ = VARIANTS[variant]
     table = pd.DataFrame({

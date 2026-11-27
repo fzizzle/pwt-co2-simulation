@@ -128,11 +128,11 @@ st.markdown(f"Each cell is one full hybrid. Both maps share a scale, capped at "
             f"{HEAT_MAX_PCT:.0f} % above the best, so the pale map really is flatter.")
 left, right = st.columns(2)
 left.markdown("**WLTC: every buildable size is within 11 % of the best**")
-left.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=True),
-                  width="stretch", theme=None)
+with left:
+    show_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=True))
 right.markdown(f"**{CYCLES['franco_sport_generated']}: the spread reaches 27 %**")
-right.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "franco_sport_generated"], pal),
-                   width="stretch", theme=None)
+with right:
+    show_chart(size_heatmap(hybrid[hybrid["cycle"] == "franco_sport_generated"], pal))
 st.caption(
     f"The lap's best size sits where the 80 kW grid edge meets the {MAX_C_RATE:.0f}C limit, so it "
     "marks those limits rather than a free optimum. Engine check: "
@@ -202,22 +202,18 @@ ymax = max(
 ) * 1.1
 left, right = st.columns(2)
 left.markdown("**WLTC: R101 weighting keeps rewarding range**")
-left.plotly_chart(
-    phev_lines(
+with left:
+    show_chart(phev_lines(
         eu_wltc, fr_wltc, ymax, (20.0, "Still falling at<br>the grid edge"), pal,
         eu_feasible=eu_wltc_feas, fr_feasible=fr_wltc_feas,
-    ),
-    width="stretch", theme=None,
-)
+    ))
 left.caption(_selection_caption(phev_wltc_sel, eu_wltc))
 right.markdown("**One Francorchamps sport lap: past 6 kWh, a battery is only mass**")
-right.plotly_chart(
-    phev_lines(
+with right:
+    show_chart(phev_lines(
         eu_sport, fr_sport, ymax, (6.0, "Enough for<br>the whole lap"), pal,
         eu_feasible=eu_sport_feas, fr_feasible=fr_sport_feas,
-    ),
-    width="stretch", theme=None,
-)
+    ))
 right.caption(_selection_caption(phev_sport_sel, eu_sport))
 
 # --- tables -----------------------------------------------------------------------------------

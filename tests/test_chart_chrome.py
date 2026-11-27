@@ -34,7 +34,8 @@ def test_no_direct_plotly_chart_calls():
     for path in (ROOT / "dashboard").rglob("*.py"):
         if path.name == "layout.py":
             continue
-        if re.search(r"\bst\.plotly_chart\(", path.read_text(encoding="utf-8")):
+        # Any container's .plotly_chart, not just st.plotly_chart: left.plotly_chart(...) too.
+        if re.search(r"\.plotly_chart\(", path.read_text(encoding="utf-8")):
             offenders.append(path.relative_to(ROOT).as_posix())
     assert offenders == []
 

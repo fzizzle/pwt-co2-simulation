@@ -14,7 +14,7 @@ import pandas as pd
 import streamlit as st
 
 from dashboard.cornering_charts import (
-    CO2, VARIANTS, baseline_row, comparison_table, infeasible, line_chart, rows_for,
+    CO2, VARIANTS, baseline_row, comparison_table, infeasible, response_chart, rows_for,
 )
 from dashboard.layout import configure, download, rounded, show_chart
 from pwt.catalog import POWERTRAIN_NAMES
@@ -84,8 +84,7 @@ with explore:
     elif infeasible(rows).any():
         st.warning("Some variants cannot follow their lap. Their rows are marked as provisional "
                    "and drawn with hollow markers.")
-    show_chart(line_chart(rows, variant, "lap_time_s", "Lap time (s)", powertrain, pal))
-    show_chart(line_chart(rows, variant, grid, "CO₂ emissions (g CO₂/km)", powertrain, pal))
+    show_chart(response_chart(rows, variant, grid, powertrain, pal))
     st.caption("Hollow markers cannot follow the lap at the engine's full-load power (provisional).")
     numbers = comparison_table(rows, variant, grid)
     st.dataframe(rounded(numbers), width="stretch", hide_index=True)
