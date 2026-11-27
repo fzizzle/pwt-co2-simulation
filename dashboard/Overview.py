@@ -1,4 +1,4 @@
-"""The app's entry point: the menu, in three labelled groups.
+"""The app's entry point: Home plus the menu in three labelled groups.
 
 Run with: `streamlit run dashboard/Overview.py`. The file keeps its old name so the hosted app's
 entry point does not change; the pages themselves are in `views/`.
@@ -19,21 +19,23 @@ import streamlit as st
 
 PAGES = Path(__file__).resolve().parent / "views"
 
-#: The workbooks' figures as reported, what `pwt.model` computes, then the studies' reports.
+#: Landing page, then the workbooks' figures as reported, `pwt.model`, and the studies' reports.
 MENU = {
-    "The workbooks": [
-        st.Page(PAGES / "1_Overview.py", title="Overview", url_path="overview",
-                default=True),
+    "": [
+        st.Page(PAGES / "0_Home.py", title="Home", url_path="home", default=True),
+    ],
+    "Workbooks": [
+        st.Page(PAGES / "1_Overview.py", title="Overview", url_path="overview"),
         st.Page(PAGES / "2_Category_View.py", title="Category view", url_path="category-view"),
         st.Page(PAGES / "3_Trace_Explorer.py", title="Trace explorer", url_path="trace-explorer"),
         st.Page(PAGES / "4_Compare.py", title="Compare", url_path="compare"),
         st.Page(PAGES / "5_Data.py", title="Data", url_path="data"),
     ],
-    "The model": [
+    "Model": [
         st.Page(PAGES / "6_Model.py", title="Model", url_path="model"),
         st.Page(PAGES / "8_Track_Map.py", title="Track map", url_path="track-map"),
     ],
-    "The reports": [
+    "Studies": [
         st.Page(PAGES / "7_Sizing.py", title="Hybrid sizing", url_path="sizing"),
         st.Page(PAGES / "9_CO2_Sensitivity.py", title="CO₂ sensitivity",
                 url_path="co2-sensitivity"),

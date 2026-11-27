@@ -134,22 +134,24 @@ def test_loaders_recovers_from_a_stale_pwt_workbook(monkeypatch):
 
 
 def test_gap_bars_are_labelled_rather_than_showing_a_zero(runs):
-    """A zero-height bar with "0.000" beside it reads as a result; it must say so instead."""
+    """A zero-height bar with "0.000" beside it reads as a result; it must carry the gap mark."""
     gaps = {("phev", "nedc")}
     fig = charts.grouped_totals(runs, "co2_g_per_km", DARK, unit="g", gaps=gaps)
     phev = next(b for b in fig.data if b.name == "Plug-in hybrid")
     labels = list(phev.text)
-    assert "electricity not counted" in labels
-    assert labels.count("electricity not counted") == 1  # only the flagged cycle
+    assert charts.GAP_MARKER in labels
+    assert labels.count(charts.GAP_MARKER) == 1  # only the flagged cycle
+    assert any(charts.GAP_LABEL in (a.text or "") for a in fig.layout.annotations)
     # the other powertrains are untouched
     petrol = next(b for b in fig.data if b.name == "Petrol")
-    assert "electricity not counted" not in petrol.text
+    assert charts.GAP_MARKER not in petrol.text
 
 
 def test_no_gap_labels_when_none_are_flagged(runs):
     fig = charts.grouped_totals(runs, "co2_g_per_km", DARK, unit="g")
     for bar in fig.data:
-        assert "electricity not counted" not in list(bar.text)
+        assert charts.GAP_MARKER not in list(bar.text)
+        assert charts.GAP_LABEL not in list(bar.text)
 
 
 def test_varying_parameters_lists_only_what_differs(runs):

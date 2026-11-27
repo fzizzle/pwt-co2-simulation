@@ -44,11 +44,11 @@ def test_one_run_renders(app, powertrain, cycle, tiles):
 
 def test_the_page_opens_on_a_lap_with_its_map():
     app = AppTest.from_file(MODEL, default_timeout=180).run()
-    assert [b.label for b in app.button_group] == ["Paint the track with"]
+    assert [b.label for b in app.button_group] == ["Map colour"]
 
 
 def test_the_map_comes_with_laps_only(app):
     app.selectbox(key="model_cycle").set_value("franco_eco").run()
-    assert [b.label for b in app.button_group] == ["Paint the track with"]
+    assert [b.label for b in app.button_group] == ["Map colour"]
     app.selectbox(key="model_cycle").set_value("wltc").run()
     assert not app.exception and not app.button_group

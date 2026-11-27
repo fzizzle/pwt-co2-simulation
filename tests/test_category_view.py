@@ -33,14 +33,12 @@ def test_page_renders():
 
 def test_powertrain_category_shows_three_runs():
     app = run("Powertrain", "petrol")
-    text = " ".join(m.value for m in app.markdown) + " ".join(c.value for c in app.caption)
-    assert "3 runs" in text
+    assert len(app.dataframe[0].value) == 3
 
 
 def test_cycle_category_shows_four_runs():
     app = run("Cycle", "nedc")
-    text = " ".join(m.value for m in app.markdown) + " ".join(c.value for c in app.caption)
-    assert "4 runs" in text
+    assert len(app.dataframe[0].value) == 4
 
 
 def test_all_sport_is_reachable_through_the_cycle_category():
@@ -48,22 +46,22 @@ def test_all_sport_is_reachable_through_the_cycle_category():
     app = run("Cycle", "franco_sport")
     table = app.dataframe[0].value
     assert len(table) == 4
-    assert "Petrol" in set(table["Run"])
-    assert "Plug-in hybrid" in set(table["Run"])
+    assert "Petrol" in set(table["Powertrain"])
+    assert "Plug-in hybrid" in set(table["Powertrain"])
 
 
 def test_totals_table_carries_every_canonical_figure():
     app = run("Powertrain", "petrol")
     table = app.dataframe[0].value
-    for heading in ("CO₂ per km (g CO₂/km)", "Fuel consumption (l/100 km)"):
+    for heading in ("CO₂ emissions (g CO₂/km)", "Fuel consumption (l/100 km)"):
         assert heading in table.columns
 
 
 def test_petrol_category_shows_the_workbook_figures():
     app = run("Powertrain", "petrol")
-    table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.7"
-    assert table.loc["NEDC", "CO₂ per km (g CO₂/km)"] == "158.3"
+    table = app.dataframe[0].value.set_index("Cycle")
+    assert table.loc["Francorchamps — eco", "CO₂ emissions (g CO₂/km)"] == "245.7"
+    assert table.loc["NEDC", "CO₂ emissions (g CO₂/km)"] == "158.3"
 
 
 def test_incomplete_run_is_flagged_in_its_categories():
@@ -119,10 +117,10 @@ def test_figures_table_shows_a_dash_not_none_for_an_unreported_figure():
 def test_figures_table_marks_the_known_gap():
     """The NEDC plug-in hybrid has no fuel data; its zeros must not read as results."""
     app = run("Cycle", "nedc")
-    table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Plug-in hybrid", "CO₂ per km (g CO₂/km)"] == "0 — electricity not counted"
+    table = app.dataframe[0].value.set_index("Powertrain")
+    assert table.loc["Plug-in hybrid", "CO₂ emissions (g CO₂/km)"] == "0 — electricity not counted"
     # a complete run in the same table is untouched
-    assert table.loc["Petrol", "CO₂ per km (g CO₂/km)"] == "158.3"
+    assert table.loc["Petrol", "CO₂ emissions (g CO₂/km)"] == "158.3"
 
 
 def test_overlay_opens_on_the_laps_against_distance():
@@ -134,15 +132,15 @@ def test_overlay_opens_on_the_laps_against_distance():
 
 def test_figures_table_rounds_to_one_decimal():
     app = run("Powertrain", "petrol")
-    table = app.dataframe[0].value.set_index("Run")
-    assert table.loc["Francorchamps — eco", "CO₂ per km (g CO₂/km)"] == "245.7"
+    table = app.dataframe[0].value.set_index("Cycle")
+    assert table.loc["Francorchamps — eco", "CO₂ emissions (g CO₂/km)"] == "245.7"
     assert table.loc["Francorchamps — eco", "Fuel consumption (l/100 km)"] == "10.3"
 
 
 def test_varying_table_explains_its_blanks():
     app = run("Cycle", "nedc")
     captions = " ".join(c.value for c in app.caption)
-    assert "absent from" in captions
+    assert "does not report" in captions
 
 
 def test_page_requests_dashes_only_for_a_powertrain_category(monkeypatch):

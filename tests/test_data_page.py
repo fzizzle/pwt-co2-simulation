@@ -57,7 +57,7 @@ def test_empty_selection_explains_itself():
     app = run("Totals")
     app.multiselect[0].set_value([]).run()
     assert not app.exception, [e.value for e in app.exception]
-    assert any("Nothing matches" in i.value for i in app.info)
+    assert any("No rows match" in i.value for i in app.info)
 
 
 def test_display_names_not_internal_codes():

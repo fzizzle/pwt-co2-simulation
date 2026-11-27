@@ -113,7 +113,7 @@ def test_trace_explorer_maps_laps_only():
     for i, option in enumerate(box.options):
         app.selectbox(key="trace_run").select_index(i).run()
         assert not app.exception, [e.value for e in app.exception]
-        painted = any(b.label == "Paint the track with" for b in app.button_group)
+        painted = any(b.label == "Map colour" for b in app.button_group)
         assert painted == ("Francorchamps" in option)
 
 

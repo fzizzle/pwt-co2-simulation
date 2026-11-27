@@ -85,7 +85,7 @@ def test_overview_flags_the_missing_nedc_phev_data():
     assert "Plug-in hybrid" in warnings
     # one sentence in the banner; the explanation sits behind a toggle
     assert len(warnings) < 200
-    assert any(e.label == "Why" for e in app.expander)
+    assert any(e.label == "Electricity accounting" for e in app.expander)
 
     # and the cell itself carries the label, not just the banner
     matrix = app.dataframe[0].value
@@ -124,7 +124,7 @@ def test_trace_explorer_handles_a_bev_with_no_gear_column():
     app.selectbox(key="trace_run").set_value(run_index("bev", "franco_eco")).run()
     assert not app.exception, [e.value for e in app.exception]
     captions = " ".join(c.value for c in app.caption)
-    assert "no gear column" in captions
+    assert "no gear data" in captions
 
 
 def test_trace_explorer_handles_the_zeroed_nedc_phev():
@@ -164,7 +164,7 @@ def test_compare_avoids_percentage_change_from_zero():
     app.selectbox(key="cmp_left").set_value(run_index("phev", "nedc")).run()
     app.selectbox(key="cmp_right").set_value(run_index("petrol", "nedc")).run()
     assert not app.exception, [e.value for e in app.exception]
-    changes = app.dataframe[0].value["Change"].tolist()
+    changes = app.dataframe[0].value["Change from left (%)"].tolist()
     assert not any(isinstance(c, float) for c in changes)
     assert "inf" not in " ".join(str(c) for c in changes).lower()
 
@@ -190,17 +190,14 @@ def test_compare_says_when_two_runs_share_a_trace():
 
 
 def test_overview_defines_every_cycle():
-    """Each cycle gets a definition plus facts measured from the files, not quoted."""
+    """Each cycle gets a plain definition without computed summary statistics."""
     app = run(OVERVIEW)
     text = " ".join(m.value for m in app.markdown)
     assert "New European Driving Cycle" in text
     assert "Spa-Francorchamps" in text
 
     captions = " ".join(c.value for c in app.caption)
-    assert "In these files:" in captions
-    # NEDC is flat and spends a large share of its steps stationary; the lap is neither.
-    assert "flat" in captions
-    assert "elevation range" in captions
+    assert "In these files:" not in captions
 
 
 def test_nedc_distance_is_not_offered_as_an_axis():
@@ -213,7 +210,7 @@ def test_nedc_distance_is_not_offered_as_an_axis():
     assert "Distance (m)" not in axis_options
     assert "Time (s)" in axis_options
     captions = " ".join(c.value for c in app.caption)
-    assert "recorded per step in this workbook rather than cumulatively" in captions
+    assert "recorded per step rather than cumulatively" in captions
 
 
 def test_francorchamps_distance_is_offered_as_an_axis():
@@ -288,9 +285,10 @@ def test_compare_and_category_view_agree_on_what_differs():
 
 
 def test_entry_point_opens_on_the_overview():
-    """The hosted app starts from `dashboard/Overview.py`; it must land on the Overview page."""
+    """The hosted app starts from `dashboard/Overview.py`; it lands on the Home page."""
     app = run(ENTRY)
-    assert app.title[0].value == run(OVERVIEW).title[0].value
+    html_text = " ".join(getattr(h, "value", "") or getattr(h, "body", "") for h in app.html)
+    assert "Four cars. Four cycles." in html_text
 
 
 def test_menu_has_the_three_groups():
@@ -302,7 +300,7 @@ def test_menu_has_the_three_groups():
         if isinstance(node, ast.AnnAssign) and getattr(node.target, "id", "") == "MENU"
         or isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "MENU"
     )
-    assert [k.value for k in menu.keys] == ["The workbooks", "The model", "The reports"]
+    assert [k.value for k in menu.keys if k.value] == ["Workbooks", "Model", "Studies"]
     pages = sorted(p.name for p in (ROOT / "dashboard" / "views").glob("*.py"))
     assert source.count("st.Page(") == len(pages)
     for name in pages:
@@ -310,12 +308,12 @@ def test_menu_has_the_three_groups():
 
 
 def test_reports_have_their_own_group():
-    """Study pages sit under *The reports*, apart from the model pages, with a descriptive name."""
+    """Study pages sit under *Studies*, apart from the model pages, with a descriptive name."""
     source = Path(ENTRY).read_text(encoding="utf-8")
-    model, reports = source.split('"The model"')[1].split('"The reports"')
+    model, studies = source.split('"Model":')[1].split('"Studies":')
     for page, title in [("7_Sizing.py", "Hybrid sizing"), ("9_CO2_Sensitivity.py", "CO₂ sensitivity"),
                         ("10_Cornering_Speed.py", "Cornering speed")]:
-        assert page in reports and page not in model
-        assert f'title="{title}"' in reports
+        assert page in studies and page not in model
+        assert f'title="{title}"' in studies
     assert 'title="Study B"' not in source
     assert 'title="Study C"' not in source

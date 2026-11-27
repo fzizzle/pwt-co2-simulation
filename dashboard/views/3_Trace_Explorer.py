@@ -13,12 +13,14 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    WB_TRACE_RUN_KEY,
     X_LABELS,
     configure,
     download,
     render_run_notices,
     run_label,
     run_picker,
+    sidebar_reset_button,
     source_caption,
 )
 from dashboard.labels import column as column_label
@@ -33,37 +35,32 @@ from dashboard.loaders import (
 from dashboard.theme import style_axes
 from dashboard.track_charts import is_lap, lap_section, mark_corners
 
-pal = configure("Trace Explorer")
+pal = configure("Trace explorer")
 runs = load_runs()
 
-st.title("Trace Explorer")
-st.markdown(
-    "Every step of one run. The Francorchamps laps are 32 variable-length segments; the NEDC "
-    "runs are around 105 steps. Hover any chart for exact values."
-)
+st.title("Trace explorer")
 
 # --- controls -------------------------------------------------------------------------------
 
-st.sidebar.subheader("Run")
-row = run_picker(runs, "Run to explore", key="trace_run", index=0)
+row = run_picker(runs, "Run", key="trace_run", index=0, persist_key=WB_TRACE_RUN_KEY)
+sidebar_reset_button()
 trace = trace_for(row["powertrain"], row["cycle"])
 
 if trace.empty:
-    st.warning("This workbook has no per-step data.")
+    st.warning("This workbook has no trace data.")
     st.stop()
 
 available = numeric_trace_columns(trace)
 x_options = axis_columns(trace)
-st.sidebar.subheader("Axis")
 x_column = st.sidebar.selectbox(
-    "Plot against", options=x_options, format_func=lambda c: X_LABELS[c]
+    "X-axis", options=x_options, format_func=lambda c: X_LABELS[c]
 )
 x_label = X_LABELS[x_column]
 
 for excluded in ("distance_m", "time_s"):
     reason = axis_exclusion_reason(trace, excluded)
     if reason:
-        st.sidebar.caption(f"Not offered as an axis: {reason}")
+        st.sidebar.caption(reason)
 if x_column == "step":
     trace = trace.assign(step=range(len(trace)))
 
@@ -73,7 +70,7 @@ on_lap = is_lap(row["cycle"]) and "distance_m" in x_options
 
 # --- the three standing views ---------------------------------------------------------------
 
-st.subheader("Speed and elevation")
+st.subheader("Speed and altitude")
 fig = charts.speed_and_altitude(trace, x_column, pal)
 style_axes(fig, pal, x_title=x_label)
 fig.update_layout(height=420)
@@ -82,8 +79,8 @@ if on_lap:
 st.plotly_chart(fig, width="stretch", theme=None)
 
 if on_lap:
-    st.subheader("On the circuit")
-    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal)
+    st.subheader("Circuit map")
+    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal, source="workbook")
 
 left, right = st.columns(2)
 
@@ -98,9 +95,7 @@ with left:
         st.plotly_chart(fig, width="stretch", theme=None)
     else:
         st.subheader("Gear")
-        st.caption(
-            "This workbook has no gear column — the electric runs use a single reduction ratio."
-        )
+        st.caption("This workbook has no gear data.")
 
 with right:
     st.subheader("Forces")
@@ -111,13 +106,13 @@ with right:
         mark_corners(fig, trace, x_column, pal, labels=False)
     st.plotly_chart(fig, width="stretch", theme=None)
     st.caption(
-        "Overlaid rather than stacked: both components are signed in the supplied data — "
-        "acceleration force goes negative under braking, resistive force downhill."
+        "Acceleration force can be negative during braking. "
+        "Resistive force can be negative on descents."
     )
 
 # --- free-form column picker ----------------------------------------------------------------
 
-st.subheader("Any column")
+st.subheader("Trace columns")
 default = [c for c in ("engine_power_w",) if c in available] or available[:1]
 columns = st.multiselect(
     "Columns to plot", options=available, default=default, label_visibility="collapsed",
@@ -133,14 +128,13 @@ if columns:
     st.plotly_chart(fig, width="stretch", theme=None)
     if len(columns) > 1:
         st.caption(
-            "One shared y-axis. Columns of very different magnitude are easier to read one at "
-            "a time than on two scales."
+            "Selected columns share one scale. Plot columns with different units separately."
         )
 else:
-    st.caption("Pick one or more columns to plot.")
+    st.caption("Select at least one column.")
 
 # --- the table ------------------------------------------------------------------------------
 
-with st.expander(f"All {len(trace)} steps, as a table"):
+with st.expander(f"Trace table ({len(trace)} steps)"):
     st.dataframe(readable(trace), width="stretch", hide_index=True)
-    download(trace, f"trace-{row['powertrain']}-{row['cycle']}.csv")
+    download(trace, f"trace-{row['powertrain']}-{row['cycle']}.csv", "Download trace (CSV)")
