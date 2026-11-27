@@ -81,24 +81,6 @@ figures = pd.DataFrame(records)
 st.dataframe(figures, width="stretch", hide_index=True)
 st.caption("Figures as each workbook reports them. A dash marks a figure the workbook does not report.")
 
-# --- inputs that differ ---------------------------------------------------------------------
-
-st.subheader("Parameter differences")
-pair = pd.concat([left_row.to_frame().T, right_row.to_frame().T], ignore_index=True)
-differences = varying_parameters(pair)
-if not differences.empty:
-    differences = differences.drop(columns="Distinct values")
-
-if differences.empty:
-    st.caption("The workbooks report the same parameters and values.")
-else:
-    shown = differences.copy()
-    for name in (left_name, right_name):
-        shown[name] = shown[name].map(number)  # a missing parameter reads "—", never None
-    st.dataframe(shown, width="stretch", hide_index=True)
-    st.caption("A dash marks a parameter the workbook does not report.")
-    download(differences, "parameter-differences.csv", "Download parameter differences (CSV)")
-
 # --- one trace column, overlaid --------------------------------------------------------------
 
 st.subheader("Trace comparison")
@@ -160,3 +142,21 @@ laps = {name: t for name, t, r in ((left_name, left_trace, left_row),
 if laps:
     st.subheader("Circuit map")
     lap_section(laps, "compare", pal, source="workbook")
+
+# --- inputs that differ ---------------------------------------------------------------------
+
+st.subheader("Parameter differences")
+pair = pd.concat([left_row.to_frame().T, right_row.to_frame().T], ignore_index=True)
+differences = varying_parameters(pair)
+if not differences.empty:
+    differences = differences.drop(columns="Distinct values")
+
+if differences.empty:
+    st.caption("The workbooks report the same parameters and values.")
+else:
+    shown = differences.copy()
+    for name in (left_name, right_name):
+        shown[name] = shown[name].map(number)  # a missing parameter reads "—", never None
+    st.dataframe(shown, width="stretch", hide_index=True)
+    st.caption("A dash marks a parameter the workbook does not report.")
+    download(differences, "parameter-differences.csv", "Download parameter differences (CSV)")

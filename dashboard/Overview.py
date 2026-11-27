@@ -22,7 +22,7 @@ PAGES = Path(__file__).resolve().parent / "views"
 #: Landing page, then the workbooks' figures as reported, `pwt.model`, and the studies' reports.
 MENU = {
     "": [
-        st.Page(PAGES / "0_Home.py", title="Home", url_path="home", default=True),
+        st.Page(PAGES / "0_Home.py", title="Home", default=True),
     ],
     "Workbooks": [
         st.Page(PAGES / "1_Overview.py", title="Overview", url_path="overview"),

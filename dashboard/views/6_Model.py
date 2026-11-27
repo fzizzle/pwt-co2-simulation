@@ -217,9 +217,6 @@ st.caption(
     "hybrid's NEDC and WLTC rows weight its charge-depleting and charge-sustaining runs."
 )
 co2_table, feas_table, long_frame = comparison()
-table = co2_table.rename(columns=SCENARIO_LABELS)
-st.dataframe(table, width="stretch", hide_index=True, height=len(table) * 35 + 38)
-download(table, "pwt-model-scenarios.csv")
 
 bar_scenario = st.selectbox(
     "Scenario chart",
@@ -234,14 +231,20 @@ if bar_scenario == "exact":
 else:
     st.caption("g CO₂/km, EU grid 250 g/kWh · * outlined: engine short of the trace on some steps")
 
-st.markdown("**Engine capability check (short steps and worst shortfall)**")
-feas_display = feas_table.rename(columns=SCENARIO_LABELS)
-st.dataframe(feas_display, width="stretch", hide_index=True, height=len(feas_display) * 35 + 38)
-download(feas_display, "pwt-model-feasibility.csv")
-st.caption(
-    "Steps where demand exceeds the 74 kW full-load curve and worst shortfall in kW. "
-    "Scenarios without an engine check are labelled unchecked."
-)
+with st.expander("Scenario tables"):
+    table = co2_table.rename(columns=SCENARIO_LABELS)
+    st.dataframe(table, width="stretch", hide_index=True, height=len(table) * 35 + 38)
+    download(table, "pwt-model-scenarios.csv")
+
+    st.markdown("**Engine capability check (short steps and worst shortfall)**")
+    feas_display = feas_table.rename(columns=SCENARIO_LABELS)
+    st.dataframe(feas_display, width="stretch", hide_index=True,
+                 height=len(feas_display) * 35 + 38)
+    download(feas_display, "pwt-model-feasibility.csv")
+    st.caption(
+        "Steps where demand exceeds the 74 kW full-load curve and worst shortfall in kW. "
+        "Scenarios without an engine check are labelled unchecked."
+    )
 
 with st.expander("What each column changes"):
     for scenario, note in SCENARIO_NOTES.items():

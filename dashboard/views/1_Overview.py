@@ -41,50 +41,27 @@ from pwt.catalog import CYCLE_NAMES, POWERTRAIN_NAMES
 pal = configure("Overview")
 runs = load_runs()
 
-# --- header ---------------------------------------------------------------------------------
+# --- header and controls -------------------------------------------------------------------
 
 st.title("Workbook overview")
-st.markdown("Reported results for four powertrains on three cycles.")
+st.html('<span class="pwt-badge pwt-badge-wb">Reported figures, as each workbook gives them</span>')
 
-# --- controls -------------------------------------------------------------------------------
-
-powertrains, cycles = sidebar_filters(runs, key_prefix="overview")
-quantity = measure_picker(st.sidebar, key="wb_measure_overview", widget="radio")
+measure_column, filter_column = st.columns([4, 1], vertical_alignment="bottom")
+quantity = measure_picker(measure_column, key="wb_measure_overview", widget="radio",
+                          horizontal=True)
+with filter_column.popover("Filter runs", width="stretch"):
+    powertrains, cycles = sidebar_filters(runs, key_prefix="overview", container=st)
 display_name, unit = CANONICAL_QUANTITIES[quantity]
 
 selected = runs[runs["powertrain"].isin(powertrains) & runs["cycle"].isin(cycles)]
 if selected.empty:
-    st.info("Select at least one powertrain and one driving cycle.")
+    st.info("No run matches the filters. Open “Filter runs” and pick at least one powertrain "
+            "and one driving cycle.")
     st.stop()
-
-# --- the matrix -----------------------------------------------------------------------------
-
-st.subheader(f"{display_name} ({unit})")
-st.caption("A dash marks a figure the workbook does not report.")
-
-render_run_notices(*(row for _, row in selected.iterrows()))
-
-matrix = (
-    selected.pivot(index="powertrain", columns="cycle", values=quantity)
-    .reindex(index=[p for p in POWERTRAIN_ORDER if p in powertrains])
-    .reindex(columns=[c for c in CYCLE_NAMES if c in cycles])
-    .rename(index=POWERTRAIN_NAMES, columns=CYCLE_NAMES)
-    .rename_axis(index="Powertrain", columns=None)
-)
-# No cell gradient here: it would pull in matplotlib as a runtime dependency, and the
-# grouped bar below already carries the magnitude comparison.
-display = matrix.copy().astype(object)
-for powertrain in matrix.index:
-    for cycle in matrix.columns:
-        code_p = next(k for k, v in POWERTRAIN_NAMES.items() if v == powertrain)
-        code_c = next(k for k, v in CYCLE_NAMES.items() if v == cycle)
-        display.loc[powertrain, cycle] = mark_gap_value(
-            matrix.loc[powertrain, cycle], code_p, code_c
-        )
-st.dataframe(display, width="stretch")
 
 # --- the chart ------------------------------------------------------------------------------
 
+st.subheader(f"{display_name} ({unit})")
 gaps = {
     (row["powertrain"], row["cycle"])
     for _, row in selected.iterrows()
@@ -97,28 +74,51 @@ show_chart(fig)
 if gaps:
     st.caption(f"{charts.GAP_MARKER} {charts.GAP_LABEL}.")
 
+render_run_notices(*(row for _, row in selected.iterrows()))
+
+# --- the matrix -----------------------------------------------------------------------------
+
+matrix = (
+    selected.pivot(index="powertrain", columns="cycle", values=quantity)
+    .reindex(index=[p for p in POWERTRAIN_ORDER if p in powertrains])
+    .reindex(columns=[c for c in CYCLE_NAMES if c in cycles])
+    .rename(index=POWERTRAIN_NAMES, columns=CYCLE_NAMES)
+    .rename_axis(index="Powertrain", columns=None)
+)
+# No cell gradient here: it would pull in matplotlib as a runtime dependency, and the
+# grouped bar above already carries the magnitude comparison.
+display = matrix.copy().astype(object)
+for powertrain in matrix.index:
+    for cycle in matrix.columns:
+        code_p = next(k for k, v in POWERTRAIN_NAMES.items() if v == powertrain)
+        code_c = next(k for k, v in CYCLE_NAMES.items() if v == cycle)
+        display.loc[powertrain, cycle] = mark_gap_value(
+            matrix.loc[powertrain, cycle], code_p, code_c
+        )
+st.dataframe(display, width="stretch")
+st.caption("A dash marks a figure the workbook does not report.")
+
 # --- what the cells contain -----------------------------------------------------------------
 
 notes = data_notes(selected)
 if notes:
-    with st.expander(f"Zero and negative figures ({len(notes)})", expanded=True):
+    with st.expander(f"Zero and negative figures ({len(notes)})"):
         for note in notes:
             st.markdown(f"- {note}")
 
-# --- elevation and cycle context ------------------------------------------------------------
+# --- cycle context --------------------------------------------------------------------------
 
 lap = trace_for("petrol", "franco_eco")
 eco_label = run_label("petrol", "franco_eco")
-strip = elevation_strip(lap, pal)
-if strip is not None:
-    show_chart(strip)
-    st.caption(f"Altitude from the {eco_label} workbook.")
-    with st.expander("Circuit map"):
-        lap_section({eco_label: lap}, "overview", pal, paint="Altitude")
-
 with st.expander("Driving cycles"):
+    strip = elevation_strip(lap, pal)
+    if strip is not None:
+        show_chart(strip)
+        st.caption(f"Spa-Francorchamps altitude, from the {eco_label} workbook.")
     for code, definition in CYCLE_DEFINITIONS.items():
         st.markdown(f"### {CYCLE_NAMES[code]}\n{definition}")
+with st.expander("Circuit map"):
+    lap_section({eco_label: lap}, "overview", pal, paint="Altitude")
 
 # --- the table ------------------------------------------------------------------------------
 

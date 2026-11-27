@@ -292,11 +292,16 @@ def test_home_page_renders_with_wltc_preview_and_links():
     ])
     assert "Four cars. Four cycles." in all_text
     assert "Model output" in all_text
-    # WLTC infeasible runs carry the '*' convention
-    assert "145.1*" in all_text
-    assert "73.6*" in all_text
-    assert "128.8" in all_text
-    assert "45.8" in all_text
+    # The WLTC values sit on the chart; infeasible runs carry the '*' convention.
+    bar_labels = " ".join(
+        str(t) for chart in app.get("plotly_chart")
+        for trace in __import__("json").loads(chart.proto.spec)["data"]
+        for t in (trace.get("text") or [])
+    )
+    assert "145.1*" in bar_labels
+    assert "73.6*" in bar_labels
+    assert "128.8" in bar_labels
+    assert "45.8" in bar_labels
 
 
 def test_entry_point_defaults_to_home():
@@ -304,8 +309,8 @@ def test_entry_point_defaults_to_home():
     assert not app.exception, [e.value for e in app.exception]
     html_text = " ".join(getattr(h, "value", "") or getattr(h, "body", "") for h in app.html)
     assert "Four cars. Four cycles." in html_text
-    # All 10 destination pages across the three groups are linked via st.page_link
-    assert len(app.get("page_link")) == 10
+    # Three task links; the sidebar already lists every page.
+    assert len(app.get("page_link")) == 3
 
 
 def test_overview_nav_caption_and_matrix_above_elevation():

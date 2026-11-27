@@ -390,8 +390,15 @@ def sidebar_reset_button(key_suffix: str = "") -> None:
     )
 
 
-def sidebar_filters(runs: pd.DataFrame, *, key_prefix: str = "wb") -> tuple[list[str], list[str]]:
-    """Powertrain and cycle selection, persisted across workbook pages with a reset."""
+def sidebar_filters(
+    runs: pd.DataFrame, *, key_prefix: str = "wb", container=None
+) -> tuple[list[str], list[str]]:
+    """Powertrain and cycle selection, persisted across workbook pages with a reset.
+
+    The pickers go in `container` (the sidebar by default); the reset button always stays in
+    the sidebar, where every workbook page keeps it.
+    """
+    host = st.sidebar if container is None else container
     valid_pts = list(POWERTRAIN_ORDER)
     valid_cycles = list(CYCLE_NAMES)
     pts_key = f"wb_filter_powertrains_{key_prefix}"
@@ -411,13 +418,13 @@ def sidebar_filters(runs: pd.DataFrame, *, key_prefix: str = "wb") -> tuple[list
     if cyc_key not in st.session_state:
         st.session_state[cyc_key] = list(saved_cycles)
 
-    powertrains = st.sidebar.multiselect(
+    powertrains = host.multiselect(
         "Powertrains",
         options=valid_pts,
         key=pts_key,
         format_func=lambda p: POWERTRAIN_NAMES[p],
     )
-    cycles = st.sidebar.multiselect(
+    cycles = host.multiselect(
         "Driving cycles",
         options=valid_cycles,
         key=cyc_key,
@@ -436,6 +443,7 @@ def measure_picker(
     widget: str = "radio",
     label: str = "Measure",
     label_visibility: str = "visible",
+    horizontal: bool = False,
 ) -> str:
     """Canonical workbook measure selector, persisted across workbook pages."""
     options = list(CANONICAL_QUANTITIES)
@@ -459,6 +467,7 @@ def measure_picker(
             key=key,
             format_func=lambda q: CANONICAL_QUANTITIES[q][0],
             label_visibility=label_visibility,
+            horizontal=horizontal,
         )
     st.session_state[WB_MEASURE_KEY] = choice
     return choice
