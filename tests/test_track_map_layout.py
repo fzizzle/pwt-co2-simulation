@@ -84,7 +84,7 @@ def test_fit_camera_keeps_full_outline_and_extreme_corners_inside(
 def test_lap_map_places_colorbar_below_map_and_has_no_plotly_overlap_controls():
     wb = trace_for.__wrapped__("petrol", "franco_eco")
     vals, unit, div = metrics(wb, source="workbook")["Speed"]
-    fig = lap_map(wb, vals, "Speed", unit, div, DARK, source="workbook", width_px=360)
+    fig = lap_map(wb, vals, "Speed", unit, div, DARK, source="workbook", width_px=360, basemap="tiles")
 
     # Map domain leaves room below for the horizontal colourbar.
     map_y0, map_y1 = fig.layout.map.domain.y
@@ -170,7 +170,7 @@ def test_model_metrics_keep_derived_measures():
 def test_workbook_map_hover_is_only_on_reported_segment_ends():
     wb = trace_for.__wrapped__("petrol", "franco_eco")
     vals, unit, div = metrics(wb, source="workbook")["Power demand"]
-    fig = lap_map(wb, vals, "Power demand", unit, div, DARK, source="workbook")
+    fig = lap_map(wb, vals, "Power demand", unit, div, DARK, source="workbook", basemap="tiles")
 
     # Find every trace with a data hovertemplate (excluding landmark tooltips).
     data_hover_traces = [
@@ -193,7 +193,7 @@ def test_colour_scales_clear_wcag_non_text_contrast():
 def test_map_has_dark_halo_behind_car_and_labels():
     wb = trace_for.__wrapped__("petrol", "franco_eco")
     vals, unit, div = metrics(wb, source="workbook")["Speed"]
-    fig = lap_map(wb, vals, "Speed", unit, div, DARK, source="workbook")
+    fig = lap_map(wb, vals, "Speed", unit, div, DARK, source="workbook", basemap="tiles")
 
     # Car marker: outer dark dot larger than inner bright dot at the exact same coordinate.
     dark_car = [t for t in fig.data if t.mode == "markers" and len(t.lat) == 1 and t.marker.size >= 18]

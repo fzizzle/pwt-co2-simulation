@@ -180,6 +180,22 @@ def inject_css(pal: Palette) -> None:
             text-overflow: clip !important;
             line-height: 1.15;
         }}
+        /* On a phone Streamlit stacks columns, so a row of four metrics became a tall
+           column. Keep metric rows two across instead. */
+        @media (max-width: 640px) {{
+            [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {{
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                gap: 0.75rem 1rem !important;
+            }}
+            [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > div {{
+                flex: 1 1 calc(50% - 1rem) !important;
+                min-width: calc(50% - 1rem) !important;
+            }}
+            [data-testid="stMetricValue"] {{
+                font-size: 1.5rem !important;
+            }}
+        }}
         /* Inline code (file names, formulas) in quiet greys instead of Streamlit's green. */
         .stApp code {{
             background-color: {pal.surface_raised} !important;
