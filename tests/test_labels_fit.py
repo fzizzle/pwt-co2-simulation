@@ -57,8 +57,11 @@ def test_metric_css_wraps_instead_of_truncating(monkeypatch):
     css = "".join(seen)
     rule = css.split('[data-testid="stMetricLabel"]', 1)[1].split("}", 1)[0]
     assert "white-space: normal" in rule
-    rule = css.split('[data-testid="stMetricValue"] > div', 1)[1].split("}", 1)[0]
+    # The value element itself and everything inside it: a long text value such as
+    # "Peak engine efficiency" ran into the next tile when only its child div wrapped.
+    rule = css.split('[data-testid="stMetricValue"] *', 1)[1].split("}", 1)[0]
     assert "white-space: normal" in rule
+    assert "overflow-wrap: anywhere" in rule
 
 
 @pytest.mark.parametrize("fixture", ["model", "sizing", "track"])

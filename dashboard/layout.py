@@ -174,10 +174,12 @@ def inject_css(pal: Palette) -> None:
             overflow: visible !important;
             text-overflow: clip !important;
         }}
-        [data-testid="stMetricValue"] > div {{
+        [data-testid="stMetricValue"],
+        [data-testid="stMetricValue"] * {{
             white-space: normal !important;
             overflow: visible !important;
             text-overflow: clip !important;
+            overflow-wrap: anywhere;
             line-height: 1.15;
         }}
         /* On a phone Streamlit stacks columns, so a row of four metrics became a tall
