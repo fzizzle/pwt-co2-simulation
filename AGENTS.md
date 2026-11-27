@@ -1,6 +1,6 @@
 # Agent instructions
 
-These instructions are for coding agents working in this repo. Read `README.md` first: it covers the layout, the model and how the workbooks are read. This file adds the rules the README leaves implicit.
+These instructions are for coding agents working in this repo. Read `README.md` first: it covers the layout and the model. `docs/workbooks.md` covers how the workbooks are read. This file adds the rules the README leaves implicit.
 
 ## This is graded coursework
 
@@ -35,7 +35,7 @@ python3 -m venv .venv
 - **Generate every figure and table from code** with a `python -m pwt.<module>` entry point, so they can be rebuilt if Nelis changes an assumption. Don't type numbers from a run into prose: format them from the data, or test the quoted values.
 - **Label assumptions as assumptions.** Add any new external constant to `docs/sources.md` along with its source.
 - **Respect feasibility.** `sweep` reports `short_steps` and `short_kw` when the engine can't deliver the power the trace demands. CO2 on an infeasible trace is a conditional result. Flag it rather than ranking on it silently.
-- **Lookups go by label, never by cell address.** The workbooks don't share a layout (see "What the reader has to work around" in the README).
+- **Lookups go by label, never by cell address.** The workbooks don't share a layout (see "What the reader has to work around" in `docs/workbooks.md`).
 
 ## The dashboard
 

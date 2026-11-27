@@ -3,8 +3,7 @@
 from pathlib import Path
 
 import numpy as np
-from matplotlib.font_manager import FontProperties, findfont
-from PIL import Image, ImageFont
+from PIL import Image
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_LINE_DASH_STYLE
@@ -14,8 +13,9 @@ from pptx.util import Pt
 from pptx.oxml.xmlchemy import OxmlElement
 
 from pwt.catalog import POWERTRAIN_NAMES
-from pwt.deck import art, data, track
-from pwt.deck.structure import SLIDES, SECTIONS, lap_position
+from pwt.deck import art, data, figures, fonts, track
+from pwt.deck.structure import (DATAFLOW_EDGES, DATAFLOW_NODES, SLIDES, SECTIONS,
+                                lap_position)
 from pwt.sweep import cycles
 
 PLACEHOLDERS = {
@@ -24,9 +24,57 @@ PLACEHOLDERS = {
     "spec": "key specs",
     "tile": ("number", "one line"),
     "row": ("limit", "why it matters", "next step"),
+    "term": ("term", "what it means"),
+    "point": ("Study {} owner's conclusion", "a real-world example"),
+    "open": ("Study {} owner's open question", "why it matters"),
+    "limit": "a limit of the model",
     "figure": ("chart or figure from the study", "Study {} owner's slides"),
     "questions.subtitle": "then, if time allows: the live demo",
 }
+
+
+#: Problems found while fitting author text; `python -m pwt.deck` prints them.
+WARNINGS: list[str] = []
+
+
+def _split(text: str, lines: int, size: float, weight: int, spacing: float) -> list[str]:
+    """Break `text` at spaces into at most `lines` rows, as evenly wide as possible."""
+    words = text.split()
+    if lines < 2 or len(words) < 2:
+        return [text]
+    best = None
+    for cut in range(1, len(words)):
+        rows = [" ".join(words[:cut]), " ".join(words[cut:])]
+        widest = max(fonts.text_width(r, size, weight, spacing=spacing) for r in rows)
+        if best is None or widest < best[0]:
+            best = (widest, rows)
+    return best[1]
+
+
+def wrap(text: str, size: float, width: float, weight: int = 400) -> list[str]:
+    """Greedy word wrap of `text` into rows no wider than `width`."""
+    rows: list[str] = []
+    for word in text.split():
+        if rows and fonts.text_width(rows[-1] + " " + word, size, weight) <= width:
+            rows[-1] += " " + word
+        else:
+            rows.append(word)
+    return rows or [""]
+
+
+def fit(text: str, size: float, max_width: float, min_size: float, lines: int,
+        weight: int, spacing: float) -> tuple[list[str], float]:
+    """Shrink, then wrap: the rows and font size (px) that set `text` within `max_width`."""
+    width = lambda t, s: fonts.text_width(t, s, weight, spacing=spacing * s / size)
+    if width(text, size) <= max_width:
+        return [text], size
+    if width(text, min_size) <= max_width:
+        return [text], max(min_size, size * max_width / width(text, size))
+    rows = _split(text, lines, size, weight, spacing)
+    for s in (size, *(size - k for k in range(1, int(size - min_size) + 1))):
+        if max(width(r, s) for r in rows) <= max_width:
+            return rows, s
+    return rows, min_size
 
 
 def u(x):
@@ -38,8 +86,11 @@ def rgb(color):
 
 
 class Canvas:
-    def __init__(self, slide, theme, fields):
+    def __init__(self, slide, theme, fields, slide_id="", out_dir=None):
         self.slide = slide
+        self.theme = theme
+        self.out_dir = out_dir
+        self.slide_id = slide_id
         self.shapes = slide.shapes
         self.palette = art.THEMES[theme]
         self.fields = fields
@@ -77,7 +128,7 @@ class Canvas:
         p.alignment = PP_ALIGN.CENTER if center else PP_ALIGN.LEFT
         r = p.add_run()
         r.text = value
-        r.font.name = {500: "Inter Medium", 600: "Inter SemiBold"}.get(weight, "Inter")
+        r.font.name = fonts.FAMILIES[weight]
         r.font.bold = weight >= 700
         r.font.size = Pt(size * 0.6)
         r.font.color.rgb = self.color(color)
@@ -94,16 +145,32 @@ class Canvas:
             )
         return box
 
-    def field(self, field, x, y, size, default=None, **style):
+    def field(self, field, x, y, size, default=None, max_width=None, min_size=None,
+              lines=1, **style):
+        """One author field. Written text that is too wide for `max_width` first shrinks
+        (down to `min_size`), then wraps onto up to `lines` lines stacked upwards from the
+        baseline `y`; anything still too wide is reported in WARNINGS."""
         value = self.fields.get(field)
-        return self.text(
-            x,
-            y,
-            value or default or PLACEHOLDERS.get(field, field),
-            size,
-            placeholder=None if value else field,
-            **style,
-        )
+        text = value or default or PLACEHOLDERS.get(field, field)
+        self.rows = 1
+        if not value or not max_width:
+            return self.text(x, y, text, size, placeholder=None if value else field, **style)
+        base = size
+        rows, size = fit(text, size, max_width, min_size or size, lines,
+                         style.get("weight", 400), style.get("spacing", 0))
+        style["_size"] = base
+        if fonts.text_width(max(rows, key=len), size, style.get("weight", 400),
+                            spacing=style.get("spacing", 0)) > max_width + 0.5:
+            WARNINGS.append(f"{self.slide_id}.{field} is too long to fit; shorten it.")
+        if "spacing" in style:  # letter spacing scales with the shrunk size
+            style["spacing"] = style["spacing"] * size / style["_size"]
+        style.pop("_size")
+        self.rows = len(rows)
+        boxes = []
+        for k, row in enumerate(rows):
+            lift = (len(rows) - 1 - k) * size * 1.05
+            boxes.append(self.text(x, y - lift, row, size, **style))
+        return boxes[-1]
 
     def shape(self, x, y, w, h, fill, radius=0, ellipse=False, top_only=False):
         kind = (
@@ -159,10 +226,28 @@ class Canvas:
         x, y = track.label_spot(points, dot, str(i + 1))
         self.text(x, y + 6, str(i + 1), 18, weight=600, center=True).name = "lap-label"
 
-    def parts(self, field, defaults, positions, center=False):
+    def check(self, field, text, size, max_width, weight=400):
+        if fonts.text_width(text, size, weight) > max_width:
+            WARNINGS.append(f"{self.slide_id}.{field} is too long to fit; shorten it.")
+
+    def parts(self, field, defaults, positions, center=False, widths=()):
         value = self.fields.get(field, "")
         parts = [s.strip() for s in value.split("|")] if value else defaults
-        for part, (x, y, size) in zip(parts, positions):
+        if value and len(parts) > len(positions):
+            WARNINGS.append(f"{self.slide_id}.{field} has {len(parts)} parts separated by |; "
+                            f"only {len(positions)} are used.")
+        for n, (part, (x, y, size), width) in enumerate(
+                zip(parts, positions, widths or [None] * len(positions))):
+            if value and width and n == len(positions) - 1 and field.startswith("tile"):
+                rows = wrap(part, size, width, 600)
+                if len(rows) > 3:
+                    WARNINGS.append(f"{self.slide_id}.{field}: the line under the number "
+                                    "wraps past 3 lines; shorten it.")
+                for k, row in enumerate(rows[:3]):
+                    self.text(x, y + k * size * 1.3, row, size, weight=600, center=center)
+                continue
+            if value and width:
+                self.check(field, part, size, width, 600)
             self.text(
                 x,
                 y,
@@ -232,6 +317,8 @@ def flow(c):
         c.text(x + 105, 400, str(i + 1), 20, "muted", 600, True)
         key = f"step{i+1}"
         name, _, detail = c.fields.get(key, "").partition("|")
+        if name.strip():
+            c.check(key, name.strip(), 27, 195, 700)
         c.text(
             x + 105,
             460,
@@ -245,10 +332,189 @@ def flow(c):
         parts = detail.strip().split(", ")
         if len(parts) >= 3:
             parts = [", ".join(parts[:2]), ", ".join(parts[2:])]
-        for j, line in enumerate(parts):
+        if len(parts) > 2:
+            WARNINGS.append(f"{c.slide_id}.{key}: the detail wraps onto 2 lines at most.")
+        for j, line in enumerate(parts[:2]):
+            c.check(key, line, 17, 195)
             c.text(x + 105, 505 + j * 24, line, 17, "muted", center=True)
         if i < 5:
             c.arrow(x + 218, 455, 24, 8)
+
+
+#: Dataflow geometry in design units: node size, column and row pitch.
+DF_W, DF_H = 228, 112
+DF_X = [36 + 312 * k for k in range(5)]
+DF_Y = [240, 430, 620]
+
+
+def _df_box(col, row):
+    return DF_X[col], DF_Y[row], DF_W, DF_H
+
+
+def _df_arrow(c, points, label=""):
+    """A polyline with an arrowhead at its end, and its data label beside the first leg."""
+    shape = c.line(points, "muted", 2.5)
+    ln = shape.line._get_or_add_ln()
+    tail = OxmlElement("a:tailEnd")
+    tail.set("type", "triangle")
+    tail.set("w", "med")
+    tail.set("len", "med")
+    ln.append(tail)
+    if label:
+        (x0, y0), (x1, y1) = points[0], points[1]
+        if y0 == y1:  # horizontal: centred above the arrow
+            c.text((x0 + x1) / 2, y0 - 10, label, 17, "muted", center=True)
+        else:  # vertical: to the right of it
+            c.text(x0 + 12, (y0 + y1) / 2 + 6, label, 17, "muted")
+
+
+def dataflow(c):
+    """Study A's method as a dataflow chart: inputs, processes, saved files and results."""
+    from pptx.enum.shapes import MSO_SHAPE as S
+
+    kinds = {"data": (S.PARALLELOGRAM, None, "fg"), "process": (S.ROUNDED_RECTANGLE, "soft", "fg"),
+             "file": (S.CAN, "line", "fg"), "result": (S.PARALLELOGRAM, "fg", "bg")}
+    boxes = {}
+    for name, kind, col, row in DATAFLOW_NODES:
+        x, y, w, h = _df_box(col, row)
+        boxes[name] = (x, y, w, h)
+        shape_kind, fill, ink = kinds[kind]
+        s = c.shapes.add_shape(shape_kind, u(x), u(y), u(w), u(h))
+        if shape_kind == S.ROUNDED_RECTANGLE:
+            s.adjustments[0] = 18 / h
+        elif shape_kind == S.PARALLELOGRAM:
+            s.adjustments[0] = 0.2  # a shallow slant leaves room for the text
+        if fill:
+            s.fill.solid()
+            s.fill.fore_color.rgb = c.color(fill)
+            s.line.fill.background()
+        else:
+            s.fill.background()
+            s.line.color.rgb = c.color("muted")
+            s.line.width = u(2.5)
+        key = f"node.{name}"
+        title, _, detail = (t.strip() for t in c.fields.get(key, "").partition("|"))
+        cx, top = x + w / 2, y + (14 if kind == "file" else 0)
+        room = w - (70 if shape_kind == S.PARALLELOGRAM else 36)
+        rows = wrap(detail, 18, room) if detail else []
+        if title:
+            c.check(key, title, 23, room, 700)
+            if len(rows) > 2:
+                WARNINGS.append(f"{c.slide_id}.{key}: the detail wraps past 2 lines; "
+                                "shorten it.")
+        lift = 12 if len(rows) > 1 else 0  # centre two detail lines in the box
+        c.text(cx, top + 48 - lift, title or name, 23, ink, 700, True,
+               placeholder=None if title else key)
+        for k, row in enumerate(rows[:2]):
+            c.text(cx, top + 78 - lift + k * 22, row, 18, "muted" if ink == "fg" else ink,
+                   center=True)
+    for a, b in DATAFLOW_EDGES:
+        ax, ay, aw, ah = boxes[a]
+        bx, by, bw, bh = boxes[b]
+        label = c.fields.get(f"edge.{a}.{b}", "")
+        if ay == by:  # same row
+            y = ay + ah / 2
+            points = ([(ax + aw, y), (bx, y)] if bx > ax else [(ax, y), (bx + bw, y)])
+        elif ax == bx:  # same column
+            x = ax + aw / 2
+            points = ([(x, ay + ah), (x, by)] if by > ay else [(x, ay), (x, by + bh)])
+        else:  # down, then across
+            x, y = ax + aw / 2, by + bh / 2
+            points = [(x, ay + ah), (x, y), (bx, y)]
+        _df_arrow(c, points, label)
+    # Key to the shapes, in one row under the chart.
+    kx, ky = DF_X[0] + 20, DF_Y[2] + DF_H + 46
+    for k, (shape_kind, fill, text) in enumerate((
+            (S.PARALLELOGRAM, None, "input or output"), (S.ROUNDED_RECTANGLE, "soft", "process"),
+            (S.CAN, "line", "saved file"), (S.PARALLELOGRAM, "fg", "result on a later slide"))):
+        x = kx + k * 330
+        y = ky
+        s = c.shapes.add_shape(shape_kind, u(x), u(y), u(46), u(30))
+        if fill:
+            s.fill.solid()
+            s.fill.fore_color.rgb = c.color(fill)
+            s.line.fill.background()
+        else:
+            s.fill.background()
+            s.line.color.rgb = c.color("muted")
+            s.line.width = u(2)
+        c.text(x + 60, y + 22, text, 17, "muted")
+
+
+def _marker(c, x, y, kind):
+    """A filled circle with a check, question mark or exclamation mark: native shapes."""
+    fill = {"point": "#30d158", "open": "#ff9f0a", "limit": None}[kind]
+    s = c.shapes.add_shape(MSO_SHAPE.OVAL, u(x), u(y), u(34), u(34))
+    s.fill.solid()
+    s.fill.fore_color.rgb = RGBColor.from_string(fill[1:]) if fill else c.color("muted")
+    s.line.fill.background()
+    if kind == "point":
+        c.line([(x + 9, y + 18), (x + 15, y + 24), (x + 26, y + 11)], "bg", 3.5)
+    else:
+        c.text(x + 17, y + 25, "?" if kind == "open" else "!", 22, "bg", 700, True)
+
+
+def wrapup(c, spec):
+    """Conclusions and open questions in two columns, model limits in a strip below."""
+    study = spec.section
+    columns = (("point", 110, "WHAT WE CAN CONCLUDE"), ("open", 830, "STILL OPEN"))
+    for kind, x, heading in columns:
+        c.text(x, 262, heading, 19, "muted", 600)
+        for i in range(3):
+            key = f"{kind}{i+1}"
+            y = 300 + i * 118
+            _marker(c, x, y, kind)
+            value = c.fields.get(key, "")
+            if not value:
+                main, sub = (t.format(study) for t in PLACEHOLDERS[kind])
+                c.text(x + 52, y + 26, main, 24, weight=600, placeholder=key)
+                c.text(x + 52, y + 58, sub, 18, placeholder=key)
+                continue
+            statement, _, example = (t.strip() for t in value.partition("|"))
+            c.check(key, statement, 26, 610, 600)
+            c.text(x + 52, y + 26, statement, 26, weight=600)
+            rows = wrap(example, 20, 610)
+            if len(rows) > 2:
+                WARNINGS.append(f"{c.slide_id}.{key}: the example wraps past 2 lines; "
+                                "shorten it.")
+            for k, row in enumerate(rows[:2]):
+                c.text(x + 52, y + 58 + k * 26, row, 20, "muted")
+    c.shape(110, 668, 1380, 150, "soft", 22)
+    c.text(140, 708, "MODEL LIMITS", 17, "muted", 600)
+    for i in range(3):
+        key = f"limit{i+1}"
+        x = 140 + i * 450
+        _marker(c, x, 728, "limit")
+        value = c.fields.get(key, "")
+        if not value:
+            c.text(x + 48, 752, PLACEHOLDERS["limit"], 18, placeholder=key)
+            continue
+        rows = wrap(value, 20, 390)
+        if len(rows) > 2:
+            WARNINGS.append(f"{c.slide_id}.{key}: wraps past 2 lines; shorten it.")
+        for k, row in enumerate(rows[:2]):
+            c.text(x + 48, 752 + k * 26, row, 20)
+
+
+def terms(c):
+    """A glossary: up to six rows of `term | what it means`, the meaning on up to 2 lines."""
+    for i in range(6):
+        key = f"term{i+1}"
+        y = 262 + i * 98
+        c.line([(180, y - 40), (1420, y - 40)], "line", 2)
+        value = c.fields.get(key, "")
+        term, _, meaning = (s.strip() for s in value.partition("|"))
+        if not value:
+            c.text(160, y, PLACEHOLDERS["term"][0], 28, weight=700, placeholder=key)
+            c.text(520, y, PLACEHOLDERS["term"][1], 23, placeholder=key)
+            continue
+        c.check(key, term, 28, 340, 700)
+        c.text(160, y, term, 28, weight=700)
+        rows = wrap(meaning, 23, 920)
+        if len(rows) > 2:
+            WARNINGS.append(f"{c.slide_id}.{key}: the meaning wraps past 2 lines; shorten it.")
+        for k, row in enumerate(rows[:2]):
+            c.text(520, y + k * 30, row, 23)
 
 
 def cars(c):
@@ -276,7 +542,8 @@ def cars(c):
         c.text(x + 25, 485, f"{km:.1f} km", 18, "muted")
         c.shape(x + 24, 594, 32, 32, data.CAR_COLOURS[pt], ellipse=True)
         c.text(x + 70, 620, POWERTRAIN_NAMES[pt], 26, weight=700)
-        c.field("spec." + pt, x + 70, 654, 18, PLACEHOLDERS["spec"], weight=600)
+        c.field("spec." + pt, x + 70, 654, 18, PLACEHOLDERS["spec"], weight=600,
+                max_width=255)
 
 
 def body(c, spec):
@@ -295,7 +562,14 @@ def body(c, spec):
                 PLACEHOLDERS["tile"],
                 [(x + 165, 470, 64), (x + 165, 550, 22)],
                 True,
+                widths=(300, 300),
             )
+    elif spec.layout == "wrapup":
+        wrapup(c, spec)
+    elif spec.layout == "dataflow":
+        dataflow(c)
+    elif spec.layout == "terms":
+        terms(c)
     elif spec.layout == "rows":
         c.text(230, 270, "LIMIT", 19, "muted", 600)
         c.text(900, 270, "NEXT STEP", 19, "muted", 600)
@@ -307,21 +581,34 @@ def body(c, spec):
                 f"row{i+1}",
                 PLACEHOLDERS["row"],
                 [(230, y + 62, 32), (230, y + 100, 21), (900, y + 72, 30)],
+                widths=(510, 510, 470),
             )
     elif spec.layout == "slot":
         path = c.fields.get("figure")
-        if path:
+        name = None
+        if path and path.startswith("chart:"):
+            name = path.removeprefix("chart:").strip()
+            path = figures.render(name, c.theme, c.out_dir)
+        elif path:
             path = Path(__file__).resolve().parents[2] / path
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"{spec.id}.figure: no image at {fields_path(path)}. Give a path from the "
+                    "repository root, e.g. docs/phase-3-sizing.png."
+                )
+        if path:
             with Image.open(path) as image:
                 w, h = image.size
             scale = min(1100 / w, 520 / h)
-            c.shapes.add_picture(
+            picture = c.shapes.add_picture(
                 str(path),
                 u(800 - w * scale / 2),
                 u(500 - h * scale / 2),
                 u(w * scale),
                 u(h * scale),
             )
+            if name:
+                picture.name = f"chart:{name}"
         else:
             s = c.shape(250, 240, 1100, 520, None, 26)
             s.line.color.rgb = c.color("line")
@@ -334,6 +621,13 @@ def body(c, spec):
                 [(800, 490, 30), (800, 535, 22)],
                 True,
             )
+
+
+def fields_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(Path(__file__).resolve().parents[2]))
+    except ValueError:
+        return str(path)
 
 
 def title_credit(c):
@@ -349,8 +643,7 @@ def title_credit(c):
     for field in ("subtitle", None, "byline"):
         missing = field is not None and not c.fields.get(field)
         value = (c.fields.get(field) or field) if field else " · "
-        face = FontProperties(family="Inter", style="italic" if missing else "normal")
-        width = ImageFont.truetype(findfont(face), 104).getlength(value) / 4
+        width = fonts.text_width(value, 26, italic=missing)
         parts.append((value, width, field if missing else None))
     x = 800 - sum(width for _, width, _ in parts) / 2
     for value, width, placeholder in parts:
@@ -358,14 +651,26 @@ def title_credit(c):
         x += width
 
 
+def use_inter_theme(prs) -> None:
+    """Make Inter the theme's heading and body font, so any text box added later is Inter."""
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+    theme = prs.slide_master.part.part_related_by(RT.THEME)
+    blob = theme.blob.decode("utf-8")
+    import re
+    blob = re.sub(r'(<a:(?:majorFont|minorFont)>\s*<a:latin typeface=")[^"]*"', r'\1Inter"', blob)
+    theme._blob = blob.encode("utf-8")
+
+
 def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
+    WARNINGS.clear()
     prs = Presentation()
+    use_inter_theme(prs)
     prs.slide_width, prs.slide_height = u(1600), u(900)
     for i, spec in enumerate(SLIDES):
         slide = prs.slides.add_slide(prs.slide_layouts[6])
         fields = {k: data.fill(v) for k, v in content.get(spec.id, {}).items()}
-        c = Canvas(slide, theme, fields)
+        c = Canvas(slide, theme, fields, spec.id, out_dir)
         slide.background.fill.solid()
         slide.background.fill.fore_color.rgb = c.color("bg")
         source = "pwt.deck.structure"
@@ -382,11 +687,13 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                 "interpolated from the generated lap's altitude (373–470 m), not survey data."
             )
             if spec.layout == "title":
-                c.field("title", 801, 740, 88, weight=700, center=True, spacing=-3)
+                c.field("title", 801, 740, 88, weight=700, center=True, spacing=-3,
+                        max_width=1380, min_size=60, lines=2)
                 title_credit(c)
             elif spec.layout == "opener":
-                c.text(110, 380, number, 28, "muted", 600)
-                c.field("title", 110, 480, 96, weight=700, spacing=-3.5)
+                c.field("title", 110, 480, 96, weight=700, spacing=-3.5,
+                        max_width=790, min_size=64, lines=2)
+                c.text(110, 380 - (c.rows - 1) * 96 * 1.05, number, 28, "muted", 600)
                 c.text(
                     110,
                     540,
@@ -395,7 +702,8 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                     "muted",
                 )
             else:
-                c.field("title", 110, 480, 110, weight=700, spacing=-4)
+                c.field("title", 110, 480, 110, weight=700, spacing=-4,
+                        max_width=790, min_size=72, lines=2)
                 c.field(
                     "subtitle",
                     110,
@@ -405,7 +713,7 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                     weight=600,
                 )
         else:
-            c.field("label", 110, 92, 24, color="muted", weight=500)
+            c.field("label", 110, 92, 24, color="muted", weight=500, max_width=1270)
             c.field(
                 "headline",
                 110,
@@ -413,11 +721,19 @@ def build(theme: str, content: dict[str, dict[str, str]], out_dir: Path) -> Path
                 44,
                 PLACEHOLDERS["slot.headline" if spec.layout == "slot" else "headline"],
                 weight=700 if fields.get("headline") else 600,
+                max_width=1270,
+                min_size=32,
             )
             body(c, spec)
             c.text(110, 862, "model output · first draft", 17, "muted")
             if spec.layout in ("cars", "grouped", "single"):
                 source = "pwt.sweep and pwt.deck.data"
+            elif fields.get("figure", "").startswith("chart:"):
+                name = fields["figure"].removeprefix("chart:").strip()
+                source = (
+                    f"pwt.deck.figures, redrawn from "
+                    f"{fields_path(figures.FIGURES[name])} (study figure {figures.study_figure(name)})"
+                )
             elif fields.get("figure"):
                 source = fields["figure"]
         if i:

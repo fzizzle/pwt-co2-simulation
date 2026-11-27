@@ -1,0 +1,41 @@
+storage_efficiency,strategy,cycle,co2_eu,short_steps
+1.0,band,nedc,98.7,0
+1.0,band,wltc,104.8,0
+1.0,band,franco_eco_generated,197.0,0
+1.0,band,franco_sport_generated,382.8,0
+1.0,sheets' rule,nedc,107.0,1
+1.0,sheets' rule,wltc,110.7,27
+1.0,sheets' rule,franco_eco_generated,201.3,35
+1.0,sheets' rule,franco_sport_generated,383.1,585
+0.95,band,nedc,106.3,0
+0.95,band,wltc,112.2,0
+0.95,band,franco_eco_generated,204.1,0
+0.95,band,franco_sport_generated,386.9,0
+0.95,sheets' rule,nedc,112.5,1
+0.95,sheets' rule,wltc,115.1,27
+0.95,sheets' rule,franco_eco_generated,208.6,50
+0.95,sheets' rule,franco_sport_generated,390.3,625
+0.9,band,nedc,112.7,0
+0.9,band,wltc,120.1,0
+0.9,band,franco_eco_generated,211.5,0
+0.9,band,franco_sport_generated,391.1,0
+0.9,sheets' rule,nedc,116.7,1
+0.9,sheets' rule,wltc,119.4,27
+0.9,sheets' rule,franco_eco_generated,216.2,54
+0.9,sheets' rule,franco_sport_generated,397.7,667
+0.85,band,nedc,123.7,0
+0.85,band,wltc,128.8,0
+0.85,band,franco_eco_generated,218.8,0
+0.85,band,franco_sport_generated,395.2,0
+0.85,sheets' rule,nedc,121.1,1
+0.85,sheets' rule,wltc,123.7,27
+0.85,sheets' rule,franco_eco_generated,224.0,66
+0.85,sheets' rule,franco_sport_generated,405.3,701
+0.8,band,nedc,129.7,0
+0.8,band,wltc,137.9,0
+0.8,band,franco_eco_generated,226.3,0
+0.8,band,franco_sport_generated,399.4,0
+0.8,sheets' rule,nedc,124.8,1
+0.8,sheets' rule,wltc,127.9,27
+0.8,sheets' rule,franco_eco_generated,231.9,70
+0.8,sheets' rule,franco_sport_generated,412.9,735
