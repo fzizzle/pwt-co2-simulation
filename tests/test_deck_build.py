@@ -15,7 +15,7 @@ def deck(tmp_path_factory):
 
 
 def test_builds_without_content(deck):
-    assert len(deck.slides) == 23
+    assert len(deck.slides) == 28
     assert {"placeholder:subtitle", "placeholder:byline"} <= {
         s.name for s in deck.slides[0].shapes
     }

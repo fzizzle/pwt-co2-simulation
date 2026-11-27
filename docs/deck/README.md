@@ -60,10 +60,11 @@ The build shrinks text that is a little too long, wraps titles onto two lines, a
 | `rowN` | `limit \| why it matters \| next step`: about 28, 44 and 28 characters |
 | `stepN` | `Name \| detail`: name about 13 characters; the detail splits at commas onto 2 lines |
 | `spec.<car>` | 26 characters |
+| `termN` | `Term \| what it means`: term about 20 characters; the meaning wraps onto 2 lines at most |
 
 ### Study slides
 
-Each study has an opener and three slots (`A-1` to `A-3`, `B-1`, …). A slot's `figure:` takes an image path from the repository root. The image is fitted into the middle of the slide.
+Each study has an opener and three slots (`A-1` to `A-3`, `B-1`, …). Study A also has a method slide (`A-steps`, a dataflow chart: `node.<name>` is `technique | what it achieves`, `edge.<from>.<to>` is the data on that arrow) and a glossary (`A-terms`, up to six `termN` rows) between its opener and its slots, at its owner's request. Every study ends on a closing slide (`A-end`, `B-end`, `C-end`): three conclusions with a real-world example, three open questions and three model limits. Each owner writes their own. A slot's `figure:` takes an image path from the repository root. The image is fitted into the middle of the slide.
 
 | Study | Figures already in the repo |
 |---|---|
@@ -73,7 +74,7 @@ Each study has an opener and three slots (`A-1` to `A-3`, `B-1`, …). A slot's 
 
 These figures were made for the study reports. They have white backgrounds and their own titles, so they look out of place on the dark theme.
 
-The Study B and C figures are also redrawn in the deck's theme. To use one, write `figure: chart:` followed by the figure's name without `.png`, for example `figure: chart:study-b-combustion` or `figure: chart:study-c-co2`. The build draws the chart for each theme from the study's saved results (`docs/study-b-swings.csv`, `docs/study-c-results.csv`), and the speaker notes name that source. The data and the engine-check flags are the same as in the study figures; only the styling changes. Rebuild a study's results with its own entry point before you rebuild the deck. Which figure goes on which slide is still the owners' call.
+The Study B and C figures are also redrawn in the deck's theme. To use one, write `figure: chart:` followed by the figure's name without `.png`, for example `figure: chart:study-b-combustion` or `figure: chart:study-c-co2`. Study A has three themed charts drawn from the tables in `docs/phase-3-sizing.md`: `chart:phase-3-storage` (the band strategy minus the sheets' rule, by storage efficiency), `chart:phase-3-hybrid` and `chart:phase-3-plugin` (CO2 against battery size). To stay legible they show WLTC Class 3 (solid) and Francorchamps sport (dashed) only, on the EU grid, in the car's colour; the other cycles and the French grid are in the study document. Hollow points are runs where an engine is short of the trace, so their CO2 is conditional; on `chart:phase-3-storage` that is the sheets'-rule car on both cycles (`short_steps` in `docs/phase-3-storage.csv`). The build draws the chart for each theme from the study's saved results (`docs/phase-3-sizing.csv`, `docs/phase-3-storage.csv`, `docs/study-b-swings.csv`, `docs/study-c-results.csv`), and the speaker notes name that source. The data and the engine-check flags are the same as in the study figures; only the styling changes. Rebuild a study's results with its own entry point (`python -m pwt.sweep` for Study A) before you rebuild the deck. Which figure goes on which slide is still the owners' call.
 
 ## Fonts
 
