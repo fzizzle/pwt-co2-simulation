@@ -5,6 +5,7 @@ Any page showing a single lap calls `lap_section`, so a lap always comes with it
 
 from __future__ import annotations
 
+import functools
 import math
 
 import numpy as np
@@ -12,6 +13,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
+from dashboard.layout import show_chart
 from dashboard.theme import Palette, style_axes
 from pwt.trackmap import LANDMARKS, outline, place
 
@@ -37,7 +39,7 @@ LANDMARK_POSITIONS: dict[str, str] = {
     "Fagnes": "bottom center",
     "Stavelot": "bottom left",
     "Blanchimont": "middle left",
-    "Bus Stop": "top left",
+    "Bus Stop": "middle left",
 }
 #: Subset shown as static text on narrow (<420 px) frames; all 10 remain on hover.
 COMPACT_LANDMARKS = frozenset({
@@ -185,8 +187,10 @@ def _nearest_landmark(distance_m: float) -> str:
 
 
 def _car_label(row: pd.Series, metric_label: str = "", value: float | None = None,
-               unit: str = "") -> str:
-    parts = [f"{float(row['distance_m']) / 1000.0:.2f} km"]
+               unit: str = "", *, distance_unit: str = "km") -> str:
+    metres = float(row["distance_m"])
+    # Workbook laps keep the reported metres; model laps read in km.
+    parts = [f"{metres:,.0f} m" if distance_unit == "m" else f"{metres / 1000.0:.2f} km"]
     if "time_s" in row and pd.notna(row["time_s"]):
         parts.append(f"{float(row['time_s']):.0f} s")
     parts.append(f"{float(row['speed_kph']):.0f} km/h")
@@ -231,12 +235,63 @@ def _is_dark(pal: Palette) -> bool:
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 0.5
 
 
+#: Local metres per degree at Spa, for the tile-free equal-aspect map.
+_M_PER_DEG_LAT = 111_132.0
+
+
+@functools.cache
+def _relief_lines() -> tuple[tuple[np.ndarray, np.ndarray], ...]:
+    """The deck's altitude contours (`pwt.deck.track.relief`) as (lat, lon) polylines.
+
+    The deck draws them in its own normalised, north-up frame. That frame is undone here: the
+    same generated lap is placed again, smoothed the same way, and its offset and scale
+    inverted, so the contours sit under any lap drawn from `pwt.trackmap.place`.
+    """
+    from math import cos, radians
+
+    from pwt.deck import track as deck
+    from pwt.sweep import cycles
+
+    lat, lon = place(np.asarray(cycles()["franco_sport_generated"].s))
+    squeeze = cos(radians(lat.mean()))
+    raw = np.column_stack((lon * squeeze, -lat))
+    for _ in range(2):
+        raw = sum(np.roll(raw, shift, axis=0) for shift in range(-4, 5)) / 9
+    offset, scale = raw.min(axis=0), np.ptp(raw[:, 0])
+    lines = []
+    for _level, polylines in deck.relief():
+        for line in polylines:
+            back = line * scale + offset
+            lines.append((-back[:, 1], back[:, 0] / squeeze))
+    return tuple(lines)
+
+
+class _Projector:
+    """Draw the same layers on street tiles (`Scattermap`) or on a tile-free plane (`Scatter`)."""
+
+    def __init__(self, basemap: str, lat0: float, lon0: float):
+        self.tiles = basemap == "tiles"
+        self.lat0, self.lon0 = lat0, lon0
+        self.m_per_deg_lon = _M_PER_DEG_LAT * math.cos(math.radians(lat0))
+
+    def xy(self, lat, lon) -> tuple[np.ndarray, np.ndarray]:
+        lat, lon = np.asarray(lat, dtype=float), np.asarray(lon, dtype=float)
+        return (lon - self.lon0) * self.m_per_deg_lon, (lat - self.lat0) * _M_PER_DEG_LAT
+
+    def trace(self, lat, lon, **kw):
+        if self.tiles:
+            return go.Scattermap(lat=lat, lon=lon, **kw)
+        x, y = self.xy(lat, lon)
+        return go.Scatter(x=x, y=y, **kw)
+
+
 def _add_landmark_traces(
     fig: go.Figure,
     camera: dict,
     *,
     compact: bool,
     dark: bool,
+    projector: "_Projector",
 ) -> None:
     distances = np.array(list(LANDMARKS), dtype=float)
     names = list(LANDMARKS.values())
@@ -246,12 +301,12 @@ def _add_landmark_traces(
     fg = "#ffffff" if dark else "#111111"
 
     # Outer halo dots + inner landmark dots (all 10 corners carry hover tooltips).
-    fig.add_trace(go.Scattermap(
-        lat=near_lat, lon=near_lon, mode="markers", hoverinfo="skip", showlegend=False,
+    fig.add_trace(projector.trace(
+        near_lat, near_lon, mode="markers", hoverinfo="skip", showlegend=False,
         marker=dict(size=9, color=halo),
     ))
-    fig.add_trace(go.Scattermap(
-        lat=near_lat, lon=near_lon, mode="markers", showlegend=False,
+    fig.add_trace(projector.trace(
+        near_lat, near_lon, mode="markers", showlegend=False,
         marker=dict(size=5, color=fg),
         customdata=np.column_stack([names, distances / 1000.0]),
         hovertemplate="%{customdata[0]} (%{customdata[1]:.2f} km)<extra></extra>",
@@ -278,13 +333,13 @@ def _add_landmark_traces(
         halo_lats = np.concatenate([lats + dlat for dlat, _ in halo_offsets])
         halo_lons = np.concatenate([lons + dlon for _, dlon in halo_offsets])
         halo_texts = texts * len(halo_offsets)
-        fig.add_trace(go.Scattermap(
-            lat=halo_lats, lon=halo_lons, mode="markers+text", text=halo_texts,
+        fig.add_trace(projector.trace(
+            halo_lats, halo_lons, mode="markers+text", text=halo_texts,
             marker=dict(size=1, opacity=0), textposition=pos,
             textfont=dict(color=halo, size=12), hoverinfo="skip", showlegend=False,
         ))
-        fig.add_trace(go.Scattermap(
-            lat=lats, lon=lons, mode="markers+text", text=texts,
+        fig.add_trace(projector.trace(
+            lats, lons, mode="markers+text", text=texts,
             marker=dict(size=1, opacity=0), textposition=pos,
             textfont=dict(color=fg, size=12), hoverinfo="skip", showlegend=False,
         ))
@@ -303,12 +358,19 @@ def lap_map(
     width_px: int | None = None,
     height_px: int = MAP_HEIGHT,
     uirevision: str | None = None,
+    basemap: str = "relief",
+    compact: bool | None = None,
 ) -> go.Figure:
     """`values`, one per step of `steps`, painted along the real Spa circuit (north up).
 
     The camera is fitted to the full circuit outline with padding so La Source and Bruxelles
     are never cropped. Playback controls live outside the figure as native Streamlit widgets,
     and the colourbar sits horizontally below the map canvas.
+
+    `basemap="relief"` (the default) draws the lap over the deck's altitude contours on an
+    equal-aspect plane: no street tiles, no attribution badge, same look as the slides.
+    `basemap="tiles"` keeps the CARTO street map. `compact` limits static corner names to
+    `COMPACT_LANDMARKS` (all ten stay on hover); by default it follows `width_px < 420`.
     """
     track = outline()
     dark = _is_dark(pal)
@@ -335,6 +397,7 @@ def lap_map(
     pad_x = 68.0 if map_w < 420 else 56.0
     pad_y = 40.0
     camera = fit_camera(track, width_px=map_w, height_px=map_h, pad_x=pad_x, pad_y=pad_y)
+    projector = _Projector(basemap, float(track["lat"].mean()), float(track["lon"].mean()))
 
     colorbar = dict(
         orientation="h",
@@ -353,10 +416,18 @@ def lap_map(
 
     fig = go.Figure()
 
+    # 0. Relief: the deck's altitude contours, quiet, under everything else.
+    if not projector.tiles:
+        for lat_c, lon_c in _relief_lines():
+            fig.add_trace(projector.trace(
+                lat_c, lon_c, mode="lines", name="relief", hoverinfo="skip", showlegend=False,
+                line=dict(color=pal.grid, width=1),
+            ))
+
     # 1. Dark casing along the full circuit outline.
-    fig.add_trace(go.Scattermap(
-        lat=all_lat, lon=all_lon, mode="lines", hoverinfo="skip", showlegend=False,
-        line=dict(color="#000000", width=10),
+    fig.add_trace(projector.trace(
+        all_lat, all_lon, mode="lines", hoverinfo="skip", showlegend=False,
+        line=dict(color="#000000" if dark else pal.border, width=10),
     ))
 
     # 2. Painted track ribbon. On workbook laps (or any interpolated lap), hover is disabled on
@@ -381,8 +452,8 @@ def lap_map(
     else:
         ribbon_kwargs["hoverinfo"] = "skip"
 
-    fig.add_trace(go.Scattermap(
-        lat=rib_lat, lon=rib_lon, mode="markers", showlegend=False,
+    fig.add_trace(projector.trace(
+        rib_lat, rib_lon, mode="markers", name="lap", showlegend=False,
         marker=dict(
             size=7, color=rib_vals, colorscale=colorscale, cmin=cmin, cmax=cmax,
             colorbar=colorbar,
@@ -411,8 +482,8 @@ def lap_map(
                 f"<br>{label}: %{{customdata[2]}} {unit}<extra></extra>"
             )
         )
-        fig.add_trace(go.Scattermap(
-            lat=step_lat, lon=step_lon, mode="markers", showlegend=False,
+        fig.add_trace(projector.trace(
+            step_lat, step_lon, mode="markers", showlegend=False,
             marker=dict(
                 size=10, color=values, colorscale=colorscale, cmin=cmin, cmax=cmax,
                 showscale=False,
@@ -422,31 +493,28 @@ def lap_map(
         ))
 
     # 4. Corner landmarks with dark halo behind white labels.
-    _add_landmark_traces(fig, camera, compact=(width_px is not None and width_px < 420), dark=dark)
+    if compact is None:
+        compact = width_px is not None and width_px < 420
+    _add_landmark_traces(fig, camera, compact=compact, dark=dark, projector=projector)
 
     # 5. Car position marker with high-contrast dark halo + bright fill + dark centre dot.
     car_dist = float(steps["distance_m"].iloc[car_idx])
     car_lat, car_lon = place(np.array([car_dist], dtype=float))
-    fig.add_trace(go.Scattermap(
-        lat=car_lat, lon=car_lon, mode="markers", hoverinfo="skip", showlegend=False,
+    fig.add_trace(projector.trace(
+        car_lat, car_lon, mode="markers", hoverinfo="skip", showlegend=False,
         marker=dict(size=22, color=_HALO_COLOUR),
     ))
-    fig.add_trace(go.Scattermap(
-        lat=car_lat, lon=car_lon, mode="markers", hoverinfo="skip", showlegend=False,
+    fig.add_trace(projector.trace(
+        car_lat, car_lon, mode="markers", hoverinfo="skip", showlegend=False,
         marker=dict(size=13, color="#ffffff"),
     ))
-    fig.add_trace(go.Scattermap(
-        lat=car_lat, lon=car_lon, mode="markers", hoverinfo="skip", showlegend=False,
+    fig.add_trace(projector.trace(
+        car_lat, car_lon, mode="markers", hoverinfo="skip", showlegend=False,
         marker=dict(size=5, color="#1a1a19"),
     ))
 
     layout_kwargs: dict = dict(
         template="none",
-        map=dict(
-            style="carto-darkmatter" if dark else "carto-positron",
-            domain=dict(x=[0.0, 1.0], y=list(_MAP_DOMAIN_Y)),
-            **camera,
-        ),
         height=height_px,
         margin=dict(l=margin_l, r=margin_r, t=margin_t, b=margin_b),
         paper_bgcolor="rgba(0,0,0,0)",
@@ -455,6 +523,21 @@ def lap_map(
         hoverlabel=dict(font_size=12),
         showlegend=False,
     )
+    if projector.tiles:
+        layout_kwargs["map"] = dict(
+            style="carto-darkmatter" if dark else "carto-positron",
+            domain=dict(x=[0.0, 1.0], y=list(_MAP_DOMAIN_Y)),
+            **camera,
+        )
+    else:
+        # Equal-aspect plane sized to the outline with a margin for the corner names.
+        ox, oy = projector.xy(track["lat"], track["lon"])
+        pad = 0.14 * max(float(np.ptp(ox)), float(np.ptp(oy)))
+        hidden = dict(visible=False, showgrid=False, zeroline=False, fixedrange=False)
+        layout_kwargs["xaxis"] = dict(hidden, range=[ox.min() - pad, ox.max() + pad],
+                                      domain=[0.0, 1.0])
+        layout_kwargs["yaxis"] = dict(hidden, range=[oy.min() - pad, oy.max() + pad],
+                                      scaleanchor="x", scaleratio=1, domain=list(_MAP_DOMAIN_Y))
     if width_px is not None:
         layout_kwargs["width"] = width_px
         layout_kwargs["autosize"] = False
@@ -474,10 +557,18 @@ def metric_strip(
     *,
     car_index: int = 0,
     source: str = "model",
+    colour: str | None = None,
+    distance_unit: str = "km",
 ) -> go.Figure:
-    """Plot the selected painted measure along lap distance with a synced car cursor."""
+    """Plot the selected painted measure along lap distance with a synced car cursor.
+
+    `colour` is the car's colour; without one the line is neutral ink. `distance_unit="m"`
+    keeps a workbook lap in the metres the workbook reports.
+    """
+    line_colour = colour or pal.text_secondary
     car_idx = max(0, min(int(car_index), len(steps) - 1))
-    dist_km = steps["distance_m"].to_numpy(dtype=float) / 1000.0
+    scale = 1.0 if distance_unit == "m" else 1000.0
+    dist_km = steps["distance_m"].to_numpy(dtype=float) / scale
     y_arr = values.to_numpy(dtype=float)
     car_km = float(dist_km[car_idx])
     car_val = float(y_arr[car_idx]) if pd.notna(y_arr[car_idx]) else 0.0
@@ -490,19 +581,20 @@ def metric_strip(
         y=y_arr,
         mode=mode,
         showlegend=False,
-        line=dict(color=pal.series[0], width=2),
-        marker=dict(size=6, color=pal.series[0], line=dict(color=pal.surface, width=1.5)),
+        line=dict(color=line_colour, width=2),
+        marker=dict(size=6, color=line_colour, line=dict(color=pal.surface, width=1.5)),
         customdata=formatted,
-        hovertemplate=f"%{{x:.2f}} km<br>{label}: %{{customdata}} {unit}<extra></extra>",
+        hovertemplate=(f"%{{x:,.0f}} m" if distance_unit == "m" else "%{x:.2f} km")
+        + f"<br>{label}: %{{customdata}} {unit}<extra></extra>",
     ))
 
     if diverging:
         fig.add_hline(y=0, line=dict(color=pal.axis, width=1, dash="dot"), layer="below")
 
-    max_km = float(dist_km[-1]) if len(dist_km) else 7.0
+    max_km = float(dist_km[-1]) if len(dist_km) else 7000.0 / scale
     for at in LANDMARKS:
-        if at <= max_km * 1000.0:
-            fig.add_vline(x=at / 1000.0, line=dict(color=pal.grid, width=1, dash="dot"),
+        if at <= max_km * scale:
+            fig.add_vline(x=at / scale, line=dict(color=pal.grid, width=1, dash="dot"),
                           layer="below")
 
     clean = values.dropna()
@@ -524,9 +616,9 @@ def metric_strip(
         marker=dict(size=10, color=pal.text_primary, line=dict(color=pal.surface, width=2)),
     ))
 
-    style_axes(fig, pal, x_title="Lap distance (km)", y_title=f"{label} ({unit})")
+    style_axes(fig, pal, x_title=f"Lap distance ({distance_unit})", y_title=f"{label} ({unit})")
     fig.update_layout(height=STRIP_HEIGHT, showlegend=False, margin=dict(l=8, r=8, t=12, b=8))
-    fig.update_xaxes(range=[0.0, max_km], dtick=1)
+    fig.update_xaxes(range=[0.0, max_km], dtick=1000.0 / scale)
     fig.update_yaxes(range=[y_lo, y_hi])
     return fig
 
@@ -546,7 +638,15 @@ def mark_corners(fig: go.Figure, trace: pd.DataFrame, x_column: str, pal: Palett
                                xanchor="center", yanchor="bottom", yshift=2 + 14 * (i % 2),
                                font=dict(color=pal.text_muted, size=11))
     if labels:
-        fig.update_layout(margin=dict(t=max(fig.layout.margin.t or 0, 44)))
+        # A top legend would print on the two label rows, so lift it above them.
+        shows_legend = fig.layout.showlegend is True or (
+            fig.layout.showlegend is None and sum(t.showlegend is not False for t in fig.data) > 1
+        )
+        top = 76 if shows_legend else 44
+        fig.update_layout(margin=dict(t=max(fig.layout.margin.t or 0, top)))
+        if shows_legend:
+            fig.update_layout(legend=dict(orientation="h", y=1.16, yanchor="bottom",
+                                          x=0, xanchor="left"))
 
 
 def lap_section(
@@ -556,6 +656,7 @@ def lap_section(
     paint: str = "Speed",
     *,
     source: str = "workbook",
+    colour: str | None = None,
 ) -> tuple[pd.Series, str] | None:
     """The map for one lap, with native keyboard-accessible playback and a painted-metric strip.
 
@@ -614,7 +715,9 @@ def lap_section(
         corner = _nearest_landmark(float(row["distance_m"]))
 
         # Tall portrait map on the left; readout, playback controls and painted strip on the right.
-        map_col, ctrl_col = st.columns([5, 6], gap="large")
+        # Controls first, so on a phone (where columns stack) Play and the scrubber sit above
+        # the map; on a desktop they read left to right, controls then circuit.
+        ctrl_col, map_col = st.columns([6, 5], gap="large")
 
         with ctrl_col:
             scope = (
@@ -623,7 +726,10 @@ def lap_section(
                 else "Workbook figures as reported — exact values at segment ends."
             )
             st.caption(scope)
-            st.markdown(f"**{_car_label(row, metric, cur_val, unit)}** · near *{corner}*")
+            st.markdown(
+                f"**{_car_label(row, metric, cur_val, unit, distance_unit='m' if source == 'workbook' else 'km')}**"
+                f" · near *{corner}*"
+            )
 
             btn_play, btn_reset = st.columns([1, 1])
             toggle_label = "❚❚ Pause" if st.session_state[play_key] else "▶ Play"
@@ -650,12 +756,10 @@ def lap_section(
                 car_idx = frame_ids[min(int(chosen_pos), max_frame)]
 
             strip_fig = metric_strip(
-                steps, values, metric, unit, diverging, pal, car_index=car_idx, source=source
+                steps, values, metric, unit, diverging, pal, car_index=car_idx, source=source,
+                colour=colour, distance_unit="m" if source == "workbook" else "km",
             )
-            st.plotly_chart(
-                strip_fig, width="stretch", theme=None,
-                config={"displayModeBar": "hover"}, key=f"{key}_strip",
-            )
+            show_chart(strip_fig, key=f"{key}_strip")
 
         with map_col:
             map_fig = lap_map(
@@ -663,11 +767,9 @@ def lap_section(
                 source=source,
                 car_index=car_idx,
                 uirevision=f"{key}_{name}_{st.session_state[reset_key]}",
+                compact=True,  # the map column is narrow on every layout; all ten on hover
             )
-            st.plotly_chart(
-                map_fig, width="stretch", theme=None,
-                config={"scrollZoom": True, "displayModeBar": "hover"}, key=f"{key}_map",
-            )
+            show_chart(map_fig, scroll_zoom=True, key=f"{key}_map")
 
     run_every = 0.25 if st.session_state[play_key] else None
     st.fragment(run_every=run_every)(_render_player)()
@@ -685,6 +787,7 @@ def lap_section(
     st.caption(
         "Map positions and landmark markers are approximate. Circuit outline: "
         "[bacinger/f1-circuits](https://github.com/bacinger/f1-circuits) (MIT licence). "
-        "Map tiles © OpenStreetMap contributors, © CARTO."
+        "Contour lines are an impression interpolated from the generated lap's altitude, "
+        "as on the slides."
     )
     return values, unit

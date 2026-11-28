@@ -324,6 +324,7 @@ def phev_lines(
         if not feas_df.empty:
             fig.add_trace(go.Scatter(
                 x=feas_df["battery_kwh"], y=feas_df["co2"], name=name, mode="lines+markers",
+                legendgroup=name,
                 line=dict(color=phev_colour, width=width, dash=feas_dash),
                 marker=dict(size=7, symbol="circle", color=phev_colour),
                 customdata=_phev_customdata(feas_df),
@@ -340,6 +341,10 @@ def phev_lines(
                 x=prov_df["battery_kwh"], y=prov_df["co2"],
                 name=f"{name} ({PROVISIONAL_LABEL})",
                 mode="lines+markers",
+                # One legend entry per grid, so the two panels' legends match; hollow markers
+                # carry the provisional state, as the caption under the chart says.
+                legendgroup=name,
+                showlegend=feas_df.empty,
                 line=dict(color=phev_colour, width=width, dash=prov_dash),
                 marker=dict(size=8, symbol="circle-open", color=phev_colour, line=dict(width=2)),
                 customdata=_phev_customdata(prov_df),

@@ -24,8 +24,8 @@ def app():
 
 
 def test_scenario_table_shows_the_model(app):
-    table = app.dataframe[0].value.set_index(["powertrain", "cycle"])
-    assert table.loc[("Petrol", "Francorchamps — eco"), "1 · Workbook vehicles, 250 g/kWh grid"] == "245.7"
+    table = app.dataframe[0].value.set_index(["Powertrain", "Cycle"])
+    assert table.loc[("Petrol", "Francorchamps — eco"), "1 · Workbook vehicles"] == "245.7"
     assert table.loc[("Petrol", "Francorchamps — eco"), "2 · One convention"] == "203.0"
 
 

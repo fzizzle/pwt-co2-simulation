@@ -20,13 +20,14 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.labels import readable
-from dashboard.layout import X_LABELS, configure, download
+from dashboard.layout import X_LABELS, configure, download, show_chart
 from dashboard.theme import POWERTRAIN_ORDER, Palette, style_axes
 from dashboard.track_charts import is_lap, lap_section, mark_corners
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.checkpoint import CYCLE_LABELS, CYCLE_ORDER
 from pwt.model import fleet
 from pwt.model.profile import generate
+from pwt.sweep import CYCLES
 from pwt.phase2 import (
     ASSIGNMENT_VEHICLES,
     GENERATED,
@@ -42,11 +43,11 @@ pal = configure("Model")
 
 #: Numbered because each scenario builds on the one before it.
 SCENARIO_LABELS = {
-    "exact": "1 · Workbook vehicles, 250 g/kWh grid",
+    "exact": "1 · Workbook vehicles",
     "harmonised": "2 · One convention",
-    "stage B": "3 · Better hybrid control",
-    "assignment": "4 · Assignment vehicles",
-    "storage losses": "5 · With storage losses",
+    "stage B": "3 · Hybrid control",
+    "assignment": "4 · Assignment",
+    "storage losses": "5 · Storage losses",
 }
 SCENARIO_NOTES = {
     "exact": "Each workbook's vehicle and formulas reproduced exactly, with electricity counted "
@@ -62,8 +63,8 @@ SCENARIO_NOTES = {
 }
 SMALL_CHARTS = {"gear": "Gear", "batt_soc": "Battery charge",
                 "engine_power_drivetrain_w": "Power demand"}
-CYCLE_CHOICES = {**CYCLE_LABELS, "franco_eco_generated": "Francorchamps — eco, generated",
-                 "franco_sport_generated": "Francorchamps — sport, generated"}
+CYCLE_CHOICES = {**CYCLE_LABELS, "franco_eco_generated": CYCLES["franco_eco_generated"],
+                 "franco_sport_generated": CYCLES["franco_sport_generated"]}
 
 
 def _format_shortfall(short_steps: int | None, short_kw: float | None) -> str:
@@ -137,13 +138,19 @@ def comparison() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     results = {scenario: scenario_cells(scenario) for scenario in SCENARIOS}
     summary = {scenario: cells_ for scenario, (cells_, _) in results.items()}
     co2_table = side_by_side(summary).reset_index()
+    # Rows in the chart's order (petrol, hybrid, plug-in hybrid, electric), readable headers.
+    rank = {POWERTRAIN_NAMES[p]: i for i, p in enumerate(POWERTRAIN_ORDER)}
+    co2_table = co2_table.sort_values(
+        "powertrain", key=lambda s: s.map(rank), kind="stable"
+    ).rename(columns={"powertrain": "Powertrain", "cycle": "Cycle"}).reset_index(drop=True)
 
     feas_rows = []
     long_rows = []
-    for powertrain, p_name in POWERTRAIN_NAMES.items():
+    for powertrain in POWERTRAIN_ORDER:
+        p_name = POWERTRAIN_NAMES[powertrain]
         for cycle in CYCLE_ORDER:
             c_name = CYCLE_LABELS[cycle]
-            feas_row = {"powertrain": p_name, "cycle": c_name}
+            feas_row = {"Powertrain": p_name, "Cycle": c_name}
             for scenario in SCENARIOS:
                 cells_, shortfall = results[scenario]
                 cell = next(
@@ -217,9 +224,6 @@ st.caption(
     "hybrid's NEDC and WLTC rows weight its charge-depleting and charge-sustaining runs."
 )
 co2_table, feas_table, long_frame = comparison()
-table = co2_table.rename(columns=SCENARIO_LABELS)
-st.dataframe(table, width="stretch", hide_index=True, height=len(table) * 35 + 38)
-download(table, "pwt-model-scenarios.csv")
 
 bar_scenario = st.selectbox(
     "Scenario chart",
@@ -228,20 +232,26 @@ bar_scenario = st.selectbox(
     format_func=SCENARIO_LABELS.get,
     key="model_bar_scenario",
 )
-st.plotly_chart(_scenario_bars(long_frame, bar_scenario, pal), width="stretch", theme=None)
+show_chart(_scenario_bars(long_frame, bar_scenario, pal))
 if bar_scenario == "exact":
     st.caption("g CO₂/km, EU grid 250 g/kWh · Engine check: unchecked for this scenario.")
 else:
     st.caption("g CO₂/km, EU grid 250 g/kWh · * outlined: engine short of the trace on some steps")
 
-st.markdown("**Engine capability check (short steps and worst shortfall)**")
-feas_display = feas_table.rename(columns=SCENARIO_LABELS)
-st.dataframe(feas_display, width="stretch", hide_index=True, height=len(feas_display) * 35 + 38)
-download(feas_display, "pwt-model-feasibility.csv")
-st.caption(
-    "Steps where demand exceeds the 74 kW full-load curve and worst shortfall in kW. "
-    "Scenarios without an engine check are labelled unchecked."
-)
+with st.expander("Scenario tables"):
+    table = co2_table.rename(columns=SCENARIO_LABELS)
+    st.dataframe(table, width="stretch", hide_index=True, height=len(table) * 35 + 38)
+    download(table, "pwt-model-scenarios.csv")
+
+    st.markdown("**Engine capability check (short steps and worst shortfall)**")
+    feas_display = feas_table.rename(columns=SCENARIO_LABELS)
+    st.dataframe(feas_display, width="stretch", hide_index=True,
+                 height=len(feas_display) * 35 + 38)
+    download(feas_display, "pwt-model-feasibility.csv")
+    st.caption(
+        "Steps where demand exceeds the 74 kW full-load curve and worst shortfall in kW. "
+        "Scenarios without an engine check are labelled unchecked."
+    )
 
 with st.expander("What each column changes"):
     for scenario, note in SCENARIO_NOTES.items():
@@ -256,10 +266,24 @@ powertrain = left.selectbox("Powertrain", list(POWERTRAIN_NAMES),
 drives = list(CYCLE_ORDER) + list(GENERATED)
 cycle = middle.selectbox("Drive", drives, index=drives.index("franco_sport_generated"),
                          format_func=CYCLE_CHOICES.get, key="model_cycle")
-scenario = right.selectbox("Scenario", list(SCENARIOS), index=2, key="model_scenario",
-                           format_func=SCENARIO_LABELS.get, disabled=cycle in GENERATED)
+# The choice lives under its own key: Streamlit drops a widget's state on any run where the
+# widget is not drawn, and the picker is hidden on a generated lap.
+SCENARIO_CHOICE = "model_scenario_choice"
+st.session_state.setdefault(SCENARIO_CHOICE, "stage B")
 if cycle in GENERATED:
-    st.caption("A generated lap has no workbook, so it only exists with the assignment vehicles.")
+    # A generated lap has no workbook; steps() runs it with the assignment vehicles unless
+    # the chosen scenario already is one of theirs. Say which, instead of showing a
+    # disabled picker that names a scenario it does not run.
+    chosen = st.session_state[SCENARIO_CHOICE]
+    scenario = chosen if chosen in ASSIGNMENT_VEHICLES else "assignment"
+    right.caption(f"Scenario: {SCENARIO_LABELS[scenario]}. A generated lap has no workbook, so "
+                  "it only exists with the assignment vehicles.")
+else:
+    options = list(SCENARIOS)
+    scenario = right.selectbox("Scenario", options,
+                               index=options.index(st.session_state[SCENARIO_CHOICE]),
+                               key="model_scenario", format_func=SCENARIO_LABELS.get)
+    st.session_state[SCENARIO_CHOICE] = scenario
 if powertrain == "phev" and cycle in ("nedc", "wltc"):
     st.caption("The plug-in hybrid's charge-depleting run (from 98 %); the scenario table "
                "weights it with the charge-sustaining run.")
@@ -272,10 +296,11 @@ tiles = [(label, text) for label, text in (
     ("Fuel", None if fuel is None or fuel == 0 else f"{fuel:.2f} l/100 km"),
     ("From the battery", None if battery is None or battery == 0
      else f"{battery:.1f} kWh/100 km"),
-    ("CO₂ (fuel, or grid for the electric car)", f"{co2:.1f} g/km"),
+    ("CO₂", f"{co2:.1f} g/km"),
 ) if text is not None]
 for slot, (label, text) in zip(st.columns(len(tiles)), tiles):
     slot.metric(label, text)
+st.caption("CO₂ counts the fuel burned, and for the electric car the grid electricity.")
 
 if cycle in GENERATED:
     drive_shortfall = gen_shortfall
@@ -309,26 +334,27 @@ else:
 
 on_lap = is_lap(cycle)
 if on_lap:
-    lap_section({CYCLE_CHOICES[cycle]: trace}, "model", pal, source="model")
+    lap_section({CYCLE_CHOICES[cycle]: trace}, "model", pal, source="model",
+                colour=pal.for_powertrain(powertrain))
 else:
     st.caption("This is a test cycle, not a circuit, so it has no track map. Pick a "
                "Francorchamps drive to see one.")
 
 x_column = "distance_m" if on_lap else "time_s"
 st.markdown("**Speed and elevation**")
-fig = charts.speed_and_altitude(trace, x_column, pal)
+fig = charts.speed_and_altitude(trace, x_column, pal, colour=pal.for_powertrain(powertrain))
 style_axes(fig, pal, x_title=X_LABELS[x_column])
 fig.update_layout(height=420)
 if on_lap:
     mark_corners(fig, trace, x_column, pal)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig)
 
 plots = [c for c in SMALL_CHARTS if c in trace.columns]
 cols = st.columns(len(plots))
 for column, slot in zip(plots, cols):
     with slot:
         st.markdown(f"**{SMALL_CHARTS[column]}**")
-        fig = (charts.gear_steps(trace, x_column, pal) if column == "gear"
+        fig = (charts.gear_steps(trace, x_column, pal, colour=pal.for_powertrain(powertrain)) if column == "gear"
                else charts.trace_lines(trace, [column], x_column, pal))
         style_axes(fig, pal, x_title=X_LABELS[x_column],
                    y_title="" if column == "gear" else
@@ -336,7 +362,7 @@ for column, slot in zip(plots, cols):
         fig.update_layout(height=300)
         if on_lap:
             mark_corners(fig, trace, x_column, pal, labels=False)
-        st.plotly_chart(fig, width="stretch", theme=None)
+        show_chart(fig)
 
 with st.expander("How the generated laps are built"):
     st.markdown(

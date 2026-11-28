@@ -13,6 +13,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    show_chart,
     WB_TRACE_RUN_KEY,
     X_LABELS,
     configure,
@@ -42,7 +43,9 @@ st.title("Trace explorer")
 
 # --- controls -------------------------------------------------------------------------------
 
-row = run_picker(runs, "Run", key="trace_run", index=0, persist_key=WB_TRACE_RUN_KEY)
+run_column, axis_column = st.columns([3, 1], vertical_alignment="bottom")
+with run_column:
+    row = run_picker(runs, "Run", key="trace_run", index=0, persist_key=WB_TRACE_RUN_KEY)
 sidebar_reset_button()
 trace = trace_for(row["powertrain"], row["cycle"])
 
@@ -52,7 +55,7 @@ if trace.empty:
 
 available = numeric_trace_columns(trace)
 x_options = axis_columns(trace)
-x_column = st.sidebar.selectbox(
+x_column = axis_column.selectbox(
     "X-axis", options=x_options, format_func=lambda c: X_LABELS[c]
 )
 x_label = X_LABELS[x_column]
@@ -60,7 +63,7 @@ x_label = X_LABELS[x_column]
 for excluded in ("distance_m", "time_s"):
     reason = axis_exclusion_reason(trace, excluded)
     if reason:
-        st.sidebar.caption(reason)
+        st.caption(reason)
 if x_column == "step":
     trace = trace.assign(step=range(len(trace)))
 
@@ -71,28 +74,29 @@ on_lap = is_lap(row["cycle"]) and "distance_m" in x_options
 # --- the three standing views ---------------------------------------------------------------
 
 st.subheader("Speed and altitude")
-fig = charts.speed_and_altitude(trace, x_column, pal)
+fig = charts.speed_and_altitude(trace, x_column, pal, colour=pal.for_powertrain(row["powertrain"]))
 style_axes(fig, pal, x_title=x_label)
 fig.update_layout(height=420)
 if on_lap:
     mark_corners(fig, trace, x_column, pal)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig, toolbar=True)
 
 if on_lap:
     st.subheader("Circuit map")
-    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal, source="workbook")
+    lap_section({run_label(row["powertrain"], row["cycle"]): trace}, "trace", pal, source="workbook",
+                colour=pal.for_powertrain(row["powertrain"]))
 
 left, right = st.columns(2)
 
 with left:
     if "gear" in trace.columns and trace["gear"].notna().any():
         st.subheader("Gear")
-        fig = charts.gear_steps(trace, x_column, pal)
+        fig = charts.gear_steps(trace, x_column, pal, colour=pal.for_powertrain(row["powertrain"]))
         style_axes(fig, pal, x_title=x_label, y_title="Gear")
         fig.update_layout(height=300)
         if on_lap:
             mark_corners(fig, trace, x_column, pal, labels=False)
-        st.plotly_chart(fig, width="stretch", theme=None)
+        show_chart(fig)
     else:
         st.subheader("Gear")
         st.caption("This workbook has no gear data.")
@@ -104,7 +108,7 @@ with right:
     fig.update_layout(height=300)
     if on_lap:
         mark_corners(fig, trace, x_column, pal, labels=False)
-    st.plotly_chart(fig, width="stretch", theme=None)
+    show_chart(fig)
     st.caption(
         "Acceleration force can be negative during braking. "
         "Resistive force can be negative on descents."
@@ -125,7 +129,7 @@ if columns:
     fig.update_layout(height=380)
     if on_lap:
         mark_corners(fig, trace, x_column, pal)
-    st.plotly_chart(fig, width="stretch", theme=None)
+    show_chart(fig, toolbar=True)
     if len(columns) > 1:
         st.caption(
             "Selected columns share one scale. Plot columns with different units separately."

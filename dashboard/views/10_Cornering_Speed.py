@@ -14,9 +14,9 @@ import pandas as pd
 import streamlit as st
 
 from dashboard.cornering_charts import (
-    CO2, VARIANTS, baseline_row, comparison_table, infeasible, line_chart, rows_for,
+    CO2, VARIANTS, baseline_row, comparison_table, infeasible, response_chart, rows_for,
 )
-from dashboard.layout import configure, download
+from dashboard.layout import configure, download, rounded, show_chart
 from pwt.catalog import POWERTRAIN_NAMES
 from pwt.sweep import CYCLES
 
@@ -41,6 +41,8 @@ def render_report(text: str) -> None:
     for index in range(0, len(parts), 3):
         # Repo-relative documents are downloads below, not URLs on the Streamlit server.
         markdown = re.sub(r"\[([^\]]+)\]\((?!https?://)[^)]+\)", r"\1", parts[index])
+        # The page already has its h1; demote the report's headings one level.
+        markdown = re.sub(r"^(#{1,5}) ", r"#\1 ", markdown, flags=re.MULTILINE)
         st.markdown(markdown)
         if index + 2 < len(parts):
             path = (DOCS / parts[index + 2]).resolve()
@@ -60,7 +62,7 @@ except (FileNotFoundError, pd.errors.EmptyDataError):
     st.stop()
 
 left, middle, right = st.columns(3)
-powertrain = left.selectbox("Car", list(POWERTRAIN_NAMES), format_func=POWERTRAIN_NAMES.get,
+powertrain = left.selectbox("Powertrain", list(POWERTRAIN_NAMES), format_func=POWERTRAIN_NAMES.get,
                            key="study_c_powertrain")
 variant = middle.selectbox("Change", list(VARIANTS), format_func=lambda v: VARIANTS[v][2],
                            key="study_c_variant")
@@ -82,13 +84,10 @@ with explore:
     elif infeasible(rows).any():
         st.warning("Some variants cannot follow their lap. Their rows are marked as provisional "
                    "and drawn with hollow markers.")
-    st.plotly_chart(line_chart(rows, variant, "lap_time_s", "Lap time (s)", powertrain, pal),
-                    width="stretch", theme=None)
-    st.plotly_chart(line_chart(rows, variant, grid, "CO₂ emissions (g CO₂/km)", powertrain, pal),
-                    width="stretch", theme=None)
+    show_chart(response_chart(rows, variant, grid, powertrain, pal))
     st.caption("Hollow markers cannot follow the lap at the engine's full-load power (provisional).")
     numbers = comparison_table(rows, variant, grid)
-    st.dataframe(numbers, width="stretch", hide_index=True)
+    st.dataframe(rounded(numbers), width="stretch", hide_index=True)
     download(numbers, f"pwt-study-c-{powertrain}-{variant}.csv", "Download this comparison")
     with st.expander("How to read the study", expanded=False):
         st.markdown("- **Radii** are inferred or estimated from a coarse outline.\n"

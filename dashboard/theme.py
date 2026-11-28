@@ -47,6 +47,11 @@ POWERTRAIN_MARKERS: dict[str, str] = {
     "bev": "triangle-up",
 }
 
+#: UI accent: neutral silver, so no chip, tab or active control looks like a powertrain.
+#: Filled controls carry ACCENT_INK on it (13.9:1). Owner decision, 27 Nov 2026.
+ACCENT = "#d1d1d6"
+ACCENT_INK = "#000000"
+
 FONT_STACK = (
     "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', "
     "'Segoe UI', Helvetica, Arial, sans-serif"
@@ -65,6 +70,7 @@ class Palette:
     surface_raised: str = ""
     border: str = ""
     primary: str = ""
+    primary_ink: str = "#000000"
     name: str = "dark"
 
     def for_powertrain(self, powertrain: str | None) -> str:
@@ -92,7 +98,9 @@ LIGHT = Palette(
     series=_CAR_SERIES,
     surface_raised="#f5f5f7",
     border="#e5e5ea",
-    primary="#1f63a8",
+    # Silver is too faint on white, so a viewer who switches to light gets ink-filled controls.
+    primary="#1d1d1f",
+    primary_ink="#ffffff",
     name="light",
 )
 
@@ -106,7 +114,8 @@ DARK = Palette(
     series=_CAR_SERIES,
     surface_raised="#1c1c1e",
     border="#2c2c2e",
-    primary="#2f78c1",
+    primary=ACCENT,
+    primary_ink=ACCENT_INK,
     name="dark",
 )
 

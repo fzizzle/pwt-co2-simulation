@@ -14,6 +14,11 @@ import pandas as pd
 #: Per-step columns: name and unit as the reader sees them. Names follow the workbooks' own
 #: headers, so the table matches the spreadsheet a reader may have open beside it.
 COLUMNS: dict[str, tuple[str, str]] = {
+    # The four reported results per run, named as on the Overview (layout.CANONICAL_QUANTITIES).
+    "co2_g_per_km": ("CO₂ emissions", "g CO₂/km"),
+    "consumption_l_per_100km": ("Fuel consumption", "l/100 km"),
+    "energy_wh_per_100km": ("Electrical energy", "Wh/100 km"),
+    "co2_g_total": ("Total CO₂", "g CO₂"),
     "step": ("Step", ""),
     "delta_time_s": ("Time step", "s"),
     "delta_distance_m": ("Distance step", "m"),

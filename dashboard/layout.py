@@ -133,8 +133,6 @@ def render_run_notices(*runs: pd.Series) -> None:
 def inject_css(pal: Palette) -> None:
     """Apply deck typography, tabular numerals, WCAG-AA active controls, and card tokens."""
     is_dark = pal.name == "dark"
-    active_bg = "#2c2c2e" if is_dark else "#1d1d1f"
-    active_fg = "#f5f5f7" if is_dark else "#ffffff"
     link_fg = "#6eb4fa" if is_dark else "#1f63a8"
     badge_wb_fg = "#e2b36a" if is_dark else "#7a5210"
     badge_model_fg = "#7bb4ec" if is_dark else "#1b5594"
@@ -148,25 +146,65 @@ def inject_css(pal: Palette) -> None:
         .stMetricValue, [data-testid="stMetricValue"], .pwt-tabular {{
             font-variant-numeric: tabular-nums;
         }}
-        /* High-contrast active segmented controls and pills (WCAG AA >= 4.5:1). */
-        [data-testid="stBaseButton-segmented_controlActive"],
-        [data-testid="stBaseButton-pillsActive"],
-        button[kind="segmented_controlActive"],
-        button[kind="pillsActive"] {{
-            background-color: {active_bg} !important;
-            color: {active_fg} !important;
+        /* Active segmented controls and pills, filled with the accent and its own ink.
+           Selectors come from the live Streamlit 1.66 DOM: the selected button carries
+           data-variant and aria-checked, not a `kind` attribute. */
+        .stApp button[data-variant="segmented_control"][aria-checked="true"],
+        .stApp button[data-variant="pills"][aria-checked="true"] {{
+            background-color: {pal.primary} !important;
+            color: {pal.primary_ink} !important;
             border-color: {pal.primary} !important;
             font-weight: 600 !important;
         }}
-        /* Multiselect tags: white text on accessible primaryColor (>= 4.5:1). */
-        span[data-baseweb="tag"] {{
-            background-color: {pal.primary} !important;
-            color: #ffffff !important;
+        /* Multiselect chips: Streamlit fills them with primaryColor but forces white text,
+           which is unreadable on silver. Give the chip, its label and its close icon the ink. */
+        [data-testid="stMultiSelectTagsContainer"] [data-tag],
+        [data-testid="stMultiSelectTagsContainer"] [data-tag] * {{
+            background-color: {pal.primary};
+            color: {pal.primary_ink} !important;
+            fill: {pal.primary_ink} !important;
         }}
-        span[data-baseweb="tag"] span,
-        span[data-baseweb="tag"] svg {{
-            color: #ffffff !important;
-            fill: #ffffff !important;
+        [data-testid="stMultiSelectTagsContainer"] [data-tag] * {{
+            background-color: transparent;
+        }}
+        /* Metric labels and values wrap instead of ending in an ellipsis. */
+        [data-testid="stMetricLabel"],
+        [data-testid="stMetricLabel"] * {{
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }}
+        [data-testid="stMetricValue"],
+        [data-testid="stMetricValue"] * {{
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            overflow-wrap: anywhere;
+            line-height: 1.15;
+        }}
+        /* On a phone Streamlit stacks columns, so a row of four metrics became a tall
+           column. Keep metric rows two across instead. */
+        @media (max-width: 640px) {{
+            [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) {{
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                gap: 0.75rem 1rem !important;
+            }}
+            [data-testid="stHorizontalBlock"]:has([data-testid="stMetric"]) > div {{
+                flex: 1 1 calc(50% - 1rem) !important;
+                min-width: calc(50% - 1rem) !important;
+            }}
+            [data-testid="stMetricValue"] {{
+                font-size: 1.5rem !important;
+            }}
+        }}
+        /* Inline code (file names, formulas) in quiet greys instead of Streamlit's green. */
+        .stApp code {{
+            background-color: {pal.surface_raised} !important;
+            color: {pal.text_secondary} !important;
+            border: 1px solid {pal.border};
+            border-radius: 5px;
+            padding: 1px 5px;
         }}
         /* Keep caption hyperlinks at full contrast instead of inheriting 0.6 opacity. */
         [data-testid="stCaptionContainer"] {{
@@ -228,6 +266,20 @@ def configure(title: str) -> Palette:
     return pal
 
 
+def show_chart(
+    fig: go.Figure, *, toolbar: bool = False, scroll_zoom: bool = False, key: str | None = None
+) -> None:
+    """Draw a Plotly figure. The only place in the dashboard that calls `st.plotly_chart`.
+
+    The toolbar is off by default because it sat on top of legends and corner labels. Charts
+    where zooming helps pass `toolbar=True` and get it on hover only.
+    """
+    config = {"displayModeBar": "hover" if toolbar else False, "displaylogo": False}
+    if scroll_zoom:
+        config["scrollZoom"] = True
+    st.plotly_chart(fig, width="stretch", theme=None, key=key, config=config)
+
+
 def _rgba(hex_colour: str, alpha: float) -> str:
     """A hex colour as rgba(), so fills track the active palette instead of being hardcoded."""
     h = hex_colour.lstrip("#")
@@ -236,35 +288,46 @@ def _rgba(hex_colour: str, alpha: float) -> str:
 
 
 def elevation_strip(trace: pd.DataFrame, pal: Palette) -> go.Figure | None:
-    """The Spa elevation profile as a thin band.
+    """The Spa elevation profile as a quiet band, with its scale.
 
-    This is the recurring motif of the tool and it is real data, not ornament: the altitude
-    column drives the grade term, which is why the same car returns different figures on the
-    lap and on NEDC. Drawn flat and quiet so it frames the page without competing with it.
+    Real data, not ornament: the altitude column drives the grade term, which is why the same
+    car returns different figures on the lap and on NEDC. It describes the circuit, not a car,
+    so it is drawn in neutral ink. The x-axis stays in the workbook's own metres, and the
+    y-axis marks only the lowest and highest point.
     """
     if "altitude_m" not in trace.columns or trace["altitude_m"].isna().all():
         return None
     x = "distance_m" if "distance_m" in trace.columns else "step"
-    accent = pal.for_powertrain("bev")
+    ink = pal.text_secondary
     fig = go.Figure()
     fig.add_scatter(
         x=trace[x],
         y=trace["altitude_m"],
         mode="lines",
-        line=dict(color=accent, width=1.5),  # linear: smoothing would misstate the profile
+        line=dict(color=ink, width=1.5),  # linear: smoothing would misstate the profile
         fill="tozeroy",
-        fillcolor=_rgba(accent, 0.14),
-        hoverinfo="skip",
+        fillcolor=_rgba(ink, 0.10),
+        hovertemplate="%{x:,.0f} m along the lap · %{y:.0f} m altitude<extra></extra>",
     )
-    low, high = trace["altitude_m"].min(), trace["altitude_m"].max()
+    low, high = float(trace["altitude_m"].min()), float(trace["altitude_m"].max())
+    span = max(high - low, 1.0)
+    tick = dict(color=pal.text_muted, size=11)
     fig.update_layout(
-        height=64,
-        margin=dict(l=0, r=0, t=0, b=0),
+        height=110,
+        margin=dict(l=8, r=8, t=4, b=8),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
         showlegend=False,
-        xaxis=dict(visible=False),
-        yaxis=dict(visible=False, range=[low - (high - low) * 0.4, high + (high - low) * 0.2]),
+        font=dict(family=FONT_STACK),
+        xaxis=dict(
+            showgrid=False, zeroline=False, ticks="", tickfont=tick, ticksuffix=" m",
+            tickformat=",.0f", nticks=8,
+        ),
+        yaxis=dict(
+            range=[low - span * 0.4, high + span * 0.2], showgrid=False, zeroline=False,
+            tickmode="array", tickvals=[low, high],
+            ticktext=[f"{low:.0f} m", f"{high:.0f} m"], tickfont=tick,
+        ),
     )
     return fig
 
@@ -358,8 +421,15 @@ def sidebar_reset_button(key_suffix: str = "") -> None:
     )
 
 
-def sidebar_filters(runs: pd.DataFrame, *, key_prefix: str = "wb") -> tuple[list[str], list[str]]:
-    """Powertrain and cycle selection, persisted across workbook pages with a reset."""
+def sidebar_filters(
+    runs: pd.DataFrame, *, key_prefix: str = "wb", container=None
+) -> tuple[list[str], list[str]]:
+    """Powertrain and cycle selection, persisted across workbook pages with a reset.
+
+    The pickers go in `container` (the sidebar by default); the reset button always stays in
+    the sidebar, where every workbook page keeps it.
+    """
+    host = st.sidebar if container is None else container
     valid_pts = list(POWERTRAIN_ORDER)
     valid_cycles = list(CYCLE_NAMES)
     pts_key = f"wb_filter_powertrains_{key_prefix}"
@@ -379,13 +449,13 @@ def sidebar_filters(runs: pd.DataFrame, *, key_prefix: str = "wb") -> tuple[list
     if cyc_key not in st.session_state:
         st.session_state[cyc_key] = list(saved_cycles)
 
-    powertrains = st.sidebar.multiselect(
+    powertrains = host.multiselect(
         "Powertrains",
         options=valid_pts,
         key=pts_key,
         format_func=lambda p: POWERTRAIN_NAMES[p],
     )
-    cycles = st.sidebar.multiselect(
+    cycles = host.multiselect(
         "Driving cycles",
         options=valid_cycles,
         key=cyc_key,
@@ -404,6 +474,7 @@ def measure_picker(
     widget: str = "radio",
     label: str = "Measure",
     label_visibility: str = "visible",
+    horizontal: bool = False,
 ) -> str:
     """Canonical workbook measure selector, persisted across workbook pages."""
     options = list(CANONICAL_QUANTITIES)
@@ -427,6 +498,7 @@ def measure_picker(
             key=key,
             format_func=lambda q: CANONICAL_QUANTITIES[q][0],
             label_visibility=label_visibility,
+            horizontal=horizontal,
         )
     st.session_state[WB_MEASURE_KEY] = choice
     return choice
@@ -472,6 +544,14 @@ def source_caption(*rows: pd.Series) -> None:
     files = [f"`{row['source_file']}`" for row in rows]
     prefix = "Workbook: " if len(files) == 1 else "Workbooks: "
     st.caption(prefix + " · ".join(files))
+
+
+def rounded(frame: pd.DataFrame) -> pd.DataFrame:
+    """A table for the screen: one decimal, two for elasticities. Downloads keep full precision."""
+    out = frame.copy()
+    for column in out.select_dtypes("number").columns:
+        out[column] = out[column].round(2 if "lastic" in str(column) else 1)
+    return out
 
 
 def download(frame: pd.DataFrame, filename: str, label: str = "Download CSV") -> None:

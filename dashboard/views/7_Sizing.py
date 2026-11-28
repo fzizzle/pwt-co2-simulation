@@ -16,7 +16,7 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from dashboard.layout import configure, download
+from dashboard.layout import configure, download, show_chart
 from dashboard.sizing_charts import (
     HEAT_MAX_PCT,
     PROVISIONAL_LABEL,
@@ -35,8 +35,15 @@ from pwt.sweep import (
 pal = configure("Hybrid sizing")
 
 SHORT = {"NEDC": "NEDC", "WLTC Class 3": "WLTC",
-         "Francorchamps eco, generated": "Francorchamps — eco",
-         "Francorchamps sport, generated": "Francorchamps — sport"}
+         CYCLES["franco_eco_generated"]: CYCLES["franco_eco_generated"],
+         CYCLES["franco_sport_generated"]: CYCLES["franco_sport_generated"]}
+
+
+def _motor(kw: float) -> str:
+    """'a 50 kW motor', 'an 80 kW motor': the article follows how the number is said."""
+    text = f"{kw:g}"
+    article = "an" if text.startswith("8") or text in ("11", "18") else "a"
+    return f"{article} {text} kW motor"
 LOSSY = 0.85
 
 st.title("Hybrid sizing")
@@ -68,18 +75,18 @@ hyb_wltc_sel = best_selection(hybrid[hybrid["cycle"] == "wltc"])
 hyb_sport_sel = best_selection(hybrid[hybrid["cycle"] == "franco_sport_generated"])
 fit_wltc = hyb_wltc_sel["feasible"] if hyb_wltc_sel["feasible"] is not None else hyb_wltc_sel["provisional"]
 fit_sport = hyb_sport_sel["feasible"] if hyb_sport_sel["feasible"] is not None else hyb_sport_sel["provisional"]
-wltc_note = f"with a {fit_wltc['motor_kw']:g} kW motor" + (
+wltc_note = f"with {_motor(fit_wltc['motor_kw'])}" + (
     f" ({PROVISIONAL_LABEL})" if hyb_wltc_sel["feasible"] is None else ""
 )
-sport_note = f"with a {fit_sport['motor_kw']:g} kW motor, set by the limits" + (
+sport_note = f"with {_motor(fit_sport['motor_kw'])}, set by the limits" + (
     f" ({PROVISIONAL_LABEL})" if hyb_sport_sel["feasible"] is None else ""
 )
 tiles = (
-    ("Full hybrid on WLTC, with losses", f"+{rise:.0%}",
+    ("WLTC hybrid, with losses", f"+{rise:.0%}",
      f"{band_wltc[1.0]:.0f} → {band_wltc[LOSSY]:.0f} g CO₂/km"),
     ("Band stops paying below", f"{crossing[0]:.0%}", "energy kept each way, on WLTC"),
     ("Best full hybrid on WLTC", f"{fit_wltc['battery_kwh']:g} kWh", wltc_note),
-    ("Best full hybrid, Francorchamps — sport", f"{fit_sport['battery_kwh']:g} kWh", sport_note),
+    ("Best full hybrid, sport lap", f"{fit_sport['battery_kwh']:g} kWh", sport_note),
 )
 for column, (label, value, note) in zip(st.columns(4), tiles):
     column.metric(label, value)
@@ -94,14 +101,11 @@ st.markdown("The band charges the battery from the engine, and that energy now p
 cycle_label = st.segmented_control(
     "Cycle", list(CYCLES.values()), default=wltc, format_func=SHORT.get, key="storage_cycle",
 ) or wltc
-st.plotly_chart(
-    efficiency_lines(
+show_chart(efficiency_lines(
         sensitivity.xs("band", level="strategy")[cycle_label],
         sensitivity.xs("sheets' rule", level="strategy")[cycle_label],
         petrol[cycle_label], pal,
-    ),
-    width="stretch", theme=None,
-)
+    ))
 if cycle_label.startswith("Francorchamps"):
     st.caption("On the laps the band keeps its lead at every efficiency tested.")
 
@@ -114,7 +118,7 @@ st.markdown("The assignment's 1.5 kWh, 25 kW hybrid with its band. Left of the l
 band = sensitivity.xs("band", level="strategy")
 free_gap = {SHORT[c]: (band[c][1.0] / petrol[c] - 1) * 100 for c in CYCLES.values()}
 lossy_gap = {SHORT[c]: (band[c][LOSSY] / petrol[c] - 1) * 100 for c in CYCLES.values()}
-st.plotly_chart(petrol_gap(free_gap, lossy_gap, pal), width="stretch", theme=None)
+show_chart(petrol_gap(free_gap, lossy_gap, pal))
 
 # --- 3 ----------------------------------------------------------------------------------------
 
@@ -124,11 +128,11 @@ st.markdown(f"Each cell is one full hybrid. Both maps share a scale, capped at "
             f"{HEAT_MAX_PCT:.0f} % above the best, so the pale map really is flatter.")
 left, right = st.columns(2)
 left.markdown("**WLTC: every buildable size is within 11 % of the best**")
-left.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=True),
-                  width="stretch", theme=None)
-right.markdown("**Francorchamps — sport: the spread reaches 27 %**")
-right.plotly_chart(size_heatmap(hybrid[hybrid["cycle"] == "franco_sport_generated"], pal),
-                   width="stretch", theme=None)
+with left:
+    show_chart(size_heatmap(hybrid[hybrid["cycle"] == "wltc"], pal, show_scale=True))
+right.markdown(f"**{CYCLES['franco_sport_generated']}: the spread reaches 27 %**")
+with right:
+    show_chart(size_heatmap(hybrid[hybrid["cycle"] == "franco_sport_generated"], pal))
 st.caption(
     f"The lap's best size sits where the 80 kW grid edge meets the {MAX_C_RATE:.0f}C limit, so it "
     "marks those limits rather than a free optimum. Engine check: "
@@ -198,22 +202,18 @@ ymax = max(
 ) * 1.1
 left, right = st.columns(2)
 left.markdown("**WLTC: R101 weighting keeps rewarding range**")
-left.plotly_chart(
-    phev_lines(
+with left:
+    show_chart(phev_lines(
         eu_wltc, fr_wltc, ymax, (20.0, "Still falling at<br>the grid edge"), pal,
         eu_feasible=eu_wltc_feas, fr_feasible=fr_wltc_feas,
-    ),
-    width="stretch", theme=None,
-)
+    ))
 left.caption(_selection_caption(phev_wltc_sel, eu_wltc))
 right.markdown("**One Francorchamps sport lap: past 6 kWh, a battery is only mass**")
-right.plotly_chart(
-    phev_lines(
+with right:
+    show_chart(phev_lines(
         eu_sport, fr_sport, ymax, (6.0, "Enough for<br>the whole lap"), pal,
         eu_feasible=eu_sport_feas, fr_feasible=fr_sport_feas,
-    ),
-    width="stretch", theme=None,
-)
+    ))
 right.caption(_selection_caption(phev_sport_sel, eu_sport))
 
 # --- tables -----------------------------------------------------------------------------------

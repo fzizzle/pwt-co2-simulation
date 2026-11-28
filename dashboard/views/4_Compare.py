@@ -14,6 +14,8 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    mark_gap_value,
+    show_chart,
     CANONICAL_QUANTITIES,
     WB_CMP_LEFT_KEY,
     WB_CMP_RIGHT_KEY,
@@ -67,51 +69,17 @@ for column, (display, unit) in CANONICAL_QUANTITIES.items():
     a, b = left_row.get(column), right_row.get(column)
     if pd.isna(a) and pd.isna(b):
         continue
-    if pd.isna(a) or pd.isna(b):
-        change = "—"
-    elif a == 0:
-        change = "—"  # a percentage change from zero says nothing
-    else:
-        change = f"{(b - a) / abs(a) * 100:+.1f}%"
+    # Only the two reported values, side by side: a workbook page does no arithmetic on them.
     records.append(
         {
             "Figure": f"{display} ({unit})",
-            left_name: a,
-            right_name: b,
-            "Difference (right minus left)": None if pd.isna(a) or pd.isna(b) else b - a,
-            "Change from left (%)": change,
+            left_name: mark_gap_value(a, left_row["powertrain"], left_row["cycle"]),
+            right_name: mark_gap_value(b, right_row["powertrain"], right_row["cycle"]),
         }
     )
 figures = pd.DataFrame(records)
-st.dataframe(
-    figures.style.format({left_name: figure, right_name: figure,
-                          "Difference (right minus left)": lambda d: ("+" if d > 0 else "") + figure(d)},
-                         na_rep="—"),
-    width="stretch",
-    hide_index=True,
-)
-st.caption(
-    "A dash marks a missing figure. Percentage change is undefined when the left value is zero."
-)
-
-# --- inputs that differ ---------------------------------------------------------------------
-
-st.subheader("Parameter differences")
-pair = pd.concat([left_row.to_frame().T, right_row.to_frame().T], ignore_index=True)
-differences = varying_parameters(pair)
-if not differences.empty:
-    differences = differences.drop(columns="Distinct values")
-
-if differences.empty:
-    st.caption("The workbooks report the same parameters and values.")
-else:
-    st.dataframe(
-        differences.style.format({left_name: number, right_name: number}, na_rep="—"),
-        width="stretch",
-        hide_index=True,
-    )
-    st.caption("A dash marks a parameter the workbook does not report.")
-    download(differences, "parameter-differences.csv", "Download parameter differences (CSV)")
+st.dataframe(figures, width="stretch", hide_index=True)
+st.caption("Figures as each workbook reports them. A dash marks a figure the workbook does not report.")
 
 # --- one trace column, overlaid --------------------------------------------------------------
 
@@ -151,7 +119,7 @@ both_laps = is_lap(left_row["cycle"]) and is_lap(right_row["cycle"])
 # Eco and sport reach a corner at different times, so only distance suits both.
 if both_laps and (x_column == "distance_m" or left_row["cycle"] == right_row["cycle"]):
     mark_corners(fig, left_trace, x_column, pal)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig, toolbar=True)
 
 if left_row["cycle"] != right_row["cycle"] and x_column == "step":
     st.caption("Step numbers refer to each workbook's own trace.")
@@ -174,3 +142,21 @@ laps = {name: t for name, t, r in ((left_name, left_trace, left_row),
 if laps:
     st.subheader("Circuit map")
     lap_section(laps, "compare", pal, source="workbook")
+
+# --- inputs that differ ---------------------------------------------------------------------
+
+st.subheader("Parameter differences")
+pair = pd.concat([left_row.to_frame().T, right_row.to_frame().T], ignore_index=True)
+differences = varying_parameters(pair)
+if not differences.empty:
+    differences = differences.drop(columns="Distinct values")
+
+if differences.empty:
+    st.caption("The workbooks report the same parameters and values.")
+else:
+    shown = differences.copy()
+    for name in (left_name, right_name):
+        shown[name] = shown[name].map(number)  # a missing parameter reads "—", never None
+    st.dataframe(shown, width="stretch", hide_index=True)
+    st.caption("A dash marks a parameter the workbook does not report.")
+    download(differences, "parameter-differences.csv", "Download parameter differences (CSV)")

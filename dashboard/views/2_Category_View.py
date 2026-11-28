@@ -20,6 +20,7 @@ import streamlit as st
 
 from dashboard import charts
 from dashboard.layout import (
+    show_chart,
     CANONICAL_QUANTITIES,
     X_LABELS,
     configure,
@@ -113,7 +114,7 @@ gaps = {
 fig = charts.grouped_totals(members, quantity, pal, unit=unit, gaps=gaps)
 style_axes(fig, pal, y_title=f"{display_name} ({unit})")
 fig.update_layout(height=400)
-st.plotly_chart(fig, width="stretch", theme=None)
+show_chart(fig)
 
 if members[quantity].isna().all():
     st.caption(f"No run in this category reports {display_name}.")
@@ -179,7 +180,7 @@ elif plottable:
         x_column == "distance_m" or len(overlay_cycles) == 1
     ):
         mark_corners(fig, traces[0], x_column, pal)
-    st.plotly_chart(fig, width="stretch", theme=None)
+    show_chart(fig, toolbar=True)
 
     if member_dashes:
         st.caption("Line patterns identify cycles.")

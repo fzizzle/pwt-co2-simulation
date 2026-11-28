@@ -37,9 +37,9 @@ def test_scenario_feasibility_table_keeps_shortfall_and_marks_exact_unchecked(ap
     """Model page keeps shortfall dict from scenario_cells and labels exact as unchecked."""
     # Dataframe 0 is the CO2 table (locked by test_model_page.py); dataframe 1 is feasibility.
     assert len(app.dataframe) >= 2
-    feas = app.dataframe[1].value.set_index(["powertrain", "cycle"])
-    exact_col = "1 · Workbook vehicles, 250 g/kWh grid"
-    lossy_col = "5 · With storage losses"
+    feas = app.dataframe[1].value.set_index(["Powertrain", "Cycle"])
+    exact_col = "1 · Workbook vehicles"
+    lossy_col = "5 · Storage losses"
     assert (feas[exact_col] == "unchecked").all()
     # Petrol Francorchamps sport under storage losses: 15 short steps, ~88.3 kW.
     petrol_sport = feas.loc[("Petrol", "Francorchamps — sport"), lossy_col]
